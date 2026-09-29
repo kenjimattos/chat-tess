@@ -52,6 +52,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   proibido em produção), credenciais do OAuth, `PUBLIC_BASE_URL` e `ALLOWED_EMAILS`.
 - Dependências de autenticação: `jose` (JWT), `google-auth-library` (OAuth) e `cookie-parser`.
 - Sessão sem estado com JWT (`JwtSessionTokens`), com expiração configurável.
+- Login com Google (`GoogleIdentityProvider`): fluxo de código de autorização trocado no
+  servidor, aceitando apenas contas com e-mail verificado.
 
 ### Changed
 

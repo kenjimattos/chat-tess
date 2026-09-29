@@ -19,3 +19,9 @@ export interface SessionTokens {
   /** Devolve o id do usuário, ou `null` se o token for inválido ou estiver expirado. */
   verify(token: string): Promise<string | null>;
 }
+
+/** Provedor externo que confirma quem é o usuário (fluxo OAuth com código de autorização). */
+export interface IdentityProvider {
+  buildAuthorizationUrl(state: string): string;
+  verifyAuthorizationCode(code: string): Promise<VerifiedIdentity>;
+}
