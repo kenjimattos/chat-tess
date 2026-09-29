@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { createApp } from './app';
 import type { AppConfig } from './shared/config/env';
+import { assertDatabaseIsReachable, createDatabase } from './shared/database/database';
 import { createLogger, type Logger } from './shared/logging/logger';
 
 export interface Application {
@@ -14,10 +15,14 @@ export interface Application {
  */
 export function composeApplication(config: AppConfig): Application {
   const logger = createLogger(config.logging);
+  const database = createDatabase(config.database.url);
 
   const app = createApp({
     logger,
     apiRouters: [],
+    readinessChecks: {
+      database: () => assertDatabaseIsReachable(database),
+    },
     webDistDir: config.web.distDir,
   });
 

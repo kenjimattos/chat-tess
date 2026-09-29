@@ -12,7 +12,12 @@ import { silentLogger } from './shared/logging/logger';
 function buildApp(configureRoutes: (router: Router) => void = () => {}, webDistDir?: string) {
   const router = Router();
   configureRoutes(router);
-  return createApp({ logger: silentLogger, apiRouters: [router], webDistDir });
+  return createApp({
+    logger: silentLogger,
+    apiRouters: [router],
+    readinessChecks: {},
+    webDistDir,
+  });
 }
 
 describe('createApp', () => {

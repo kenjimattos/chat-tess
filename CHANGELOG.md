@@ -27,3 +27,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Composition root (`composition-root.ts`) como único ponto de montagem das dependências.
 - Modelo de dados com Prisma e migração inicial: usuários, lista de permitidos, conversas,
   mensagens, anexos, resumos de compactação, tools, consumo, créditos, auditoria, conectores e MCP.
+- Conexão com o Postgres e `GET /api/health/ready`, que responde 503 e aponta a dependência
+  indisponível quando o banco não responde.

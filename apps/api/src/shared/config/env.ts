@@ -9,6 +9,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  DATABASE_URL: z.string().startsWith('postgresql://'),
   /** Pasta com o build do frontend; quando definida, a API também serve o site. */
   WEB_DIST_DIR: z.string().optional(),
 });
@@ -18,6 +19,7 @@ export interface AppConfig {
   isProduction: boolean;
   http: { port: number };
   logging: { level: string; pretty: boolean };
+  database: { url: string };
   web: { distDir: string | undefined };
 }
 
@@ -46,6 +48,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
     isProduction,
     http: { port: env.PORT },
     logging: { level: env.LOG_LEVEL, pretty: env.NODE_ENV === 'development' },
+    database: { url: env.DATABASE_URL },
     web: { distDir: env.WEB_DIST_DIR },
   };
 }
