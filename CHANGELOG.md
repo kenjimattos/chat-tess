@@ -14,3 +14,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   stream SSE (`StreamEvent`), validados com Zod.
 - Vitest configurado na raiz com um projeto por workspace e cobertura via V8.
 - Postgres local via `docker compose`, com banco separado (`chat_tess_test`) para testes.
+- ESLint com regra de camadas da arquitetura hexagonal: `domain/` e `application/` não podem
+  importar `infra/`, `http/`, frameworks nem SDKs.
