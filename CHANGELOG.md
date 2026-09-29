@@ -59,6 +59,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Repositórios Prisma de usuários e da lista de permitidos.
 - Contratos de autenticação no pacote compartilhado: usuário atual, login de teste e motivos de
   falha de login.
+- Rotas de autenticação: `GET /api/auth/me`, `POST /api/auth/logout`, login com Google
+  (`/api/auth/google` e `/callback`, com `state` contra CSRF) e `POST /api/auth/test-login`,
+  disponível só no modo `test`.
+- Sessão em cookie `HttpOnly` e middleware `requireAuthentication` para rotas protegidas.
 
 ### Changed
 

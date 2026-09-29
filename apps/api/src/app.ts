@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import express, { type Express, type Router } from 'express';
 import { pinoHttp } from 'pino-http';
 import { apiNotFoundHandler, createErrorHandler } from './shared/http/error-handler';
@@ -26,6 +27,7 @@ export function createApp({
 
   app.use(pinoHttp({ logger }));
   app.use(express.json({ limit: '1mb' }));
+  app.use(cookieParser());
 
   app.use('/api', createHealthRouter({ readinessChecks }), ...apiRouters, apiNotFoundHandler);
 
