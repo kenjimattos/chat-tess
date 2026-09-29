@@ -19,3 +19,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Workspace `@chat-tess/api` com Express 5, build via tsup e execução em desenvolvimento via tsx.
 - Configuração tipada da API (`loadConfig`): variáveis de ambiente validadas com Zod em um único
   ponto, com erro que lista todas as variáveis inválidas.
+- Event bus em processo (`InProcessEventBus`) para eventos de domínio; a falha de um handler não
+  interrompe os demais nem quem publicou o evento.
