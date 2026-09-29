@@ -25,3 +25,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Servidor HTTP com `GET /api/health`, tratamento central de erros (`AppError` e Zod traduzidos
   para status HTTP) e entrega do build do frontend com fallback para o `index.html`.
 - Composition root (`composition-root.ts`) como único ponto de montagem das dependências.
+- Modelo de dados com Prisma e migração inicial: usuários, lista de permitidos, conversas,
+  mensagens, anexos, resumos de compactação, tools, consumo, créditos, auditoria, conectores e MCP.
