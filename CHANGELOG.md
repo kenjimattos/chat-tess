@@ -71,6 +71,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   barrado e mensagem de erro do Google.
 - Convenção `*.test-support.ts` para código de apoio a testes, isento da regra de camadas e fora
   da cobertura.
+- Domínio de conversas: conversa, mensagem ordenada por sequência e título gerado a partir da
+  primeira mensagem.
 
 ### Changed
 
