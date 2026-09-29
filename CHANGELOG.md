@@ -33,3 +33,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   Em desenvolvimento o Vite repassa `/api` para a API.
 - Dockerfile multi-stage: uma única imagem serve a API e o frontend, aplica as migrações pendentes
   na inicialização e roda como usuário sem privilégios.
+- Testes ponta a ponta com Playwright (`npm run e2e`): a suíte sobe API e frontend em portas
+  próprias, usa o banco `chat_tess_test` e grava trace e screenshot em caso de falha.
