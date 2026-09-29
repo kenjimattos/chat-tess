@@ -50,6 +50,7 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   remover os já cadastrados.
 - Configuração de sessão e login: `SESSION_SECRET`, `AUTH_MODE` (`google` ou `test`, este
   proibido em produção), credenciais do OAuth, `PUBLIC_BASE_URL` e `ALLOWED_EMAILS`.
+- Dependências de autenticação: `jose` (JWT), `google-auth-library` (OAuth) e `cookie-parser`.
 
 ### Changed
 
