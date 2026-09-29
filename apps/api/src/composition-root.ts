@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { createApp } from './app';
 import { createAuthModule } from './modules/auth/auth-module';
+import { createConversationsModule } from './modules/conversations/conversations-module';
 import type { AppConfig } from './shared/config/env';
 import { assertDatabaseIsReachable, createDatabase } from './shared/database/database';
 import { InProcessEventBus } from './shared/events/in-process-event-bus';
@@ -29,10 +30,16 @@ export function composeApplication(config: AppConfig): Application {
   );
 
   const auth = createAuthModule({ config, database, events, clock, logger });
+  const conversations = createConversationsModule({
+    database,
+    events,
+    clock,
+    requireAuthentication: auth.requireAuthentication,
+  });
 
   const app = createApp({
     logger,
-    apiRouters: [auth.router],
+    apiRouters: [auth.router, conversations.router],
     readinessChecks: {
       database: () => assertDatabaseIsReachable(database),
     },

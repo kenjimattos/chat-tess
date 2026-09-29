@@ -1,0 +1,134 @@
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createApp } from '../../../app';
+import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { silentLogger } from '../../../shared/logging/logger';
+import { ManualClock } from '../../../shared/time/clock';
+import {
+  TEST_USER_HEADER,
+  fakeRequireAuthentication,
+} from '../../auth/http/fake-authentication.test-support';
+import { CreateConversation } from '../application/create-conversation';
+import { DeleteConversation } from '../application/delete-conversation';
+import { GetConversation } from '../application/get-conversation';
+import { ListConversations } from '../application/list-conversations';
+import { RenameConversation } from '../application/rename-conversation';
+import { InMemoryConversationStore } from '../infra/in-memory-conversation-store';
+import { createConversationsRouter } from './conversations-router';
+
+const ANA = 'user-ana';
+const BIA = 'user-bia';
+
+describe('rotas de conversa', () => {
+  let store: InMemoryConversationStore;
+  let app: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    const clock = new ManualClock('2026-09-30T10:00:00Z');
+    const events = new RecordingEventPublisher();
+    store = new InMemoryConversationStore(clock);
+    const router = createConversationsRouter({
+      requireAuthentication: fakeRequireAuthentication,
+      createConversation: new CreateConversation(store, events, clock),
+      listConversations: new ListConversations(store),
+      getConversation: new GetConversation(store, store),
+      renameConversation: new RenameConversation(store, events, clock),
+      deleteConversation: new DeleteConversation(store, events, clock),
+    });
+    app = createApp({ logger: silentLogger, apiRouters: [router], readinessChecks: {} });
+  });
+
+  const as = (userId: string) => ({ [TEST_USER_HEADER]: userId });
+
+  it('exige autenticação', async () => {
+    const response = await request(app).get('/api/conversations');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('cria e lista as conversas do usuário', async () => {
+    const created = await request(app).post('/api/conversations').set(as(ANA)).send({});
+    await request(app).post('/api/conversations').set(as(BIA)).send({ title: 'Da Bia' });
+
+    const listed = await request(app).get('/api/conversations').set(as(ANA));
+
+    expect(created.status).toBe(201);
+    expect(created.body).toEqual({
+      id: expect.any(String),
+      title: 'Nova conversa',
+      createdAt: '2026-09-30T10:00:00.000Z',
+      updatedAt: '2026-09-30T10:00:00.000Z',
+    });
+    expect(listed.body).toEqual([created.body]);
+  });
+
+  it('abre a conversa com o histórico', async () => {
+    const conversation = await store.create(ANA, 'Dúvidas');
+    await store.append(conversation.id, { role: 'user', parts: [{ type: 'text', text: 'Oi' }] });
+
+    const response = await request(app).get(`/api/conversations/${conversation.id}`).set(as(ANA));
+
+    expect(response.status).toBe(200);
+    expect(response.body.conversation.title).toBe('Dúvidas');
+    expect(response.body.messages).toEqual([
+      {
+        id: expect.any(String),
+        sequence: 1,
+        role: 'user',
+        parts: [{ type: 'text', text: 'Oi' }],
+        createdAt: '2026-09-30T10:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('responde 404 para a conversa de outro usuário', async () => {
+    const conversationOfBia = await store.create(BIA, 'Privada');
+
+    const response = await request(app)
+      .get(`/api/conversations/${conversationOfBia.id}`)
+      .set(as(ANA));
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe('conversation_not_found');
+  });
+
+  it.each(['nao-e-uuid', randomUUID()])('responde 404 para o id "%s"', async (conversationId) => {
+    const response = await request(app).get(`/api/conversations/${conversationId}`).set(as(ANA));
+
+    expect(response.status).toBe(404);
+  });
+
+  it('renomeia a conversa', async () => {
+    const conversation = await store.create(ANA, 'Nova conversa');
+
+    const response = await request(app)
+      .patch(`/api/conversations/${conversation.id}`)
+      .set(as(ANA))
+      .send({ title: 'Planejamento' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.title).toBe('Planejamento');
+  });
+
+  it('recusa renomear sem título', async () => {
+    const conversation = await store.create(ANA, 'Nova conversa');
+
+    const response = await request(app)
+      .patch(`/api/conversations/${conversation.id}`)
+      .set(as(ANA))
+      .send({});
+
+    expect(response.status).toBe(400);
+  });
+
+  it('apaga a conversa', async () => {
+    const conversation = await store.create(ANA, 'Temporária');
+
+    const deleted = await request(app).delete(`/api/conversations/${conversation.id}`).set(as(ANA));
+    const reopened = await request(app).get(`/api/conversations/${conversation.id}`).set(as(ANA));
+
+    expect(deleted.status).toBe(204);
+    expect(reopened.status).toBe(404);
+  });
+});

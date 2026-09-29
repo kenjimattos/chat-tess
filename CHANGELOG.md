@@ -79,6 +79,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   simultâneas não repitam a sequência.
 - Contratos de conversa no pacote compartilhado: resumo, detalhe com mensagens e requisições de
   criação e renomeação.
+- Rotas de conversa (`/api/conversations`): listar, criar, abrir com histórico, renomear e apagar,
+  todas autenticadas.
 
 ### Changed
 
