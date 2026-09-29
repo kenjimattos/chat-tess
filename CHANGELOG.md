@@ -46,3 +46,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Use case `SignIn`: aplica a lista de permitidos, cria o usuário no primeiro acesso, abre a sessão
   e publica os eventos `auth.login_succeeded` e `auth.login_denied`.
 - Use case `GetCurrentUser`: identifica o usuário a partir do token de sessão.
+- Use case `SeedAllowedEmails`: carrega na inicialização os padrões vindos da configuração, sem
+  remover os já cadastrados.
