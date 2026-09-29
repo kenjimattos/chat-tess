@@ -21,3 +21,4 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   ponto, com erro que lista todas as variáveis inválidas.
 - Event bus em processo (`InProcessEventBus`) para eventos de domínio; a falha de um handler não
   interrompe os demais nem quem publicou o evento.
+- Logger estruturado (pino) no formato do Cloud Logging, com cookies e tokens ocultados.
