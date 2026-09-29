@@ -15,6 +15,19 @@ export default defineConfig({
           name: 'api',
           root: 'apps/api',
           environment: 'node',
+          exclude: ['**/node_modules/**', '**/*.integration.test.ts'],
+        },
+      },
+      {
+        // Testes contra um Postgres real (docker compose ou serviço do CI).
+        test: {
+          name: 'api-integration',
+          root: 'apps/api',
+          environment: 'node',
+          include: ['src/**/*.integration.test.ts'],
+          globalSetup: ['src/test/prepare-integration-database.ts'],
+          // Os arquivos compartilham o mesmo banco, então rodam um de cada vez.
+          fileParallelism: false,
         },
       },
       {

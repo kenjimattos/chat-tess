@@ -16,6 +16,21 @@ jobs:
   quality:
     name: Lint, tipos e testes
     runs-on: ubuntu-latest
+    services:
+      # Usado pelos testes de integração, que criam o próprio banco.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: chat_tess
+          POSTGRES_PASSWORD: chat_tess
+          POSTGRES_DB: chat_tess
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U chat_tess"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

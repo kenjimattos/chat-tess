@@ -54,6 +54,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Sessão sem estado com JWT (`JwtSessionTokens`), com expiração configurável.
 - Login com Google (`GoogleIdentityProvider`): fluxo de código de autorização trocado no
   servidor, aceitando apenas contas com e-mail verificado.
+- Testes de integração contra Postgres real (`*.integration.test.ts`), em banco próprio criado
+  automaticamente; o CI passa a subir o Postgres também no job de testes.
+- Repositórios Prisma de usuários e da lista de permitidos.
 
 ### Changed
 
