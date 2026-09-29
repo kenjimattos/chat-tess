@@ -77,6 +77,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   ao dono. A conversa de outro usuário responde como inexistente.
 - Repositórios Prisma de conversas e mensagens. A gravação trava a conversa para que mensagens
   simultâneas não repitam a sequência.
+- Contratos de conversa no pacote compartilhado: resumo, detalhe com mensagens e requisições de
+  criação e renomeação.
 
 ### Changed
 
