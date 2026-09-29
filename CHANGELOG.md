@@ -41,3 +41,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - README com instruções de execução, comandos e guia de leitura da arquitetura.
 - Script `infra/provision.sh` para provisionar Cloud SQL, Secret Manager, bucket e conta de serviço
   e fazer o deploy no Cloud Run.
+- Regra da lista de permitidos: aceita e-mail completo ou domínio (`@empresa.com`), ignorando
+  maiúsculas e espaços.
