@@ -48,3 +48,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Use case `GetCurrentUser`: identifica o usuário a partir do token de sessão.
 - Use case `SeedAllowedEmails`: carrega na inicialização os padrões vindos da configuração, sem
   remover os já cadastrados.
+
+### Changed
+
+- `infra/provision.sh` usa o projeto ativo no `gcloud`, cria os segredos da sessão e do OAuth,
+  concede a permissão de build exigida em projetos novos e já conhece a URL do serviço antes do
+  primeiro deploy.

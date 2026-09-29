@@ -7,13 +7,17 @@
 # recursos que já existem são mantidos.
 #
 # Uso:
+#   ./infra/provision.sh                         # usa o projeto ativo no gcloud
 #   PROJECT_ID=meu-projeto ./infra/provision.sh
 #
-# Pré-requisitos: gcloud autenticado e faturamento ativo no projeto.
+# Pré-requisitos: gcloud autenticado, faturamento ativo no projeto e as variáveis
+# GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET definidas no ambiente ou no
+# .env da raiz. ALLOWED_EMAILS (opcional) é lido da mesma forma.
 
 set -euo pipefail
 
-: "${PROJECT_ID:?Defina PROJECT_ID com o ID do projeto no Google Cloud}"
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
+: "${PROJECT_ID:?Defina PROJECT_ID ou selecione um projeto com gcloud config set project}"
 REGION="${REGION:-southamerica-east1}"
 SERVICE="${SERVICE:-chat-tess}"
 SQL_INSTANCE="${SQL_INSTANCE:-chat-tess-db}"
@@ -24,10 +28,42 @@ BUCKET="${BUCKET:-${PROJECT_ID}-chat-tess-files}"
 SERVICE_ACCOUNT="${SERVICE}-run"
 SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com"
 DATABASE_URL_SECRET="${SERVICE}-database-url"
+SESSION_SECRET_NAME="${SERVICE}-session-secret"
+OAUTH_SECRET_NAME="${SERVICE}-google-oauth-client-secret"
+ENV_FILE="$(dirname "$0")/../.env"
 
 gcloud_project() { gcloud --project "$PROJECT_ID" --quiet "$@"; }
 step() { printf '\n==> %s\n' "$1"; }
 exists() { "$@" >/dev/null 2>&1; }
+
+# Lê uma variável do ambiente ou, se ausente, do .env. Só as chaves pedidas são
+# lidas: o restante do .env descreve o ambiente local e não vale para produção.
+read_setting() {
+  local name="$1"
+  if [[ -n "${!name:-}" ]]; then
+    printf '%s' "${!name}"
+  elif [[ -f "$ENV_FILE" ]]; then
+    grep -E "^${name}=" "$ENV_FILE" | tail -1 | cut -d= -f2-
+  fi
+}
+
+create_secret_if_missing() {
+  local name="$1" value="$2"
+  if ! exists gcloud_project secrets describe "$name"; then
+    printf '%s' "$value" |
+      gcloud_project secrets create "$name" --data-file=- --replication-policy automatic
+  fi
+}
+
+GOOGLE_OAUTH_CLIENT_ID="$(read_setting GOOGLE_OAUTH_CLIENT_ID)"
+GOOGLE_OAUTH_CLIENT_SECRET="$(read_setting GOOGLE_OAUTH_CLIENT_SECRET)"
+ALLOWED_EMAILS="$(read_setting ALLOWED_EMAILS)"
+: "${GOOGLE_OAUTH_CLIENT_ID:?Defina GOOGLE_OAUTH_CLIENT_ID no ambiente ou no .env}"
+: "${GOOGLE_OAUTH_CLIENT_SECRET:?Defina GOOGLE_OAUTH_CLIENT_SECRET no ambiente ou no .env}"
+
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format 'value(projectNumber)')"
+# URL determinística do Cloud Run; conhecida antes do primeiro deploy.
+SERVICE_URL="https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
 
 step "Habilitando as APIs"
 gcloud_project services enable \
@@ -38,6 +74,13 @@ gcloud_project services enable \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com \
   storage.googleapis.com
+
+step "Permissão de build para deploy a partir do código-fonte"
+# Em projetos novos, o Cloud Build usa a conta padrão do Compute Engine, que
+# não tem mais as permissões de build por padrão.
+gcloud_project projects add-iam-policy-binding "$PROJECT_ID" \
+  --member "serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role roles/run.builder --condition None >/dev/null
 
 step "Conta de serviço do Cloud Run"
 if ! exists gcloud_project iam service-accounts describe "$SERVICE_ACCOUNT_EMAIL"; then
@@ -70,9 +113,12 @@ if ! exists gcloud_project secrets describe "$DATABASE_URL_SECRET"; then
   # O Cloud Run acessa o Cloud SQL por socket Unix montado em /cloudsql.
   connection_name="${PROJECT_ID}:${REGION}:${SQL_INSTANCE}"
   database_url="postgresql://${DATABASE_USER}:${database_password}@localhost/${DATABASE_NAME}?host=/cloudsql/${connection_name}"
-  printf '%s' "$database_url" |
-    gcloud_project secrets create "$DATABASE_URL_SECRET" --data-file=- --replication-policy automatic
+  create_secret_if_missing "$DATABASE_URL_SECRET" "$database_url"
 fi
+
+step "Segredos da sessão e do OAuth"
+create_secret_if_missing "$SESSION_SECRET_NAME" "$(openssl rand -base64 48)"
+create_secret_if_missing "$OAUTH_SECRET_NAME" "$GOOGLE_OAUTH_CLIENT_SECRET"
 
 step "Bucket de arquivos"
 if ! exists gcloud_project storage buckets describe "gs://${BUCKET}"; then
@@ -83,12 +129,29 @@ gcloud_project storage buckets add-iam-policy-binding "gs://${BUCKET}" \
   --member "serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role roles/storage.objectAdmin >/dev/null
 
 step "Deploy no Cloud Run a partir do código local"
+# Arquivo de variáveis em YAML: evita conflito das vírgulas de ALLOWED_EMAILS
+# com o separador de --set-env-vars.
+env_vars_file="$(mktemp)"
+trap 'rm -f "$env_vars_file"' EXIT
+cat >"$env_vars_file" <<YAML
+PUBLIC_BASE_URL: "${SERVICE_URL}"
+AUTH_MODE: "google"
+GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_OAUTH_CLIENT_ID}"
+ALLOWED_EMAILS: "${ALLOWED_EMAILS}"
+LLM_MODE: "gemini"
+GCP_PROJECT_ID: "${PROJECT_ID}"
+GCP_LOCATION: "global"
+FILE_STORAGE: "gcs"
+GCS_BUCKET: "${BUCKET}"
+YAML
+
 gcloud_project run deploy "$SERVICE" \
   --source . \
   --region "$REGION" \
   --service-account "$SERVICE_ACCOUNT_EMAIL" \
   --add-cloudsql-instances "${PROJECT_ID}:${REGION}:${SQL_INSTANCE}" \
-  --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
+  --env-vars-file "$env_vars_file" \
+  --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest,SESSION_SECRET=${SESSION_SECRET_NAME}:latest,GOOGLE_OAUTH_CLIENT_SECRET=${OAUTH_SECRET_NAME}:latest" \
   --allow-unauthenticated \
   --memory 1Gi \
   --timeout 3600 \
@@ -96,6 +159,5 @@ gcloud_project run deploy "$SERVICE" \
   --max-instances 2
 
 step "Pronto"
-service_url="$(gcloud_project run services describe "$SERVICE" --region "$REGION" --format 'value(status.url)')"
-echo "Serviço: ${service_url}"
-echo "Verificação: curl ${service_url}/api/health/ready"
+echo "Serviço: ${SERVICE_URL}"
+echo "Verificação: curl ${SERVICE_URL}/api/health/ready"
