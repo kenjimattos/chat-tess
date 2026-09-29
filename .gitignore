@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Prisma client gerado
+apps/api/src/generated/
+
+# Uploads locais (LocalFileStorage)
+apps/api/.storage/
+
+# Playwright
+e2e/test-results/
+e2e/playwright-report/
+e2e/.auth/
