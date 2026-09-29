@@ -17,3 +17,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - ESLint com regra de camadas da arquitetura hexagonal: `domain/` e `application/` não podem
   importar `infra/`, `http/`, frameworks nem SDKs.
 - Workspace `@chat-tess/api` com Express 5, build via tsup e execução em desenvolvimento via tsx.
+- Configuração tipada da API (`loadConfig`): variáveis de ambiente validadas com Zod em um único
+  ponto, com erro que lista todas as variáveis inválidas.
