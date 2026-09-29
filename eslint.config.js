@@ -18,6 +18,9 @@ const FRAMEWORK_PACKAGES = [
   'google-auth-library',
 ];
 
+/** Testes podem montar o cenário com adapters em memória, que ficam em infra/. */
+const TEST_FILES = ['**/*.test.ts'];
+
 const forbidImports = (layerPatterns, message) => ({
   'no-restricted-imports': [
     'error',
@@ -55,6 +58,7 @@ export default tseslint.config(
   },
   {
     files: ['apps/api/src/modules/*/domain/**/*.ts'],
+    ignores: TEST_FILES,
     rules: forbidImports(
       ['**/application/**', '**/infra/**', '**/http/**'],
       'domain/ não pode depender de application/, infra/ ou http/.',
@@ -62,6 +66,7 @@ export default tseslint.config(
   },
   {
     files: ['apps/api/src/modules/*/application/**/*.ts'],
+    ignores: TEST_FILES,
     rules: forbidImports(
       ['**/infra/**', '**/http/**'],
       'application/ não pode depender de infra/ ou http/.',

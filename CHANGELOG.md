@@ -43,3 +43,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   e fazer o deploy no Cloud Run.
 - Regra da lista de permitidos: aceita e-mail completo ou domínio (`@empresa.com`), ignorando
   maiúsculas e espaços.
+- Use case `SignIn`: aplica a lista de permitidos, cria o usuário no primeiro acesso, abre a sessão
+  e publica os eventos `auth.login_succeeded` e `auth.login_denied`.
