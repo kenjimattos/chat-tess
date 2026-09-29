@@ -1,0 +1,22 @@
+# Postgres local para desenvolvimento e testes.
+# O banco "chat_tess_test" é criado por infra/postgres-init.sql e usado pelos testes de integração e e2e.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: chat_tess
+      POSTGRES_PASSWORD: chat_tess
+      POSTGRES_DB: chat_tess
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U chat_tess']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

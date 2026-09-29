@@ -13,3 +13,4 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Pacote `@chat-tess/shared` com o formato neutro de mensagem (`MessagePart`) e os eventos de
   stream SSE (`StreamEvent`), validados com Zod.
 - Vitest configurado na raiz com um projeto por workspace e cobertura via V8.
+- Postgres local via `docker compose`, com banco separado (`chat_tess_test`) para testes.
