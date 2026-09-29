@@ -17,6 +17,15 @@ export default defineConfig({
           environment: 'node',
         },
       },
+      {
+        extends: 'apps/web/vite.config.ts',
+        test: {
+          name: 'web',
+          root: 'apps/web',
+          environment: 'jsdom',
+          setupFiles: ['src/test/setup.ts'],
+        },
+      },
     ],
     coverage: {
       provider: 'v8',
