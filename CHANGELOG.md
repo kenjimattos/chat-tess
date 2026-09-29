@@ -36,3 +36,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Testes ponta a ponta com Playwright (`npm run e2e`): a suíte sobe API e frontend em portas
   próprias, usa o banco `chat_tess_test` e grava trace e screenshot em caso de falha.
 - Cobertura mínima de 80% exigida em `domain/` e `application/` dos módulos da API.
+- Integração contínua no GitHub Actions: formatação, lint, tipos, testes com cobertura, build e
+  testes ponta a ponta com Postgres.
