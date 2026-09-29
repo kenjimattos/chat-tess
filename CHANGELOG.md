@@ -16,3 +16,4 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Postgres local via `docker compose`, com banco separado (`chat_tess_test`) para testes.
 - ESLint com regra de camadas da arquitetura hexagonal: `domain/` e `application/` não podem
   importar `infra/`, `http/`, frameworks nem SDKs.
+- Workspace `@chat-tess/api` com Express 5, build via tsup e execução em desenvolvimento via tsx.

@@ -10,6 +10,13 @@ export default defineConfig({
           environment: 'node',
         },
       },
+      {
+        test: {
+          name: 'api',
+          root: 'apps/api',
+          environment: 'node',
+        },
+      },
     ],
     coverage: {
       provider: 'v8',
