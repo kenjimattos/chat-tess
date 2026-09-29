@@ -48,6 +48,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Use case `GetCurrentUser`: identifica o usuário a partir do token de sessão.
 - Use case `SeedAllowedEmails`: carrega na inicialização os padrões vindos da configuração, sem
   remover os já cadastrados.
+- Configuração de sessão e login: `SESSION_SECRET`, `AUTH_MODE` (`google` ou `test`, este
+  proibido em produção), credenciais do OAuth, `PUBLIC_BASE_URL` e `ALLOWED_EMAILS`.
 
 ### Changed
 
