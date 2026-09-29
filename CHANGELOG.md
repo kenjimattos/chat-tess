@@ -39,3 +39,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Integração contínua no GitHub Actions: formatação, lint, tipos, testes com cobertura, build e
   testes ponta a ponta com Postgres.
 - README com instruções de execução, comandos e guia de leitura da arquitetura.
+- Script `infra/provision.sh` para provisionar Cloud SQL, Secret Manager, bucket e conta de serviço
+  e fazer o deploy no Cloud Run.
