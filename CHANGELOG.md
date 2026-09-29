@@ -73,6 +73,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   da cobertura.
 - Domínio de conversas: conversa, mensagem ordenada por sequência e título gerado a partir da
   primeira mensagem.
+- Use cases de conversa: criar, listar, abrir com histórico, renomear e apagar, sempre restritos
+  ao dono. A conversa de outro usuário responde como inexistente.
 
 ### Changed
 
