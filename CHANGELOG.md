@@ -38,3 +38,4 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Cobertura mínima de 80% exigida em `domain/` e `application/` dos módulos da API.
 - Integração contínua no GitHub Actions: formatação, lint, tipos, testes com cobertura, build e
   testes ponta a ponta com Postgres.
+- README com instruções de execução, comandos e guia de leitura da arquitetura.
