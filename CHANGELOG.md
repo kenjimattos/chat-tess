@@ -65,6 +65,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Sessão em cookie `HttpOnly` e middleware `requireAuthentication` para rotas protegidas.
 - Módulo de autenticação montado na aplicação (`createAuthModule`); a lista de permitidos da
   configuração é carregada antes de a API aceitar requisições.
+- Tela de login com Google, com mensagem para cada motivo de falha, cabeçalho com o usuário
+  logado e botão de sair.
 
 ### Changed
 

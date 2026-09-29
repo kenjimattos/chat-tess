@@ -1,0 +1,69 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { App } from './App';
+
+const ana = {
+  id: 'user-1',
+  email: 'ana@empresa.com',
+  name: 'Ana Souza',
+  avatarUrl: null,
+  role: 'user',
+};
+
+/** Responde cada rota da API com o status e corpo informados. */
+function stubApi(routes: Record<string, { status: number; body?: unknown }>) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const route = routes[String(input)] ?? { status: 200, body: {} };
+    const hasBody = route.status !== 204;
+    return new Response(hasBody ? JSON.stringify(route.body ?? {}) : null, {
+      status: route.status,
+    });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe('App', () => {
+  it('mostra o login quando não há sessão', async () => {
+    stubApi({ '/api/auth/me': { status: 401, body: { error: { code: 'not_authenticated' } } } });
+
+    render(<App />);
+
+    expect(await screen.findByRole('link', { name: 'Entrar com Google' })).toBeInTheDocument();
+  });
+
+  it('mostra o usuário quando há sessão', async () => {
+    stubApi({ '/api/auth/me': { status: 200, body: ana } });
+
+    render(<App />);
+
+    expect(await screen.findByText('Ana Souza')).toBeInTheDocument();
+  });
+
+  it('volta ao login ao sair', async () => {
+    const fetchMock = stubApi({
+      '/api/auth/me': { status: 200, body: ana },
+      '/api/auth/logout': { status: 204 },
+    });
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Sair' }));
+
+    expect(await screen.findByRole('link', { name: 'Entrar com Google' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/logout',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('avisa quando a API não responde', async () => {
+    stubApi({ '/api/auth/me': { status: 502 } });
+
+    render(<App />);
+
+    expect(await screen.findByText('Não foi possível conectar à API.')).toBeInTheDocument();
+  });
+});
