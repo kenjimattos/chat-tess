@@ -75,6 +75,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   primeira mensagem.
 - Use cases de conversa: criar, listar, abrir com histórico, renomear e apagar, sempre restritos
   ao dono. A conversa de outro usuário responde como inexistente.
+- Repositórios Prisma de conversas e mensagens. A gravação trava a conversa para que mensagens
+  simultâneas não repitam a sequência.
 
 ### Changed
 
