@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/coverage
+**/.storage
+.git
+.github
+.env
+.env.*
+e2e
+apps/api/src/generated
+*.md

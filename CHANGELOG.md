@@ -31,3 +31,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   indisponível quando o banco não responde.
 - Workspace `@chat-tess/web` com React, Vite e Tailwind; página inicial mostra o estado da API.
   Em desenvolvimento o Vite repassa `/api` para a API.
+- Dockerfile multi-stage: uma única imagem serve a API e o frontend, aplica as migrações pendentes
+  na inicialização e roda como usuário sem privilégios.
