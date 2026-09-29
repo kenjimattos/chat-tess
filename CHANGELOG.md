@@ -69,6 +69,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   logado e botão de sair.
 - Testes ponta a ponta do login: entrada permitida, sessão após recarregar, saída, e-mail
   barrado e mensagem de erro do Google.
+- Convenção `*.test-support.ts` para código de apoio a testes, isento da regra de camadas e fora
+  da cobertura.
 
 ### Changed
 

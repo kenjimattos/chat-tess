@@ -44,7 +44,13 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['packages/*/src/**', 'apps/*/src/**'],
-      exclude: ['**/*.test.{ts,tsx}', '**/generated/**', '**/main.{ts,tsx}', '**/index.ts'],
+      exclude: [
+        '**/*.test.{ts,tsx}',
+        '**/*.test-support.ts',
+        '**/generated/**',
+        '**/main.{ts,tsx}',
+        '**/index.ts',
+      ],
       thresholds: {
         // Regras de negócio: a cobertura mínima é verificada no CI.
         'apps/api/src/modules/**/{domain,application}/**': {

@@ -18,8 +18,11 @@ const FRAMEWORK_PACKAGES = [
   'google-auth-library',
 ];
 
-/** Testes podem montar o cenário com adapters em memória, que ficam em infra/. */
-const TEST_FILES = ['**/*.test.ts'];
+/**
+ * Testes e código de apoio a testes (*.test-support.ts) podem montar o cenário
+ * com adapters em memória, que ficam em infra/.
+ */
+const TEST_FILES = ['**/*.test.ts', '**/*.test-support.ts'];
 
 const forbidImports = (layerPatterns, message) => ({
   'no-restricted-imports': [
