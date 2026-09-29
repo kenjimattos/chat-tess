@@ -63,6 +63,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   (`/api/auth/google` e `/callback`, com `state` contra CSRF) e `POST /api/auth/test-login`,
   disponível só no modo `test`.
 - Sessão em cookie `HttpOnly` e middleware `requireAuthentication` para rotas protegidas.
+- Módulo de autenticação montado na aplicação (`createAuthModule`); a lista de permitidos da
+  configuração é carregada antes de a API aceitar requisições.
 
 ### Changed
 
