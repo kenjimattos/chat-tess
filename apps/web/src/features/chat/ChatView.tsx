@@ -2,8 +2,10 @@ import { useEffect, useRef } from 'react';
 import { Markdown } from '../../components/Markdown';
 import { Composer } from './Composer';
 import { MessageBubble } from './MessageBubble';
+import { useGradualText } from './gradual-text';
 import type { StreamingReply, ToolActivity } from './streaming-reply';
 import { useChat } from './useChat';
+import { scrollToBottom, useScrollPosition } from './useScrollPosition';
 
 export interface ChatViewProps {
   conversationId: string;
@@ -17,15 +19,26 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
       onTurnFinished,
     },
   );
-  const bottom = useRef<HTMLDivElement>(null);
+  const scrollArea = useRef<HTMLDivElement>(null);
+  const { hasContentBelow } = useScrollPosition(scrollArea);
 
+  // Rola até o fim só ao abrir a conversa. Enquanto a resposta chega, a tela
+  // fica parada e o indicador avisa que há mais conteúdo abaixo.
   useEffect(() => {
-    bottom.current?.scrollIntoView?.({ block: 'end' });
-  }, [messages, reply?.text]);
+    if (!isLoading) {
+      scrollToBottom(scrollArea.current, 'instant');
+    }
+  }, [isLoading]);
+
+  async function sendAndShowQuestion(...args: Parameters<typeof send>) {
+    const sending = send(...args);
+    requestAnimationFrame(() => scrollToBottom(scrollArea.current));
+    await sending;
+  }
 
   return (
-    <section aria-label="Chat" className="flex h-full min-h-0 flex-col">
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+    <section aria-label="Chat" className="relative flex h-full min-h-0 flex-col">
+      <div ref={scrollArea} className="flex-1 space-y-4 overflow-y-auto p-4">
         {isLoading && <p className="text-center text-sm text-slate-500">Carregando conversa…</p>}
         {!isLoading && messages.length === 0 && !reply && (
           <p className="pt-16 text-center text-slate-500">
@@ -43,13 +56,22 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
             {loadError}
           </p>
         )}
-        <div ref={bottom} />
       </div>
+
+      {hasContentBelow && (
+        <button
+          type="button"
+          onClick={() => scrollToBottom(scrollArea.current)}
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-slate-900 px-3 py-1.5 text-xs text-white shadow-md hover:bg-slate-700"
+        >
+          Mais conteúdo abaixo ↓
+        </button>
+      )}
 
       <Composer
         conversationId={conversationId}
         isStreaming={isStreaming}
-        onSend={send}
+        onSend={sendAndShowQuestion}
         onStop={stop}
       />
     </section>
@@ -71,11 +93,7 @@ function ReplyStatus({ reply, isStreaming }: { reply: StreamingReply; isStreamin
       {isStreaming && (
         <article aria-label="Resposta em andamento" className="flex justify-start">
           <div className="max-w-[85%] rounded-2xl bg-white px-4 py-3 text-slate-900 shadow-sm">
-            {reply.text ? (
-              <Markdown>{reply.text}</Markdown>
-            ) : (
-              <span className="animate-pulse">…</span>
-            )}
+            <GradualReply text={reply.text} />
           </div>
         </article>
       )}
@@ -101,4 +119,10 @@ function ToolActivityLine({ tool }: { tool: ToolActivity }) {
       {tool.status === 'running' && '…'}
     </p>
   );
+}
+
+/** Texto em stream revelado aos poucos, para não surgir em blocos. */
+function GradualReply({ text }: { text: string }) {
+  const shown = useGradualText(text);
+  return shown ? <Markdown>{shown}</Markdown> : <span className="animate-pulse">…</span>;
 }

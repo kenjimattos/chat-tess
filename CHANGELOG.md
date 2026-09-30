@@ -50,6 +50,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   duração da resposta simulada.
 - README com as seções "Limites e proteções" e "Desempenho", e o deploy atualizado com o fluxo
   contínuo e o job de migração.
+- Leitura da resposta mais calma: o texto em stream aparece aos poucos, em ritmo que acompanha o
+  atraso do stream, em vez de surgir em blocos; a tela não rola sozinha enquanto a resposta chega
+  (só ao abrir a conversa e ao enviar a pergunta), e um botão "Mais conteúdo abaixo" aparece quando
+  há conteúdo fora da área visível. Com `prefers-reduced-motion`, o texto aparece de uma vez.
 
 ### Changed
 
