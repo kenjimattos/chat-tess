@@ -9,6 +9,7 @@ const requiredEnv = {
   SESSION_SECRET,
   GOOGLE_OAUTH_CLIENT_ID: 'client-id.apps.googleusercontent.com',
   GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret',
+  GCP_PROJECT_ID: 'chat-tess',
 };
 
 describe('loadConfig', () => {
@@ -31,6 +32,14 @@ describe('loadConfig', () => {
         },
       },
       allowedEmails: [],
+      llm: { mode: 'gemini', project: 'chat-tess', location: 'global', model: 'gemini-3.8-flash' },
+      agent: {
+        contextTokenLimit: 1_000_000,
+        thresholdRatio: 0.8,
+        keepRecentMessages: 6,
+        maxToolRounds: 8,
+      },
+      files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
     });
   });
 
@@ -83,14 +92,20 @@ describe('loadConfig', () => {
 
   describe('modo de autenticação', () => {
     it('exige as credenciais do Google no modo "google"', () => {
-      const load = () => loadConfig({ DATABASE_URL, SESSION_SECRET, AUTH_MODE: 'google' });
+      const load = () =>
+        loadConfig({ DATABASE_URL, SESSION_SECRET, AUTH_MODE: 'google', LLM_MODE: 'fake' });
 
       expect(load).toThrow(/GOOGLE_OAUTH_CLIENT_ID/);
       expect(load).toThrow(/GOOGLE_OAUTH_CLIENT_SECRET/);
     });
 
     it('dispensa as credenciais do Google no modo "test"', () => {
-      const config = loadConfig({ DATABASE_URL, SESSION_SECRET, AUTH_MODE: 'test' });
+      const config = loadConfig({
+        DATABASE_URL,
+        SESSION_SECRET,
+        AUTH_MODE: 'test',
+        LLM_MODE: 'fake',
+      });
 
       expect(config.auth).toEqual({ mode: 'test' });
     });
@@ -99,6 +114,62 @@ describe('loadConfig', () => {
       const load = () => loadConfig({ ...requiredEnv, AUTH_MODE: 'test', NODE_ENV: 'production' });
 
       expect(load).toThrow(/AUTH_MODE/);
+    });
+  });
+
+  describe('LLM', () => {
+    it('lê a configuração do Gemini', () => {
+      const config = loadConfig({
+        ...requiredEnv,
+        GCP_LOCATION: 'us-central1',
+        GEMINI_MODEL: 'gemini-3.5-flash',
+        CONTEXT_TOKEN_LIMIT: '4000',
+        COMPACTION_THRESHOLD_RATIO: '0.5',
+      });
+
+      expect(config.llm).toEqual({
+        mode: 'gemini',
+        project: 'chat-tess',
+        location: 'us-central1',
+        model: 'gemini-3.5-flash',
+      });
+      expect(config.agent).toMatchObject({ contextTokenLimit: 4000, thresholdRatio: 0.5 });
+    });
+
+    it('exige o projeto do Google Cloud para usar o Gemini', () => {
+      expect(() => loadConfig({ ...requiredEnv, GCP_PROJECT_ID: '' })).toThrow(/GCP_PROJECT_ID/);
+    });
+
+    it('proíbe o LLM falso em produção', () => {
+      const load = () => loadConfig({ ...requiredEnv, LLM_MODE: 'fake', NODE_ENV: 'production' });
+
+      expect(load).toThrow(/LLM_MODE/);
+    });
+
+    it('recusa um limiar de compactação fora do intervalo entre 0 e 1', () => {
+      expect(() => loadConfig({ ...requiredEnv, COMPACTION_THRESHOLD_RATIO: '1.5' })).toThrow(
+        /COMPACTION_THRESHOLD_RATIO/,
+      );
+    });
+  });
+
+  describe('arquivos', () => {
+    it('usa o Cloud Storage quando configurado', () => {
+      const config = loadConfig({
+        ...requiredEnv,
+        FILE_STORAGE: 'gcs',
+        GCS_BUCKET: 'meu-bucket',
+        MAX_UPLOAD_MB: '5',
+      });
+
+      expect(config.files).toEqual({
+        storage: { kind: 'gcs', bucket: 'meu-bucket' },
+        maxSizeBytes: 5 * 1024 * 1024,
+      });
+    });
+
+    it('exige o bucket para usar o Cloud Storage', () => {
+      expect(() => loadConfig({ ...requiredEnv, FILE_STORAGE: 'gcs' })).toThrow(/GCS_BUCKET/);
     });
   });
 });

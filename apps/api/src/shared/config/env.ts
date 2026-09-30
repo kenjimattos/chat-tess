@@ -15,10 +15,13 @@ const commaSeparatedList = z
       .filter(Boolean),
   );
 
+const positiveInteger = z.coerce.number().int().positive();
+
 const envSchema = z
   .object({
+    // Servidor
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    PORT: z.coerce.number().int().positive().default(3000),
+    PORT: positiveInteger.default(3000),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),
@@ -28,40 +31,76 @@ const envSchema = z
     /** Endereço pelo qual o navegador acessa a aplicação. */
     PUBLIC_BASE_URL: z.url().default('http://localhost:5173'),
 
+    // Sessão e login
     SESSION_SECRET: z.string().min(32, 'precisa ter pelo menos 32 caracteres'),
-    SESSION_TTL_HOURS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .default(24 * 7),
+    SESSION_TTL_HOURS: positiveInteger.default(24 * 7),
     AUTH_MODE: z.enum(['google', 'test']).default('google'),
     GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
     GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
     ALLOWED_EMAILS: commaSeparatedList,
+
+    // LLM e agente
+    LLM_MODE: z.enum(['gemini', 'fake']).default('gemini'),
+    GCP_PROJECT_ID: z.string().optional(),
+    GCP_LOCATION: z.string().default('global'),
+    GEMINI_MODEL: z.string().default('gemini-3.8-flash'),
+    CONTEXT_TOKEN_LIMIT: positiveInteger.default(1_000_000),
+    COMPACTION_THRESHOLD_RATIO: z.coerce.number().gt(0).lt(1).default(0.8),
+    COMPACTION_KEEP_RECENT_MESSAGES: positiveInteger.default(6),
+    MAX_TOOL_ROUNDS: positiveInteger.default(8),
+
+    // Arquivos
+    FILE_STORAGE: z.enum(['local', 'gcs']).default('local'),
+    GCS_BUCKET: z.string().optional(),
+    LOCAL_STORAGE_DIR: z.string().default('.storage'),
+    MAX_UPLOAD_MB: positiveInteger.default(20),
   })
   .superRefine((env, context) => {
-    if (env.AUTH_MODE === 'test' && env.NODE_ENV === 'production') {
-      context.addIssue({
-        code: 'custom',
-        path: ['AUTH_MODE'],
-        message: 'o modo "test" permite entrar sem senha e é proibido em produção',
-      });
-    }
-    if (env.AUTH_MODE === 'google') {
-      for (const key of ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'] as const) {
-        if (!env[key]) {
-          context.addIssue({
-            code: 'custom',
-            path: [key],
-            message: 'obrigatório no modo "google"',
-          });
-        }
+    const fail = (key: keyof typeof env, message: string) =>
+      context.addIssue({ code: 'custom', path: [key], message });
+
+    if (env.NODE_ENV === 'production') {
+      if (env.AUTH_MODE === 'test') {
+        fail('AUTH_MODE', 'o modo "test" permite entrar sem senha e é proibido em produção');
+      }
+      if (env.LLM_MODE === 'fake') {
+        fail('LLM_MODE', 'o modo "fake" responde com texto roteirizado e é proibido em produção');
       }
     }
+
+    const requiredWhen = (condition: boolean, keys: (keyof typeof env)[], reason: string) => {
+      for (const key of condition ? keys : []) {
+        if (!env[key]) {
+          fail(key, `obrigatório ${reason}`);
+        }
+      }
+    };
+    requiredWhen(
+      env.AUTH_MODE === 'google',
+      ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'],
+      'no modo de login "google"',
+    );
+    requiredWhen(env.LLM_MODE === 'gemini', ['GCP_PROJECT_ID'], 'com LLM_MODE "gemini"');
+    requiredWhen(env.FILE_STORAGE === 'gcs', ['GCS_BUCKET'], 'com FILE_STORAGE "gcs"');
   });
+
+type Env = z.infer<typeof envSchema>;
 
 export type AuthConfig =
   { mode: 'google'; google: { clientId: string; clientSecret: string } } | { mode: 'test' };
+
+export type LlmConfig =
+  { mode: 'gemini'; project: string; location: string; model: string } | { mode: 'fake' };
+
+export type FileStorageConfig =
+  { kind: 'local'; rootDir: string } | { kind: 'gcs'; bucket: string };
+
+export interface AgentConfig {
+  contextTokenLimit: number;
+  thresholdRatio: number;
+  keepRecentMessages: number;
+  maxToolRounds: number;
+}
 
 export interface AppConfig {
   environment: 'development' | 'test' | 'production';
@@ -74,6 +113,9 @@ export interface AppConfig {
   auth: AuthConfig;
   /** Padrões garantidos na lista de permitidos durante a inicialização. */
   allowedEmails: string[];
+  llm: LlmConfig;
+  agent: AgentConfig;
+  files: { storage: FileStorageConfig; maxSizeBytes: number };
 }
 
 export class InvalidConfigError extends Error {
@@ -110,20 +152,47 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
     },
     auth: toAuthConfig(env),
     allowedEmails: env.ALLOWED_EMAILS,
+    llm: toLlmConfig(env),
+    agent: {
+      contextTokenLimit: env.CONTEXT_TOKEN_LIMIT,
+      thresholdRatio: env.COMPACTION_THRESHOLD_RATIO,
+      keepRecentMessages: env.COMPACTION_KEEP_RECENT_MESSAGES,
+      maxToolRounds: env.MAX_TOOL_ROUNDS,
+    },
+    files: {
+      storage:
+        env.FILE_STORAGE === 'gcs'
+          ? { kind: 'gcs', bucket: env.GCS_BUCKET ?? '' }
+          : { kind: 'local', rootDir: env.LOCAL_STORAGE_DIR },
+      maxSizeBytes: env.MAX_UPLOAD_MB * 1024 * 1024,
+    },
   };
 }
 
-function toAuthConfig(env: z.infer<typeof envSchema>): AuthConfig {
+// Nas funções abaixo, a presença das variáveis condicionais é garantida pelo superRefine.
+
+function toAuthConfig(env: Env): AuthConfig {
   if (env.AUTH_MODE === 'test') {
     return { mode: 'test' };
   }
-  // Presença garantida pelo superRefine do schema.
   return {
     mode: 'google',
     google: {
       clientId: env.GOOGLE_OAUTH_CLIENT_ID ?? '',
       clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
     },
+  };
+}
+
+function toLlmConfig(env: Env): LlmConfig {
+  if (env.LLM_MODE === 'fake') {
+    return { mode: 'fake' };
+  }
+  return {
+    mode: 'gemini',
+    project: env.GCP_PROJECT_ID ?? '',
+    location: env.GCP_LOCATION,
+    model: env.GEMINI_MODEL,
   };
 }
 

@@ -106,6 +106,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Registro de tools (`ToolRegistry`, padrões Registry e Strategy): junta tools de várias fontes
   (nativas, conectores e MCP), converte falhas em resultados de erro para o LLM e publica cada
   execução com entrada, saída e duração.
+- Configuração do LLM, do agente e dos anexos: `LLM_MODE` (`gemini` ou `fake`, este proibido em
+  produção), modelo e projeto do Vertex AI, limite de contexto e limiar de compactação, limite de
+  rodadas de tool, armazenamento (`local` ou `gcs`) e tamanho máximo de upload.
 
 ### Changed
 

@@ -1,4 +1,5 @@
 import type { RequestHandler, Router } from 'express';
+import type { FileStorageConfig } from '../../shared/config/env';
 import type { Database } from '../../shared/database/database';
 import type { EventPublisher } from '../../shared/events/domain-event';
 import type { Clock } from '../../shared/time/clock';
@@ -12,9 +13,6 @@ import { createFilesRouter } from './http/files-router';
 import { GcsFileStorage } from './infra/gcs-file-storage';
 import { LocalFileStorage } from './infra/local-file-storage';
 import { PrismaAttachmentRepository } from './infra/prisma-attachment-repository';
-
-export type FileStorageConfig =
-  { kind: 'local'; rootDir: string } | { kind: 'gcs'; bucket: string };
 
 export interface FilesModuleDependencies {
   database: Database;
