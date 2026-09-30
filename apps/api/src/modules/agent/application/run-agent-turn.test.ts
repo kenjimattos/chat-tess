@@ -1,0 +1,511 @@
+import type { StreamEvent } from '@chat-tess/shared';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { ManualClock } from '../../../shared/time/clock';
+import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
+import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
+import { ContextWindowExceededError, EmptyMessageError } from '../domain/agent-errors';
+import { FakeToolbox } from '../infra/fake-toolbox';
+import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
+import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
+import { ScriptedLlmProvider } from '../infra/scripted-llm-provider';
+import { CompactConversation } from './compact-conversation';
+import { RunAgentTurn, type AgentSettings } from './run-agent-turn';
+
+const ANA = 'user-ana';
+const BIA = 'user-bia';
+
+const defaultSettings: AgentSettings = {
+  contextTokenLimit: 100_000,
+  thresholdRatio: 0.8,
+  maxToolRounds: 3,
+};
+
+async function collect(stream: AsyncIterable<StreamEvent>): Promise<StreamEvent[]> {
+  const events: StreamEvent[] = [];
+  for await (const event of stream) {
+    events.push(event);
+  }
+  return events;
+}
+
+function textOf(events: StreamEvent[]): string {
+  return events.flatMap((event) => (event.type === 'text_delta' ? [event.text] : [])).join('');
+}
+
+describe('RunAgentTurn', () => {
+  let clock: ManualClock;
+  let store: InMemoryConversationStore;
+  let memory: InMemoryConversationMemory;
+  let attachments: InMemoryAttachmentCatalog;
+  let events: RecordingEventPublisher;
+  let conversationId: string;
+
+  beforeEach(async () => {
+    clock = new ManualClock('2026-09-30T10:00:00Z');
+    store = new InMemoryConversationStore(clock);
+    memory = new InMemoryConversationMemory();
+    attachments = new InMemoryAttachmentCatalog();
+    events = new RecordingEventPublisher();
+    conversationId = (await store.create(ANA, 'Nova conversa')).id;
+  });
+
+  function buildAgent(
+    llm: ScriptedLlmProvider,
+    { toolbox = new FakeToolbox(), settings = defaultSettings, keepRecentMessages = 2 } = {},
+  ) {
+    return new RunAgentTurn({
+      conversations: store,
+      messages: store,
+      memory,
+      attachments,
+      toolbox,
+      llm,
+      compactConversation: new CompactConversation(llm, memory, events, clock, keepRecentMessages),
+      events,
+      clock,
+      settings,
+    });
+  }
+
+  async function send(
+    agent: RunAgentTurn,
+    text: string,
+    extra: Partial<{ attachmentIds: string[]; signal: AbortSignal }> = {},
+  ) {
+    const stream = await agent.start({
+      userId: ANA,
+      conversationId,
+      text,
+      attachmentIds: extra.attachmentIds ?? [],
+      signal: extra.signal,
+    });
+    return collect(stream);
+  }
+
+  /** Preenche a conversa com pares pergunta/resposta já respondidos. */
+  async function seedHistory(turns: number): Promise<void> {
+    for (let index = 1; index <= turns; index++) {
+      await store.append(conversationId, {
+        role: 'user',
+        parts: [{ type: 'text', text: `pergunta ${index}` }],
+      });
+      await store.append(conversationId, {
+        role: 'assistant',
+        parts: [{ type: 'text', text: `resposta ${index}` }],
+      });
+    }
+  }
+
+  describe('resposta simples', () => {
+    it('grava a pergunta, transmite a resposta e grava a resposta', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'Olá! Como posso ajudar?',
+        usage: { inputTokens: 50, outputTokens: 7 },
+      });
+
+      const streamed = await send(buildAgent(llm), '  Oi  ');
+
+      const saved = await store.listByConversation(conversationId);
+      expect(saved.map(({ role, parts }) => [role, parts])).toEqual([
+        ['user', [{ type: 'text', text: 'Oi' }]],
+        ['assistant', [{ type: 'text', text: 'Olá! Como posso ajudar?' }]],
+      ]);
+      expect(textOf(streamed)).toBe('Olá! Como posso ajudar?');
+      expect(streamed.slice(-2)).toEqual([
+        { type: 'usage', usage: { inputTokens: 50, outputTokens: 7, totalTokens: 57 } },
+        { type: 'done', messageId: saved[1]?.id },
+      ]);
+    });
+
+    it('envia ao LLM o histórico da conversa e o prompt de sistema', async () => {
+      await seedHistory(1);
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'ok' });
+
+      await send(buildAgent(llm), 'E agora?');
+
+      const [request] = llm.requests;
+      expect(request?.systemPrompt).toContain('chat-tess');
+      expect(request?.messages.map(({ role, parts }) => [role, parts])).toEqual([
+        ['user', [{ type: 'text', text: 'pergunta 1' }]],
+        ['assistant', [{ type: 'text', text: 'resposta 1' }]],
+        ['user', [{ type: 'text', text: 'E agora?' }]],
+      ]);
+    });
+
+    it('dá à conversa o título da primeira mensagem', async () => {
+      await send(
+        buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'ok' })),
+        'Plano de viagem\nDetalhes...',
+      );
+
+      expect((await store.findOwned(conversationId, ANA))?.title).toBe('Plano de viagem');
+    });
+
+    it('não troca o título nas mensagens seguintes', async () => {
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'ok' }, { text: 'ok' }));
+      await send(agent, 'Primeira');
+
+      await send(agent, 'Segunda');
+
+      expect((await store.findOwned(conversationId, ANA))?.title).toBe('Primeira');
+    });
+
+    it('registra o consumo e o tamanho do contexto', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'ok',
+        usage: { inputTokens: 120, outputTokens: 30 },
+      });
+
+      await send(buildAgent(llm), 'Oi');
+
+      expect(events.ofType('llm.call_completed')).toEqual([
+        expect.objectContaining({
+          actorUserId: ANA,
+          payload: {
+            conversationId,
+            model: 'scripted-llm',
+            purpose: 'chat',
+            usage: { inputTokens: 120, outputTokens: 30, totalTokens: 150 },
+          },
+        }),
+      ]);
+      expect((await memory.load(conversationId)).lastContextTokens).toBe(150);
+    });
+
+    it('publica o evento de mensagem enviada', async () => {
+      await send(buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'ok' })), 'Oi');
+
+      expect(events.ofType('message.sent')).toEqual([
+        expect.objectContaining({
+          actorUserId: ANA,
+          payload: { conversationId, messageId: expect.any(String), attachmentCount: 0 },
+        }),
+      ]);
+    });
+  });
+
+  describe('validação antes do stream', () => {
+    it('recusa mensagem vazia sem anexos', async () => {
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      await expect(send(agent, '   ')).rejects.toThrow(EmptyMessageError);
+      expect(await store.listByConversation(conversationId)).toEqual([]);
+    });
+
+    it('recusa a conversa de outro usuário', async () => {
+      const conversationOfBia = await store.create(BIA, 'Da Bia');
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      const starting = agent.start({
+        userId: ANA,
+        conversationId: conversationOfBia.id,
+        text: 'Oi',
+        attachmentIds: [],
+      });
+
+      await expect(starting).rejects.toThrow(ConversationNotFoundError);
+    });
+  });
+
+  describe('anexos', () => {
+    const pdf = {
+      type: 'attachment' as const,
+      attachmentId: 'att-pdf',
+      fileName: 'contrato.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 2048,
+    };
+
+    it('grava os anexos na mensagem e os envia resolvidos ao LLM', async () => {
+      attachments.add(pdf, { userId: ANA, conversationId });
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'Li o contrato.' });
+
+      await send(buildAgent(llm), 'Resuma', { attachmentIds: ['att-pdf'] });
+
+      const [userMessage] = await store.listByConversation(conversationId);
+      expect(userMessage?.parts).toEqual([{ type: 'text', text: 'Resuma' }, pdf]);
+      expect(llm.requests[0]?.messages[0]?.parts[1]).toEqual({
+        type: 'attachment',
+        fileName: 'contrato.pdf',
+        mimeType: 'application/pdf',
+        source: { kind: 'uri', uri: 'memory://att-pdf' },
+      });
+    });
+
+    it('aceita uma mensagem só com anexo e usa o nome do arquivo como título', async () => {
+      attachments.add(pdf, { userId: ANA, conversationId });
+
+      await send(buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'ok' })), '', {
+        attachmentIds: ['att-pdf'],
+      });
+
+      expect((await store.findOwned(conversationId, ANA))?.title).toBe('contrato.pdf');
+    });
+
+    it('não permite reutilizar um anexo já enviado', async () => {
+      attachments.add(pdf, { userId: ANA, conversationId });
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'ok' }));
+      await send(agent, 'Primeira', { attachmentIds: ['att-pdf'] });
+
+      await expect(send(agent, 'De novo', { attachmentIds: ['att-pdf'] })).rejects.toMatchObject({
+        code: 'invalid_attachment',
+      });
+    });
+
+    it('recusa o anexo de outro usuário', async () => {
+      attachments.add(pdf, { userId: BIA, conversationId });
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      await expect(send(agent, 'Resuma', { attachmentIds: ['att-pdf'] })).rejects.toMatchObject({
+        code: 'invalid_attachment',
+      });
+    });
+  });
+
+  describe('tools', () => {
+    const weatherCall = {
+      type: 'tool_call' as const,
+      callId: 'call-1',
+      toolName: 'weather',
+      input: { city: 'Recife' },
+      providerMetadata: { thoughtSignature: 'assinatura-opaca' },
+    };
+
+    it('executa a tool pedida e devolve o resultado ao LLM na rodada seguinte', async () => {
+      const toolbox = new FakeToolbox({ weather: ({ city }) => `${String(city)}: 29°C` });
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { text: 'Vou consultar.', toolCalls: [weatherCall] },
+        { text: 'Está 29°C em Recife.' },
+      );
+
+      const streamed = await send(buildAgent(llm, { toolbox }), 'Clima em Recife?');
+
+      expect(streamed.filter(({ type }) => type.startsWith('tool_'))).toEqual([
+        { type: 'tool_started', callId: 'call-1', toolName: 'weather', input: { city: 'Recife' } },
+        { type: 'tool_finished', callId: 'call-1', toolName: 'weather', isError: false },
+      ]);
+      expect(toolbox.executions[0]?.context).toMatchObject({ userId: ANA, conversationId });
+      expect(llm.requests[1]?.messages.slice(-2)).toEqual([
+        { role: 'assistant', parts: [{ type: 'text', text: 'Vou consultar.' }, weatherCall] },
+        {
+          role: 'tool',
+          parts: [
+            {
+              type: 'tool_result',
+              callId: 'call-1',
+              toolName: 'weather',
+              output: 'Recife: 29°C',
+              isError: false,
+            },
+          ],
+        },
+      ]);
+      expect(textOf(streamed)).toBe('Vou consultar.Está 29°C em Recife.');
+    });
+
+    it('envia ao LLM as tools disponíveis', async () => {
+      const toolbox = new FakeToolbox({ weather: () => 'ok' });
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'ok' });
+
+      await send(buildAgent(llm, { toolbox }), 'Oi');
+
+      expect(llm.requests[0]?.tools.map(({ name }) => name)).toEqual(['weather']);
+    });
+
+    it('devolve ao LLM a falha da tool, sem interromper o turno', async () => {
+      const toolbox = new FakeToolbox({
+        weather: () => {
+          throw new Error('serviço fora do ar');
+        },
+      });
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [weatherCall] },
+        { text: 'Não consegui consultar o clima.' },
+      );
+
+      const streamed = await send(buildAgent(llm, { toolbox }), 'Clima?');
+
+      expect(streamed).toContainEqual({
+        type: 'tool_finished',
+        callId: 'call-1',
+        toolName: 'weather',
+        isError: true,
+      });
+      expect(streamed.at(-1)?.type).toBe('done');
+    });
+
+    it('interrompe o turno quando o LLM pede tools demais', async () => {
+      const toolbox = new FakeToolbox({ weather: () => 'ok' });
+      const llm = new ScriptedLlmProvider(() => ({ toolCalls: [weatherCall] }));
+
+      const streamed = await send(
+        buildAgent(llm, { toolbox, settings: { ...defaultSettings, maxToolRounds: 2 } }),
+        'Clima?',
+      );
+
+      expect(llm.requests).toHaveLength(3);
+      expect(streamed.at(-1)).toEqual({
+        type: 'error',
+        code: 'tool_rounds_exceeded',
+        message: 'O agente usou tools demais neste turno e foi interrompido.',
+      });
+    });
+  });
+
+  describe('compactação automática', () => {
+    const lowLimit: AgentSettings = {
+      contextTokenLimit: 1000,
+      thresholdRatio: 0.8,
+      maxToolRounds: 3,
+    };
+
+    it('resume o início da conversa quando o contexto se aproxima do limite', async () => {
+      await seedHistory(3);
+      await memory.recordContextTokens(conversationId, 900);
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { text: 'Resumo: o usuário fez as perguntas 1 e 2.' },
+        { text: 'Resposta 4' },
+      );
+
+      const streamed = await send(
+        buildAgent(llm, { settings: lowLimit, keepRecentMessages: 2 }),
+        'pergunta 4',
+      );
+
+      const [compactionRequest, chatRequest] = llm.requests;
+      expect(compactionRequest?.messages[0]?.parts[0]).toMatchObject({
+        type: 'text',
+        text: expect.stringContaining('pergunta 1'),
+      });
+      expect(chatRequest?.systemPrompt).toContain('Resumo: o usuário fez as perguntas 1 e 2.');
+      expect(chatRequest?.messages.map(({ parts }) => parts[0])).toEqual([
+        { type: 'text', text: 'pergunta 3' },
+        { type: 'text', text: 'resposta 3' },
+        { type: 'text', text: 'pergunta 4' },
+      ]);
+      expect(streamed[0]).toEqual({ type: 'compacted', summarizedMessageCount: 4 });
+      expect(textOf(streamed)).toBe('Resposta 4');
+    });
+
+    it('preserva todas as mensagens originais', async () => {
+      await seedHistory(3);
+      await memory.recordContextTokens(conversationId, 900);
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'Resumo' }, { text: 'ok' });
+
+      await send(buildAgent(llm, { settings: lowLimit }), 'pergunta 4');
+
+      expect(await store.listByConversation(conversationId)).toHaveLength(8);
+    });
+
+    it('acumula resumos em compactações seguidas', async () => {
+      await seedHistory(3);
+      await memory.saveSummary(conversationId, {
+        content: 'Resumo antigo',
+        coversUntilSequence: 2,
+        summarizedMessageCount: 2,
+      });
+      await memory.recordContextTokens(conversationId, 900);
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'Resumo novo' }, { text: 'ok' });
+
+      await send(buildAgent(llm, { settings: lowLimit, keepRecentMessages: 2 }), 'pergunta 4');
+
+      expect(llm.requests[0]?.messages[0]?.parts[0]).toMatchObject({
+        text: expect.stringContaining('Resumo antigo'),
+      });
+      expect((await memory.load(conversationId)).summary).toEqual({
+        content: 'Resumo novo',
+        // Mensagens 3 e 4; o corte recua para manter o turno 5-7 inteiro.
+        coversUntilSequence: 4,
+        summarizedMessageCount: 4,
+      });
+    });
+
+    it('registra o consumo da compactação separado do consumo do chat', async () => {
+      await seedHistory(3);
+      await memory.recordContextTokens(conversationId, 900);
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'Resumo' }, { text: 'ok' });
+
+      await send(buildAgent(llm, { settings: lowLimit }), 'pergunta 4');
+
+      const purposes = events
+        .ofType('llm.call_completed')
+        .map((event) => (event.payload as { purpose: string }).purpose);
+      expect(purposes).toEqual(['compaction', 'chat']);
+      expect(events.ofType('conversation.compacted')).toHaveLength(1);
+    });
+
+    it('compacta e tenta de novo quando o modelo recusa por excesso de contexto', async () => {
+      await seedHistory(3);
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { error: new ContextWindowExceededError() },
+        { text: 'Resumo' },
+        { text: 'Resposta depois da compactação' },
+      );
+
+      const streamed = await send(buildAgent(llm), 'pergunta 4');
+
+      expect(streamed.map(({ type }) => type)).toContain('compacted');
+      expect(textOf(streamed)).toBe('Resposta depois da compactação');
+      expect(streamed.at(-1)?.type).toBe('done');
+    });
+
+    it('informa o erro quando não há o que compactar e o contexto continua grande demais', async () => {
+      const llm = new ScriptedLlmProvider(() => ({ error: new ContextWindowExceededError() }));
+
+      const streamed = await send(buildAgent(llm), 'mensagem enorme');
+
+      expect(streamed.at(-1)).toMatchObject({ type: 'error', code: 'context_window_exceeded' });
+    });
+  });
+
+  describe('falhas e desconexão', () => {
+    it('informa a falha do LLM sem expor detalhes e mantém a pergunta salva', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({ error: new Error('503 do provedor') });
+
+      const streamed = await send(buildAgent(llm), 'Oi');
+
+      expect(streamed.at(-1)).toEqual({
+        type: 'error',
+        code: 'agent_failed',
+        message: 'Não foi possível gerar a resposta. Tente novamente.',
+      });
+      expect(events.ofType('agent.turn_failed')[0]?.payload).toMatchObject({
+        errorCode: 'agent_failed',
+        errorMessage: '503 do provedor',
+      });
+      expect((await store.listByConversation(conversationId)).map(({ role }) => role)).toEqual([
+        'user',
+      ]);
+    });
+
+    it('grava a parte já gerada quando o cliente desconecta', async () => {
+      const controller = new AbortController();
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'uma resposta bem longa que será interrompida',
+      });
+      const stream = await buildAgent(llm).start({
+        userId: ANA,
+        conversationId,
+        text: 'Oi',
+        attachmentIds: [],
+        signal: controller.signal,
+      });
+
+      const received: StreamEvent[] = [];
+      for await (const event of stream) {
+        received.push(event);
+        if (event.type === 'text_delta') {
+          controller.abort();
+        }
+      }
+
+      const saved = await store.listByConversation(conversationId);
+      expect(saved.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'uma resposta bem ' }],
+      });
+      expect(received.some(({ type }) => type === 'error')).toBe(false);
+    });
+  });
+});

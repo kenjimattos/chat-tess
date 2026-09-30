@@ -86,6 +86,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   um turno para nunca separar uma chamada de tool do resultado.
 - Compactação automática do histórico (`CompactConversation`): resume as mensagens antigas com o
   LLM, mantém as recentes intactas, acumula resumos anteriores e preserva as mensagens originais.
+- Use case `RunAgentTurn`: grava a mensagem, gera a resposta em stream, executa tools em loop
+  com limite de rodadas, compacta antes de estourar o contexto e, se o modelo recusar por excesso
+  de contexto, compacta e tenta de novo sem interromper o chat.
+- LLM roteirizado (`ScriptedLlmProvider`) e dublês em memória para testar o agente sem rede.
 
 ### Changed
 
