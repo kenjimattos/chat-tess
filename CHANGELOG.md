@@ -48,6 +48,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Teste de carga (`npm run load-test`): sobe a API com o LLM falso e mede o tempo de resposta com
   1, 5 e 20 usuários simultâneos. Localmente os três cenários ficam em cerca de 3,7 s, a própria
   duração da resposta simulada.
+- README com as seções "Limites e proteções" e "Desempenho", e o deploy atualizado com o fluxo
+  contínuo e o job de migração.
 
 ### Changed
 

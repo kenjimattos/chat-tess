@@ -27,6 +27,8 @@ Abra http://localhost:5173.
 | `npm test`              | Testes unitários e de integração HTTP (Vitest)         |
 | `npm run test:coverage` | Testes com relatório de cobertura                      |
 | `npm run e2e`           | Testes ponta a ponta no navegador (Playwright)         |
+| `npm run e2e:live`      | Specs `@live` contra o Gemini real (custa tokens)      |
+| `npm run load-test`     | Tempo de resposta com 1, 5 e 20 usuários simultâneos   |
 | `npm run lint`          | ESLint, incluindo a regra de dependência entre camadas |
 | `npm run typecheck`     | Verificação de tipos em todos os workspaces            |
 | `npm run build`         | Build do frontend e bundle da API                      |
@@ -63,12 +65,75 @@ tem as mesmas quatro pastas:
 A regra de dependência é verificada pelo ESLint: `domain/` e `application/` não conseguem importar
 Express, Prisma nem SDKs. Os testes ficam ao lado do arquivo testado.
 
+## Limites e proteções
+
+- **Créditos.** Cada usuário tem um limite vitalício de tokens (`DEFAULT_TOKEN_LIMIT`, padrão
+  500 mil), somando todas as conversas: chat, compactação e busca na web. Não renova; um
+  administrador ajusta o limite de um usuário por `PUT /api/admin/credit-limits`.
+- **Contexto.** A compactação dispara em 80% de `CONTEXT_TOKEN_LIMIT` (padrão 100 mil). É um
+  orçamento nosso, menor que a janela do modelo (1 milhão no Gemini 3.8 Flash): cada mensagem
+  reenvia o contexto inteiro, então um orçamento menor deixa cada turno mais barato e rápido. Nunca
+  deve passar da janela do modelo.
+- **Rate limit.** Por usuário: 20 mensagens e 30 uploads por minuto (`RATE_LIMIT_*`), com
+  contadores no Postgres, válidos entre as instâncias. Acima do limite, 429 com `Retry-After`; a
+  primeira recusa de cada minuto vai para a auditoria.
+- **Turnos simultâneos.** Uma resposta por conversa e até 3 por usuário
+  (`MAX_CONCURRENT_TURNS_PER_USER`), com reserva atômica no banco. Impede respostas intercaladas no
+  histórico e turnos paralelos passando juntos pela conferência de crédito.
+- **Resposta bloqueada.** Se o Gemini barrar a resposta por segurança ou cortá-la pelo limite de
+  saída, o usuário recebe o motivo e a falha vai para a auditoria.
+- **Prompt injection.** Resultados de tools com conteúdo de terceiros (busca e scraping; depois MCP)
+  chegam ao modelo marcados como externos, e o system prompt manda tratá-los como dado, nunca como
+  instrução. Coberto por um spec `@live`.
+- **Scraping.** Só endereços públicos: bloqueia rede interna, metadados do GCP e DNS rebinding, com
+  limites de tempo e tamanho.
+
+**Identidade do modelo.** O modelo não sabe a própria versão: perguntado, o Gemini 3.8 Flash
+respondia "Gemini 3.7 Flash", a versão presente nos dados de treino. O system prompt informa o
+modelo configurado, e o consumo registra a versão que o Vertex AI diz ter usado (`modelVersion`).
+
+**Fora do escopo, por decisão.** Moderação da entrada e configuração explícita dos filtros de
+segurança do Gemini: os filtros padrão do Vertex AI continuam ativos.
+
+## Desempenho
+
+Quase todo o tempo de uma resposta é espera pelo Gemini, e o Node atende outras requisições
+enquanto espera. `npm run load-test` mede isso com o LLM falso (resposta de ~4 s):
+
+| Usuários simultâneos | p50    | p95    |
+| -------------------- | ------ | ------ |
+| 1                    | 3,70 s | 3,70 s |
+| 5                    | 3,66 s | 3,66 s |
+| 20                   | 3,72 s | 3,72 s |
+
+Medido localmente; o Cloud Run tem 1 vCPU por instância e até 2 instâncias, com 80 requisições
+simultâneas cada. Outros pontos:
+
+- **Cold start.** Sem instância mínima (decisão de custo), o primeiro acesso depois de um período
+  parado espera o contêiner subir. As migrações rodam antes do deploy, não na inicialização.
+- **Sobrecarga do Gemini.** Respostas 429/500/503 do Vertex AI são repetidas até três vezes com
+  espera crescente, antes de qualquer texto chegar.
+- **Conexões.** Pool de 5 conexões por instância (`DATABASE_POOL_MAX`), dentro do limite do Cloud
+  SQL `db-f1-micro`.
+- **Uploads** ficam na memória da instância (1 GB) até irem para o Cloud Storage; o tamanho
+  máximo por arquivo e o rate limit de uploads limitam o pico.
+- **Resposta ligada à conexão.** Trocar de conversa não interrompe a resposta, mas fechar a aba
+  sim: no Cloud Run com CPU alocada só durante requisições, um turno sem conexão aberta ficaria sem
+  CPU.
+
 ## Deploy
 
-Uma única imagem Docker serve a API e o frontend. Ao iniciar, o contêiner aplica as migrações
-pendentes. O destino é o Cloud Run, com Postgres no Cloud SQL.
+Uma única imagem Docker serve a API e o frontend, no Cloud Run, com Postgres no Cloud SQL e
+arquivos no Cloud Storage.
+
+- **Contínuo:** um push na `main` roda lint, testes e e2e; se passarem, o GitHub Actions faz o
+  build da imagem, aplica as migrações no Cloud Run Job `chat-tess-migrate`, publica a revisão e
+  confere o health check. A autenticação no GCP usa Workload Identity Federation, sem chave.
+- **Provisionamento:** `infra/provision.sh` cria a infraestrutura e faz o primeiro deploy;
+  `infra/setup-github-deploy.sh` cria o job de migração e dá ao GitHub acesso de deploy.
 
 ```bash
 docker build -t chat-tess .
+docker run -e DATABASE_URL=postgresql://... chat-tess npx prisma migrate deploy
 docker run -p 8080:8080 -e DATABASE_URL=postgresql://... chat-tess
 ```
