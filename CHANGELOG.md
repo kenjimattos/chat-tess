@@ -22,6 +22,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Spec e2e do compartilhamento: outro usuário vê a conversa e a imagem sem poder enviar
   mensagens, o link revogado para de funcionar, quem não está logado volta ao link depois do login
   e a auditoria registra quem abriu.
+- README: seção sobre o compartilhamento, com o acesso restrito a usuários logados, a revogação e
+  por que a colaboração ficou para depois.
 
 ## [0.2.0] - 2026-09-30
 

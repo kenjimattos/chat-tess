@@ -65,6 +65,22 @@ tem as mesmas quatro pastas:
 A regra de dependência é verificada pelo ESLint: `domain/` e `application/` não conseguem importar
 Express, Prisma nem SDKs. Os testes ficam ao lado do arquivo testado.
 
+## Compartilhamento
+
+O dono gera, no botão ⤴ de cada conversa, um link somente leitura (`/shared/{token}`). Quem abre o
+link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas não pode escrever.
+
+- **Só usuários logados.** O link não é público: vale para quem já tem acesso ao chat-tess
+  (`ALLOWED_EMAILS`). Quem não está logado passa pelo login e volta ao link. Um link vazado não
+  expõe a conversa fora da lista, e cada abertura vai para a auditoria com quem abriu.
+- **Revogável.** Revogar apaga o link na hora, inclusive os anexos (servidos sem cache).
+  Compartilhar de novo gera outro token.
+- **Sem conteúdo de tools.** Resultados de busca e scraping não aparecem no link, como já não
+  aparecem na tela do dono.
+- **Colaboração fica para depois.** Várias pessoas escrevendo na mesma conversa exigiria decidir
+  quem paga cada turno, sincronizar respostas em tempo real entre usuários e definir papéis. O
+  registro de compartilhamento pode ganhar um campo de papel quando isso for necessário.
+
 ## Limites e proteções
 
 - **Créditos.** Cada usuário tem um limite vitalício de tokens (`DEFAULT_TOKEN_LIMIT`, padrão
