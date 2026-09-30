@@ -49,6 +49,8 @@ const envSchema = z
     COMPACTION_THRESHOLD_RATIO: z.coerce.number().gt(0).lt(1).default(0.8),
     COMPACTION_KEEP_RECENT_MESSAGES: positiveInteger.default(6),
     MAX_TOOL_ROUNDS: positiveInteger.default(8),
+    /** Cap de tokens de cada usuário novo. */
+    DEFAULT_TOKEN_LIMIT: z.coerce.number().int().nonnegative().default(2_000_000),
 
     // Arquivos
     FILE_STORAGE: z.enum(['local', 'gcs']).default('local'),
@@ -119,6 +121,7 @@ export interface AppConfig {
   llm: LlmConfig;
   agent: AgentConfig;
   files: { storage: FileStorageConfig; maxSizeBytes: number };
+  billing: { defaultTokenLimit: number };
 }
 
 export class InvalidConfigError extends Error {
@@ -170,6 +173,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
           : { kind: 'local', rootDir: env.LOCAL_STORAGE_DIR },
       maxSizeBytes: env.MAX_UPLOAD_MB * 1024 * 1024,
     },
+    billing: { defaultTokenLimit: env.DEFAULT_TOKEN_LIMIT },
   };
 }
 

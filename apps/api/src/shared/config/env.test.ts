@@ -41,6 +41,7 @@ describe('loadConfig', () => {
         maxToolRounds: 8,
       },
       files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
+      billing: { defaultTokenLimit: 2_000_000 },
     });
   });
 

@@ -14,6 +14,7 @@ import { GoogleIdentityProvider } from './infra/google-identity-provider';
 import { JwtSessionTokens } from './infra/jwt-session-tokens';
 import { PrismaAllowedEmailRepository } from './infra/prisma-allowed-email-repository';
 import { PrismaUserRepository } from './infra/prisma-user-repository';
+import type { UserRepository } from './domain/ports';
 
 export interface AuthModuleDependencies {
   config: AppConfig;
@@ -25,6 +26,8 @@ export interface AuthModuleDependencies {
 
 export interface AuthModule {
   router: Router;
+  /** Usado por módulos que localizam usuários (ex.: limites de consumo). */
+  users: UserRepository;
   /** Middleware que as rotas protegidas dos outros módulos usam. */
   requireAuthentication: ReturnType<typeof createRequireAuthentication>;
   /** Garante na lista de permitidos os padrões vindos da configuração. */
@@ -51,6 +54,7 @@ export function createAuthModule({
   const seedAllowedEmails = new SeedAllowedEmails(allowedEmails);
 
   return {
+    users,
     router: createAuthRouter({
       signIn,
       getCurrentUser,

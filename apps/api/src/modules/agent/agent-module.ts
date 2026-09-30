@@ -9,6 +9,7 @@ import { RunAgentTurn } from './application/run-agent-turn';
 import type { AttachmentCatalog } from './domain/attachment-catalog';
 import type { LlmProvider } from './domain/llm';
 import type { Toolbox } from './domain/toolbox';
+import type { UsageLimiter } from './domain/usage-limiter';
 import { createMessagesRouter } from './http/messages-router';
 import { fakeChatResponder } from './infra/fake-chat-responder';
 import { GeminiLlmProvider } from './infra/gemini-llm-provider';
@@ -26,6 +27,7 @@ export interface AgentModuleDependencies {
   messages: MessageRepository;
   attachments: AttachmentCatalog;
   toolbox: Toolbox;
+  usageLimiter: UsageLimiter;
 }
 
 export interface AgentModule {
@@ -42,6 +44,7 @@ export function createAgentModule(deps: AgentModuleDependencies): AgentModule {
     memory,
     attachments: deps.attachments,
     toolbox: deps.toolbox,
+    usageLimiter: deps.usageLimiter,
     llm,
     compactConversation: new CompactConversation(
       llm,

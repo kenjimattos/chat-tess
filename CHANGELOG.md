@@ -137,6 +137,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Créditos: cada chamada ao LLM (chat e compactação) é registrada em `usage_records` e somada ao
   consumo do usuário; `CreditGuard` bloqueia novos turnos ao atingir o cap, com mensagem clara;
   administradores ajustam o limite de um usuário pelo e-mail.
+- `GET /api/usage` (consumo, limite, saldo e chamadas recentes) e `PUT /api/admin/credit-limits`
+  (só administradores); limite padrão por usuário em `DEFAULT_TOKEN_LIMIT`.
 
 ### Changed
 

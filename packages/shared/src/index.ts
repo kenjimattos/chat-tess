@@ -1,5 +1,6 @@
 export * from './api/audit';
 export * from './api/auth';
+export * from './api/billing';
 export * from './api/conversations';
 export * from './api/messages';
 export * from './message-parts';
