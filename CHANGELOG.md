@@ -37,6 +37,7 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   (`rate_limit.exceeded`). O upload é recusado antes de o arquivo ser recebido.
 - LLM falso ganha o comando `/slow`, que responde em cerca de 4 segundos, para testar respostas
   em andamento.
+- Teste ponta a ponta de resposta que continua chegando enquanto o usuário usa outra conversa.
 
 ### Changed
 

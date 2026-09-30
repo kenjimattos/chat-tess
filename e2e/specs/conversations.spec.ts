@@ -50,6 +50,22 @@ test.describe('Conversas', () => {
     await expect(chat.userMessages()).toHaveText(['Assunto A']);
   });
 
+  test('a resposta continua chegando enquanto o usuário usa outra conversa', async ({ page }) => {
+    await chat.startNewConversation();
+    // O LLM falso responde a "/slow" em cerca de 4 segundos.
+    await chat.messageInput.fill('/slow');
+    await chat.sendButton.click();
+    await expect(page.getByRole('status', { name: /^Respondendo em/ })).toBeVisible();
+
+    await chat.startNewConversation();
+    await chat.send('Enquanto isso, na conversa B');
+    await chat.conversationNamed('/slow').click();
+
+    // Se a troca de conversa tivesse cortado a resposta, o fim dela não estaria gravado.
+    await expect(chat.assistantReplies().last()).toContainText('Fim da resposta lenta.');
+    await expect(page.getByRole('status', { name: /^Respondendo em/ })).toHaveCount(0);
+  });
+
   test('renomeia uma conversa', async ({ page }) => {
     await chat.startNewConversation();
     await chat.send('Título provisório');
