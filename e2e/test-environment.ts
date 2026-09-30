@@ -16,6 +16,9 @@ export const E2E_CONTEXT_TOKEN_LIMIT = 2000;
 /** Domínio liberado na lista de permitidos: cada teste entra com um usuário próprio dele. */
 export const ALLOWED_TEST_DOMAIN = '@e2e.test';
 
+/** Recebe o papel de administrador no login (ADMIN_EMAILS). */
+export const ADMIN_TEST_EMAIL = 'admin@e2e.test';
+
 /** Variáveis de ambiente da API durante os testes. */
 export const apiEnvironment: Record<string, string> = {
   NODE_ENV: 'test',
@@ -27,6 +30,7 @@ export const apiEnvironment: Record<string, string> = {
   // Habilita POST /api/auth/test-login: o login real do Google não é automatizável.
   AUTH_MODE: 'test',
   ALLOWED_EMAILS: ALLOWED_TEST_DOMAIN,
+  ADMIN_EMAILS: ADMIN_TEST_EMAIL,
   // LLM roteirizado: respostas previsíveis, sem rede e sem custo.
   LLM_MODE: 'fake',
   FILE_STORAGE: 'local',

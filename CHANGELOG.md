@@ -140,6 +140,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `GET /api/usage` (consumo, limite, saldo e chamadas recentes) e `PUT /api/admin/credit-limits`
   (só administradores); limite padrão por usuário em `DEFAULT_TOKEN_LIMIT`.
 - Medidor de consumo de tokens no cabeçalho, atualizado ao fim de cada resposta.
+- Testes ponta a ponta dos créditos: medidor atualizado, bloqueio ao atingir o limite definido por
+  um administrador e recusa de mudança de limite por usuário comum.
 
 ### Changed
 
