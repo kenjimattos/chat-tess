@@ -15,7 +15,12 @@ import {
   type Conversation,
 } from '../../conversations/domain/conversation';
 import type { ConversationRepository, MessageRepository } from '../../conversations/domain/ports';
-import { ContextWindowExceededError, EmptyMessageError } from '../domain/agent-errors';
+import {
+  ContextWindowExceededError,
+  EmptyMessageError,
+  ResponseBlockedError,
+  ResponseTruncatedError,
+} from '../domain/agent-errors';
 import type { AgentTurnFailed, LlmCallCompleted, MessageSent } from '../domain/agent-events';
 import type { AttachmentCatalog } from '../domain/attachment-catalog';
 import { shouldCompact, type CompactionThreshold } from '../domain/compaction-policy';
@@ -23,7 +28,7 @@ import type {
   ConversationMemoryRepository,
   ConversationSummary,
 } from '../domain/conversation-memory';
-import type { LlmProvider, LlmRequest } from '../domain/llm';
+import type { LlmFinishReason, LlmProvider, LlmRequest } from '../domain/llm';
 import { buildSystemPrompt } from '../domain/system-prompt';
 import type { Toolbox } from '../domain/toolbox';
 import type { UsageLimiter } from '../domain/usage-limiter';
@@ -72,6 +77,7 @@ interface LlmCallResult {
   text: string;
   toolCalls: ToolCallPart[];
   usage: TokenUsage;
+  finishReason: LlmFinishReason;
 }
 
 const GENERIC_FAILURE_MESSAGE = 'Não foi possível gerar a resposta. Tente novamente.';
@@ -174,6 +180,7 @@ export class RunAgentTurn {
           yield* this.saveAssistantMessage(turn, result.text, []);
           return;
         }
+        yield* this.rejectIncompleteResponse(turn, result);
 
         if (result.toolCalls.length === 0) {
           yield* this.saveAssistantMessage(turn, result.text, []);
@@ -242,6 +249,7 @@ export class RunAgentTurn {
       text: '',
       toolCalls: [],
       usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+      finishReason: 'stop',
     };
 
     try {
@@ -256,6 +264,7 @@ export class RunAgentTurn {
             break;
           case 'completed':
             result.usage = event.usage;
+            result.finishReason = event.finishReason;
             break;
         }
       }
@@ -270,6 +279,23 @@ export class RunAgentTurn {
     await this.recordUsage(turn, result.usage);
     yield { type: 'usage', usage: result.usage };
     return result;
+  }
+
+  /**
+   * Resposta bloqueada ou cortada pelo provedor: guarda o texto que o usuário
+   * já viu, descarta tools pedidas pela metade e encerra o turno com o motivo.
+   */
+  private async *rejectIncompleteResponse(
+    turn: Turn,
+    result: LlmCallResult,
+  ): AsyncGenerator<StreamEvent> {
+    if (result.finishReason !== 'blocked' && result.finishReason !== 'max_tokens') {
+      return;
+    }
+    yield* this.saveAssistantMessage(turn, result.text, [], { final: false });
+    throw result.finishReason === 'blocked'
+      ? new ResponseBlockedError()
+      : new ResponseTruncatedError();
   }
 
   private async buildRequest(turn: Turn): Promise<LlmRequest> {

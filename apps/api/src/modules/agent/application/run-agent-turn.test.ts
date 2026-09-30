@@ -492,6 +492,59 @@ describe('RunAgentTurn', () => {
     });
   });
 
+  describe('resposta bloqueada ou cortada pelo provedor', () => {
+    it('informa o bloqueio sem gravar resposta vazia', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({ finishReason: 'blocked' });
+
+      const streamed = await send(buildAgent(llm), 'pedido problemático');
+
+      expect(streamed.at(-1)).toEqual({
+        type: 'error',
+        code: 'response_blocked',
+        message: expect.stringContaining('política de segurança'),
+      });
+      expect(events.ofType('agent.turn_failed')[0]?.payload).toMatchObject({
+        errorCode: 'response_blocked',
+      });
+      expect((await store.listByConversation(conversationId)).map(({ role }) => role)).toEqual([
+        'user',
+      ]);
+    });
+
+    it('guarda o texto já transmitido e descarta as tools de uma resposta bloqueada', async () => {
+      const toolbox = new FakeToolbox();
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'Começo da resposta',
+        toolCalls: [{ type: 'tool_call', callId: 'c1', toolName: 'web_search', input: {} }],
+        finishReason: 'blocked',
+      });
+
+      await send(buildAgent(llm, { toolbox }), 'Oi');
+
+      const saved = await store.listByConversation(conversationId);
+      expect(saved.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'Começo da resposta' }],
+      });
+      expect(toolbox.executions).toEqual([]);
+    });
+
+    it('guarda a resposta cortada pelo limite de saída e avisa o usuário', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'Uma resposta enorme que',
+        finishReason: 'max_tokens',
+      });
+
+      const streamed = await send(buildAgent(llm), 'Escreva um livro');
+
+      expect(streamed.at(-1)).toMatchObject({ type: 'error', code: 'response_truncated' });
+      expect((await store.listByConversation(conversationId)).at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'Uma resposta enorme que' }],
+      });
+    });
+  });
+
   describe('falhas e desconexão', () => {
     it('informa a falha do LLM sem expor detalhes e mantém a pergunta salva', async () => {
       const llm = ScriptedLlmProvider.replyingInOrder({ error: new Error('503 do provedor') });

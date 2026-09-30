@@ -1,6 +1,6 @@
 import type { TokenUsage, ToolCallPart } from '@chat-tess/shared';
 import { estimateTokens } from '../domain/compaction-policy';
-import type { LlmProvider, LlmRequest, LlmStreamEvent } from '../domain/llm';
+import type { LlmFinishReason, LlmProvider, LlmRequest, LlmStreamEvent } from '../domain/llm';
 
 export interface ScriptedReply {
   text?: string;
@@ -9,6 +9,8 @@ export interface ScriptedReply {
   usage?: Partial<TokenUsage>;
   /** Lança este erro em vez de responder. */
   error?: Error;
+  /** Motivo de término informado no fim do stream; o padrão é `stop`. */
+  finishReason?: LlmFinishReason;
 }
 
 /** Decide a resposta de cada chamada; `callIndex` começa em 0. */
@@ -55,7 +57,7 @@ export class ScriptedLlmProvider implements LlmProvider {
     const outputTokens = reply.usage?.outputTokens ?? estimateTokens(text);
     yield {
       type: 'completed',
-      finishReason: 'stop',
+      finishReason: reply.finishReason ?? 'stop',
       usage: { inputTokens, outputTokens, totalTokens: inputTokens + outputTokens },
     };
   }

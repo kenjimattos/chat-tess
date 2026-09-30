@@ -16,3 +16,25 @@ export class ContextWindowExceededError extends AppError {
     );
   }
 }
+
+/** O provedor interrompeu a resposta por política de segurança. */
+export class ResponseBlockedError extends AppError {
+  constructor() {
+    super(
+      'forbidden',
+      'response_blocked',
+      'O modelo não pode responder a este pedido por política de segurança. Reformule a mensagem.',
+    );
+  }
+}
+
+/** A resposta chegou ao limite de tamanho de saída do modelo e foi cortada. */
+export class ResponseTruncatedError extends AppError {
+  constructor() {
+    super(
+      'limit_exceeded',
+      'response_truncated',
+      'A resposta ficou longa demais e foi cortada. Peça para o assistente continuar.',
+    );
+  }
+}

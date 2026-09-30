@@ -7,6 +7,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Added
+
+- Resposta bloqueada pelo modelo por política de segurança ou cortada pelo limite de saída: o
+  texto já transmitido é guardado, tools pedidas pela metade são descartadas e o usuário recebe o
+  motivo (`response_blocked`, `response_truncated`), registrado na auditoria. O LLM falso ganha o
+  comando `/blocked`.
+
 ### Changed
 
 - Actions do CI atualizadas para versões que rodam em Node 24 (a execução em Node 20 foi

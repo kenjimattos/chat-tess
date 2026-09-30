@@ -8,6 +8,7 @@ const TOOL_COMMAND = /^\/tool\s+(\w+)\s*(\{.*\})?\s*$/s;
  * Respostas previsíveis para `LLM_MODE=fake`, usado nos testes ponta a ponta:
  * - pedido de compactação: devolve um resumo das perguntas do usuário;
  * - "/tool nome {json}": chama a tool; na volta, relata o resultado;
+ * - "/blocked": simula uma resposta bloqueada por política de segurança;
  * - demais mensagens: repete o texto e lista os anexos recebidos.
  */
 export function fakeChatResponder(request: LlmRequest): ScriptedReply {
@@ -21,6 +22,10 @@ export function fakeChatResponder(request: LlmRequest): ScriptedReply {
   }
 
   const text = textOf(lastMessage);
+  if (text === '/blocked') {
+    return { finishReason: 'blocked' };
+  }
+
   const toolCommand = TOOL_COMMAND.exec(text);
   if (toolCommand?.[1]) {
     return {

@@ -19,6 +19,14 @@ describe('fakeChatResponder', () => {
     expect(reply).toEqual({ text: 'Você disse: "Oi".' });
   });
 
+  it('simula um bloqueio por política de segurança com /blocked', () => {
+    const reply = fakeChatResponder(
+      chatRequest([{ role: 'user', parts: [{ type: 'text', text: '/blocked' }] }]),
+    );
+
+    expect(reply).toEqual({ finishReason: 'blocked' });
+  });
+
   it('lista os anexos recebidos', () => {
     const reply = fakeChatResponder(
       chatRequest([
