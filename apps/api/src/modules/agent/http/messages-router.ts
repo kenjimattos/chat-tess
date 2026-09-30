@@ -7,6 +7,8 @@ import type { RunAgentTurn } from '../application/run-agent-turn';
 
 export interface MessagesRouterOptions {
   requireAuthentication: RequestHandler;
+  /** Rate limit por usuário, aplicado antes de qualquer trabalho do agente. */
+  rateLimit: RequestHandler;
   runAgentTurn: RunAgentTurn;
 }
 
@@ -17,6 +19,7 @@ export interface MessagesRouterOptions {
  */
 export function createMessagesRouter({
   requireAuthentication,
+  rateLimit,
   runAgentTurn,
 }: MessagesRouterOptions): Router {
   const router = Router();
@@ -24,6 +27,7 @@ export function createMessagesRouter({
   router.post(
     '/conversations/:conversationId/messages',
     requireAuthentication,
+    rateLimit,
     async (request, response) => {
       const { text, attachmentIds } = sendMessageRequestSchema.parse(request.body);
       const disconnection = new AbortController();

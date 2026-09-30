@@ -6,6 +6,7 @@ import { createBillingModule } from './modules/billing/billing-module';
 import { createAuthModule } from './modules/auth/auth-module';
 import { createConversationsModule } from './modules/conversations/conversations-module';
 import { createFilesModule } from './modules/files/files-module';
+import { createRateLimitingModule } from './modules/rate-limiting/rate-limiting-module';
 import { createToolsModule } from './modules/tools/tools-module';
 import type { AppConfig } from './shared/config/env';
 import { assertDatabaseIsReachable, createDatabase } from './shared/database/database';
@@ -38,10 +39,12 @@ export function composeApplication(config: AppConfig): Application {
 
   const auth = createAuthModule({ ...shared, config, logger });
   const { requireAuthentication } = auth;
+  const rateLimiting = createRateLimitingModule({ ...shared, config: config.rateLimits });
   const conversations = createConversationsModule({ ...shared, requireAuthentication });
   const files = createFilesModule({
     ...shared,
     requireAuthentication,
+    limitUploads: rateLimiting.limitUploads,
     conversations: conversations.conversations,
     storage: config.files.storage,
     maxSizeBytes: config.files.maxSizeBytes,
@@ -66,6 +69,7 @@ export function composeApplication(config: AppConfig): Application {
   const agent = createAgentModule({
     ...shared,
     requireAuthentication,
+    limitMessages: rateLimiting.limitMessages,
     llmConfig: config.llm,
     agentConfig: config.agent,
     conversations: conversations.conversations,

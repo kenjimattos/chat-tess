@@ -24,6 +24,7 @@ export interface AgentModuleDependencies {
   events: EventPublisher;
   clock: Clock;
   requireAuthentication: RequestHandler;
+  limitMessages: RequestHandler;
   conversations: ConversationRepository;
   messages: MessageRepository;
   attachments: AttachmentCatalog;
@@ -63,6 +64,7 @@ export function createAgentModule(deps: AgentModuleDependencies): AgentModule {
   return {
     router: createMessagesRouter({
       requireAuthentication: deps.requireAuthentication,
+      rateLimit: deps.limitMessages,
       runAgentTurn,
     }),
   };

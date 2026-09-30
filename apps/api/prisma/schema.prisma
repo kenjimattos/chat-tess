@@ -260,6 +260,18 @@ model ActiveTurn {
   @@map("active_turns")
 }
 
+// ──────────────────────────────── Rate limit ──────────────────────────────────
+
+/// Requisições de um usuário numa janela fixa de tempo, por política.
+model RateLimitWindow {
+  key         String
+  windowStart DateTime @map("window_start")
+  count       Int
+
+  @@id([key, windowStart])
+  @@map("rate_limit_windows")
+}
+
 // ───────────────────────────────── Auditoria ─────────────────────────────────
 
 /// Registro imutável de um evento de domínio. Sem chave estrangeira para o

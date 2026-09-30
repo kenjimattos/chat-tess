@@ -9,6 +9,8 @@ import { FileTooLargeError } from '../domain/file-errors';
 
 export interface FilesRouterOptions {
   requireAuthentication: RequestHandler;
+  /** Rate limit de uploads, aplicado antes de receber o arquivo. */
+  uploadRateLimit: RequestHandler;
   uploadAttachment: UploadAttachment;
   readAttachment: ReadAttachment;
   maxSizeBytes: number;
@@ -25,6 +27,7 @@ export function createFilesRouter(options: FilesRouterOptions): Router {
   router.post(
     '/conversations/:conversationId/attachments',
     options.requireAuthentication,
+    options.uploadRateLimit,
     receiveSingleFile,
     async (request, response) => {
       if (!request.file) {

@@ -17,6 +17,7 @@ import { InMemoryActiveTurns } from '../infra/in-memory-active-turns';
 import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
 import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
 import { ScriptedLlmProvider } from '../infra/scripted-llm-provider';
+import { noRateLimit } from '../../rate-limiting/http/no-rate-limit.test-support';
 import { createMessagesRouter } from './messages-router';
 
 const ANA = 'user-ana';
@@ -71,6 +72,7 @@ describe('POST /api/conversations/:id/messages', () => {
     });
     const router = createMessagesRouter({
       requireAuthentication: fakeRequireAuthentication,
+      rateLimit: noRateLimit,
       runAgentTurn,
     });
     app = createApp({ logger: silentLogger, apiRouters: [router], readinessChecks: {} });

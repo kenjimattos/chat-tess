@@ -14,6 +14,7 @@ import {
   PDF_CONTENT,
   filesTestBed,
 } from '../application/files-test-bed.test-support';
+import { noRateLimit } from '../../rate-limiting/http/no-rate-limit.test-support';
 import { createFilesRouter } from './files-router';
 
 describe('rotas de arquivos', () => {
@@ -25,6 +26,7 @@ describe('rotas de arquivos', () => {
     anaConversationId = bed.anaConversation.id;
     const router = createFilesRouter({
       requireAuthentication: fakeRequireAuthentication,
+      uploadRateLimit: noRateLimit,
       uploadAttachment: bed.upload,
       readAttachment: new ReadAttachment(bed.attachments, bed.storage),
       maxSizeBytes: MAX_SIZE_BYTES,

@@ -43,6 +43,7 @@ describe('loadConfig', () => {
       },
       files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
       billing: { defaultTokenLimit: 2_000_000 },
+      rateLimits: { messagesPerMinute: 20, uploadsPerMinute: 30 },
       tools: {
         webFetch: {
           timeoutMs: 15_000,

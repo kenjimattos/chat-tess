@@ -19,6 +19,7 @@ export interface FilesModuleDependencies {
   events: EventPublisher;
   clock: Clock;
   requireAuthentication: RequestHandler;
+  limitUploads: RequestHandler;
   conversations: ConversationRepository;
   storage: FileStorageConfig;
   maxSizeBytes: number;
@@ -37,6 +38,7 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
   return {
     router: createFilesRouter({
       requireAuthentication: deps.requireAuthentication,
+      uploadRateLimit: deps.limitUploads,
       uploadAttachment: new UploadAttachment(
         deps.conversations,
         attachments,

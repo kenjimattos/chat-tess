@@ -51,6 +51,9 @@ const envSchema = z
     MAX_TOOL_ROUNDS: positiveInteger.default(8),
     /** Respostas em andamento ao mesmo tempo por usuário, somando todas as conversas. */
     MAX_CONCURRENT_TURNS_PER_USER: positiveInteger.default(3),
+    /** Rate limit por usuário, em requisições por minuto. */
+    RATE_LIMIT_MESSAGES_PER_MINUTE: positiveInteger.default(20),
+    RATE_LIMIT_UPLOADS_PER_MINUTE: positiveInteger.default(30),
     /** Só para testes locais: deixa a tool web_scrape acessar localhost e redes privadas. */
     WEB_FETCH_ALLOW_PRIVATE_NETWORKS: z
       .enum(['true', 'false'])
@@ -128,6 +131,11 @@ export interface AgentConfig {
   maxConcurrentTurnsPerUser: number;
 }
 
+export interface RateLimitConfig {
+  messagesPerMinute: number;
+  uploadsPerMinute: number;
+}
+
 export interface AppConfig {
   environment: 'development' | 'test' | 'production';
   isProduction: boolean;
@@ -145,6 +153,7 @@ export interface AppConfig {
   agent: AgentConfig;
   files: { storage: FileStorageConfig; maxSizeBytes: number };
   billing: { defaultTokenLimit: number };
+  rateLimits: RateLimitConfig;
   tools: ToolsConfig;
 }
 
@@ -199,6 +208,10 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
       maxSizeBytes: env.MAX_UPLOAD_MB * 1024 * 1024,
     },
     billing: { defaultTokenLimit: env.DEFAULT_TOKEN_LIMIT },
+    rateLimits: {
+      messagesPerMinute: env.RATE_LIMIT_MESSAGES_PER_MINUTE,
+      uploadsPerMinute: env.RATE_LIMIT_UPLOADS_PER_MINUTE,
+    },
     tools: {
       webFetch: {
         timeoutMs: 15_000,

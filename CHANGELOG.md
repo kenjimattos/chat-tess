@@ -30,6 +30,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   (padrão 3) por usuário, com reserva atômica no Postgres (`active_turns`) válida entre instâncias.
   Uma nova mensagem fora do limite recebe 409 antes do stream. Evita respostas intercaladas no
   histórico e fecha a brecha em que turnos paralelos passavam juntos pela conferência de crédito.
+- Rate limit por usuário (módulo `rate-limiting`): envio de mensagens (20/min) e uploads (30/min),
+  configuráveis por `RATE_LIMIT_MESSAGES_PER_MINUTE` e `RATE_LIMIT_UPLOADS_PER_MINUTE`. Contadores
+  por janela fixa no Postgres (`rate_limit_windows`), válidos entre instâncias; acima do limite a
+  API responde 429 com `Retry-After`, e a primeira recusa de cada janela vai para a auditoria
+  (`rate_limit.exceeded`). O upload é recusado antes de o arquivo ser recebido.
 
 ### Changed
 
