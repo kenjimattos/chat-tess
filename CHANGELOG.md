@@ -131,6 +131,7 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   compactação, tools e falhas) é gravado em `audit_events` com o conteúdo compactado.
   `GET /api/audit-events` pagina a trilha; usuários veem só os próprios eventos e administradores
   veem todos.
+- Testes ponta a ponta da auditoria: fluxo completo registrado e isolamento entre usuários.
 
 ### Changed
 
