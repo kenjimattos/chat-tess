@@ -106,10 +106,10 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
 
 **Identidade do modelo.** O modelo não sabe a própria versão: perguntado, o Gemini 3.8 Flash
 respondia "Gemini 3.7 Flash", a versão presente nos dados de treino. O system prompt informa o
-modelo configurado, e o consumo registra a versão que o Vertex AI diz ter usado (`modelVersion`).
+modelo configurado, e o consumo registra a versão que o Agent Platform diz ter usado (`modelVersion`).
 
 **Fora do escopo, por decisão.** Moderação da entrada e configuração explícita dos filtros de
-segurança do Gemini: os filtros padrão do Vertex AI continuam ativos.
+segurança do Gemini: os filtros padrão do Agent Platform continuam ativos.
 
 ## Desempenho
 
@@ -127,7 +127,7 @@ simultâneas cada. Outros pontos:
 
 - **Cold start.** Sem instância mínima (decisão de custo), o primeiro acesso depois de um período
   parado espera o contêiner subir. As migrações rodam antes do deploy, não na inicialização.
-- **Sobrecarga do Gemini.** Respostas 429/500/503 do Vertex AI são repetidas até três vezes com
+- **Sobrecarga do Gemini.** Respostas 429/500/503 do Agent Platform são repetidas até três vezes com
   espera crescente, antes de qualquer texto chegar.
 - **Conexões.** Pool de 5 conexões por instância (`DATABASE_POOL_MAX`), dentro do limite do Cloud
   SQL `db-f1-micro`.

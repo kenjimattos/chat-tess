@@ -24,7 +24,7 @@ export const ADMIN_TEST_EMAIL = 'admin@e2e.test';
 
 /**
  * `npm run e2e:live` roda os specs marcados com @live contra o Gemini real no
- * Vertex AI, com as credenciais locais do gcloud (ADC). Custa tokens de verdade.
+ * Agent Platform, com as credenciais locais do gcloud (ADC). Custa tokens de verdade.
  */
 export const IS_LIVE = process.env.E2E_LIVE === 'true';
 

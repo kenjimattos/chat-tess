@@ -19,6 +19,7 @@ export class GeminiGroundedSearch implements WebSearchEngine {
     private readonly model: string,
     connection: GeminiConnection,
   ) {
+    // `vertexai` é o nome antigo da opção no SDK: aponta para o Agent Platform.
     this.models = new GoogleGenAI({ vertexai: true, ...connection }).models;
   }
 

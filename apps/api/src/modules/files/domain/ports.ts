@@ -5,7 +5,7 @@ export interface FileStorage {
   save(key: string, content: Buffer, mimeType: string): Promise<string>;
   read(storageUri: string): Promise<Buffer>;
   /**
-   * Endereço que o LLM consegue ler direto (por exemplo, gs:// no Vertex AI),
+   * Endereço que o LLM consegue ler direto (por exemplo, gs:// no Agent Platform),
    * ou `null` quando o conteúdo precisa ir embutido na requisição.
    */
   uriReadableByModel(storageUri: string): string | null;

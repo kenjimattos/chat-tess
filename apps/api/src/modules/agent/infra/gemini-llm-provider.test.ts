@@ -259,7 +259,7 @@ describe('GeminiLlmProvider', () => {
       ).rejects.toBe(unavailable);
     });
 
-    it('tenta de novo quando o Vertex está sobrecarregado, antes de o texto chegar', async () => {
+    it('tenta de novo quando o Agent Platform está sobrecarregado, antes de o texto chegar', async () => {
       const { client: working } = fakeClient([
         { candidates: [{ content: { parts: [{ text: 'Enfim' }] } }] },
       ]);

@@ -33,10 +33,10 @@ export interface GeminiConnection {
   location: string;
 }
 
-/** Mensagem do Vertex quando a entrada passa do limite de contexto do modelo. */
+/** Mensagem do Agent Platform quando a entrada passa do limite de contexto do modelo. */
 const CONTEXT_OVERFLOW_PATTERN = /input token count.*exceeds|exceeds the maximum number of tokens/i;
 
-/** Adapter do Gemini no Vertex AI, com autenticação pelas credenciais padrão do Google Cloud. */
+/** Adapter do Gemini no Agent Platform, com autenticação pelas credenciais padrão do Google Cloud. */
 export class GeminiLlmProvider implements LlmProvider {
   constructor(
     readonly model: string,
@@ -45,13 +45,14 @@ export class GeminiLlmProvider implements LlmProvider {
   ) {}
 
   static connect(model: string, { project, location }: GeminiConnection): GeminiLlmProvider {
+    // `vertexai` é o nome antigo da opção no SDK: aponta para o Agent Platform.
     const genAi = new GoogleGenAI({ vertexai: true, project, location });
     return new GeminiLlmProvider(model, genAi.models);
   }
 
   async *stream(request: LlmRequest, signal?: AbortSignal): AsyncIterable<LlmStreamEvent> {
     try {
-      // Sobrecarga do Vertex (429/503) é repetida aqui, antes de qualquer texto chegar.
+      // Sobrecarga do Agent Platform (429/503) é repetida aqui, antes de qualquer texto chegar.
       const chunks = await retryTransient(
         () => this.client.generateContentStream(this.toParameters(request, signal)),
         this.retryPolicy,

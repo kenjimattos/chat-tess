@@ -3,7 +3,7 @@ import type { FileStorage } from '../domain/ports';
 
 const GCS_URI_PATTERN = /^gs:\/\/([^/]+)\/(.+)$/;
 
-/** Armazenamento no Cloud Storage. O Vertex AI lê os arquivos direto pelo endereço gs://. */
+/** Armazenamento no Cloud Storage. O Agent Platform lê os arquivos direto pelo endereço gs://. */
 export class GcsFileStorage implements FileStorage {
   private readonly storage = new Storage();
 

@@ -25,6 +25,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - README: seção sobre o compartilhamento, com o acesso restrito a usuários logados, a revogação e
   por que a colaboração ficou para depois.
 
+### Changed
+
+- Documentação, comentários e testes passam a chamar a plataforma do Google Cloud pelo nome atual,
+  Agent Platform (antes Vertex AI). A opção `vertexai` do SDK mantém o nome antigo.
+
 ## [0.2.0] - 2026-09-30
 
 Guardrails do agente, limites de uso, ajustes de desempenho para vários usuários e leitura da
