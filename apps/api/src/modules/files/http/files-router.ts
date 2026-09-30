@@ -1,9 +1,10 @@
-import { Router, type RequestHandler } from 'express';
+import { Router, type RequestHandler, type Response } from 'express';
 import multer, { MulterError } from 'multer';
 import { AppError } from '../../../shared/errors/app-error';
 import { authenticatedUser } from '../../auth/http/require-authentication';
 import { conversationIdOf } from '../../conversations/http/conversations-router';
-import type { ReadAttachment } from '../application/read-attachment';
+import type { AttachmentContent, ReadAttachment } from '../application/read-attachment';
+import type { ReadSharedAttachment } from '../application/read-shared-attachment';
 import type { UploadAttachment } from '../application/upload-attachment';
 import { FileTooLargeError } from '../domain/file-errors';
 
@@ -13,12 +14,14 @@ export interface FilesRouterOptions {
   uploadRateLimit: RequestHandler;
   uploadAttachment: UploadAttachment;
   readAttachment: ReadAttachment;
+  readSharedAttachment: ReadSharedAttachment;
   maxSizeBytes: number;
 }
 
 /**
  * - POST /conversations/:id/attachments   envia um arquivo (multipart, campo "file")
  * - GET  /attachments/:id                  devolve o arquivo ao dono
+ * - GET  /shared/:token/attachments/:id    devolve o anexo de uma conversa compartilhada
  */
 export function createFilesRouter(options: FilesRouterOptions): Router {
   const router = Router();
@@ -48,23 +51,43 @@ export function createFilesRouter(options: FilesRouterOptions): Router {
     '/attachments/:attachmentId',
     options.requireAuthentication,
     async (request, response) => {
-      const { attachment, content } = await options.readAttachment.execute(
+      const file = await options.readAttachment.execute(
         String(request.params.attachmentId),
         authenticatedUser(response).id,
       );
+      sendAttachment(response, file, 'private, max-age=3600');
+    },
+  );
 
-      response
-        .type(attachment.mimeType)
-        .set({
-          'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(attachment.fileName)}`,
-          'Cache-Control': 'private, max-age=3600',
-          'X-Content-Type-Options': 'nosniff',
-        })
-        .send(content);
+  router.get(
+    '/shared/:token/attachments/:attachmentId',
+    options.requireAuthentication,
+    async (request, response) => {
+      const file = await options.readSharedAttachment.execute(
+        String(request.params.token),
+        String(request.params.attachmentId),
+      );
+      // Sem cache: depois de revogar o link, o anexo não pode continuar aparecendo.
+      sendAttachment(response, file, 'private, no-store');
     },
   );
 
   return router;
+}
+
+function sendAttachment(
+  response: Response,
+  { attachment, content }: AttachmentContent,
+  cacheControl: string,
+): void {
+  response
+    .type(attachment.mimeType)
+    .set({
+      'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(attachment.fileName)}`,
+      'Cache-Control': cacheControl,
+      'X-Content-Type-Options': 'nosniff',
+    })
+    .send(content);
 }
 
 /** Recebe um arquivo em memória; o limite de tamanho vira um erro de negócio. */

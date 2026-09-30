@@ -46,6 +46,7 @@ export function composeApplication(config: AppConfig): Application {
     requireAuthentication,
     limitUploads: rateLimiting.limitUploads,
     conversations: conversations.conversations,
+    shares: conversations.shares,
     storage: config.files.storage,
     maxSizeBytes: config.files.maxSizeBytes,
   });

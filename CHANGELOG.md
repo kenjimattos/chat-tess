@@ -14,6 +14,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `GET` e `DELETE`). Qualquer usuário logado abre a conversa em `/api/shared/:token`, sem os
   resultados de tools. Gerar, revogar e abrir o link vão para a auditoria (`conversation.shared`,
   `conversation.share_revoked`, `conversation.share_viewed`).
+- Anexos de conversa compartilhada em `/api/shared/:token/attachments/:id`, só para anexos
+  enviados em mensagens daquela conversa e sem cache, para sumirem assim que o link é revogado.
 
 ## [0.2.0] - 2026-09-30
 

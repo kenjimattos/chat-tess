@@ -7,6 +7,7 @@ import {
   fakeRequireAuthentication,
 } from '../../auth/http/fake-authentication.test-support';
 import { ReadAttachment } from '../application/read-attachment';
+import { ReadSharedAttachment } from '../application/read-shared-attachment';
 import {
   ANA,
   BIA,
@@ -19,16 +20,22 @@ import { createFilesRouter } from './files-router';
 
 describe('rotas de arquivos', () => {
   let app: ReturnType<typeof createApp>;
+  let bed: Awaited<ReturnType<typeof filesTestBed>>;
   let anaConversationId: string;
 
   beforeEach(async () => {
-    const bed = await filesTestBed();
+    bed = await filesTestBed();
     anaConversationId = bed.anaConversation.id;
     const router = createFilesRouter({
       requireAuthentication: fakeRequireAuthentication,
       uploadRateLimit: noRateLimit,
       uploadAttachment: bed.upload,
       readAttachment: new ReadAttachment(bed.attachments, bed.storage),
+      readSharedAttachment: new ReadSharedAttachment(
+        bed.conversations,
+        bed.attachments,
+        bed.storage,
+      ),
       maxSizeBytes: MAX_SIZE_BYTES,
     });
     app = createApp({ logger: silentLogger, apiRouters: [router], readinessChecks: {} });
@@ -100,5 +107,31 @@ describe('rotas de arquivos', () => {
     const response = await request(app).get(`/api/attachments/${body.attachmentId}`).set(as(BIA));
 
     expect(response.status).toBe(404);
+  });
+
+  it('devolve a outro usuário o anexo de uma conversa compartilhada, sem cache', async () => {
+    const { body } = await uploadPdf();
+    await bed.attachments.linkToMessage([body.attachmentId], 'message-1');
+    const { token } = await bed.conversations.createIfAbsent(anaConversationId, 'a'.repeat(32));
+
+    const response = await request(app)
+      .get(`/api/shared/${token}/attachments/${body.attachmentId}`)
+      .set(as(BIA));
+
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('private, no-store');
+    expect(Buffer.from(response.body)).toEqual(PDF_CONTENT);
+  });
+
+  it('exige login para o anexo compartilhado', async () => {
+    const { body } = await uploadPdf();
+    await bed.attachments.linkToMessage([body.attachmentId], 'message-1');
+    const { token } = await bed.conversations.createIfAbsent(anaConversationId, 'a'.repeat(32));
+
+    const response = await request(app).get(
+      `/api/shared/${token}/attachments/${body.attachmentId}`,
+    );
+
+    expect(response.status).toBe(401);
   });
 });

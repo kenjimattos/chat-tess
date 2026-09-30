@@ -4,8 +4,12 @@ import type { Database } from '../../shared/database/database';
 import type { EventPublisher } from '../../shared/events/domain-event';
 import type { Clock } from '../../shared/time/clock';
 import type { AttachmentCatalog } from '../agent/domain/attachment-catalog';
-import type { ConversationRepository } from '../conversations/domain/ports';
+import type {
+  ConversationRepository,
+  ConversationShareRepository,
+} from '../conversations/domain/ports';
 import { ReadAttachment } from './application/read-attachment';
+import { ReadSharedAttachment } from './application/read-shared-attachment';
 import { StoredAttachmentCatalog } from './application/stored-attachment-catalog';
 import { UploadAttachment } from './application/upload-attachment';
 import type { FileStorage } from './domain/ports';
@@ -21,6 +25,8 @@ export interface FilesModuleDependencies {
   requireAuthentication: RequestHandler;
   limitUploads: RequestHandler;
   conversations: ConversationRepository;
+  /** Libera os anexos de conversas compartilhadas por link. */
+  shares: ConversationShareRepository;
   storage: FileStorageConfig;
   maxSizeBytes: number;
 }
@@ -48,6 +54,7 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
         deps.maxSizeBytes,
       ),
       readAttachment: new ReadAttachment(attachments, storage),
+      readSharedAttachment: new ReadSharedAttachment(deps.shares, attachments, storage),
       maxSizeBytes: deps.maxSizeBytes,
     }),
     attachmentCatalog: new StoredAttachmentCatalog(attachments, storage),
