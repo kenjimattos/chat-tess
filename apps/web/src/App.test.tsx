@@ -13,6 +13,10 @@ const ana = {
 
 const DEFAULT_ROUTES: Record<string, { status: number; body?: unknown }> = {
   '/api/conversations': { status: 200, body: [] },
+  '/api/usage': {
+    status: 200,
+    body: { tokenLimit: 1000, tokensUsed: 0, remainingTokens: 1000, recentUsage: [] },
+  },
   '/api/health/ready': { status: 200, body: { status: 'ok' } },
 };
 

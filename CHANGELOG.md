@@ -139,6 +139,7 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   administradores ajustam o limite de um usuário pelo e-mail.
 - `GET /api/usage` (consumo, limite, saldo e chamadas recentes) e `PUT /api/admin/credit-limits`
   (só administradores); limite padrão por usuário em `DEFAULT_TOKEN_LIMIT`.
+- Medidor de consumo de tokens no cabeçalho, atualizado ao fim de cada resposta.
 
 ### Changed
 

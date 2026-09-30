@@ -2,6 +2,8 @@ import type { CurrentUser } from '@chat-tess/shared';
 import { ChatView } from '../chat/ChatView';
 import { ConversationList } from '../conversations/ConversationList';
 import { useConversations } from '../conversations/useConversations';
+import { UsageMeter } from '../usage/UsageMeter';
+import { useUsage } from '../usage/useUsage';
 import { useConversationRoute } from './useConversationRoute';
 
 export interface AppShellProps {
@@ -13,6 +15,12 @@ export interface AppShellProps {
 export function AppShell({ user, onSignOut }: AppShellProps) {
   const { conversations, loadError, create, rename, remove, refresh } = useConversations();
   const { selectedId, select } = useConversationRoute();
+  const { usage, refresh: refreshUsage } = useUsage();
+
+  function handleTurnFinished() {
+    void refresh();
+    void refreshUsage();
+  }
 
   async function startConversation() {
     const conversation = await create();
@@ -39,7 +47,8 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
     <div className="flex h-screen flex-col bg-slate-50">
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
         <span className="font-semibold text-slate-900">chat-tess</span>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-4 text-sm">
+          {usage && <UsageMeter usage={usage} />}
           <span className="text-slate-700">{user.name}</span>
           <button
             type="button"
@@ -73,7 +82,7 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
             <ChatView
               key={selectedId}
               conversationId={selectedId}
-              onTurnFinished={() => void refresh()}
+              onTurnFinished={handleTurnFinished}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-4 p-4 text-center">
