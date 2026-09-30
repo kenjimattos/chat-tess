@@ -44,7 +44,7 @@ export class GeminiGroundedSearch implements WebSearchEngine {
       answer: response.text ?? '',
       sources,
       usage: { inputTokens, outputTokens, totalTokens: inputTokens + outputTokens },
-      model: this.model,
+      model: response.modelVersion ?? this.model,
     };
   }
 }

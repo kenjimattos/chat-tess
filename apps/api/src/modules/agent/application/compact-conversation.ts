@@ -106,7 +106,7 @@ export class CompactConversation {
           actorUserId: userId,
           payload: {
             conversationId,
-            model: this.llm.model,
+            model: event.modelVersion ?? this.llm.model,
             purpose: 'compaction',
             usage: event.usage,
           },

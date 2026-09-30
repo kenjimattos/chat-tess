@@ -71,6 +71,7 @@ export class GeminiLlmProvider implements LlmProvider {
 
       let usage: GenerateContentResponseUsageMetadata | undefined;
       let finishReason: FinishReason | undefined;
+      let modelVersion: string | undefined;
 
       // As partes chegam espalhadas pelos pedaços do stream, inclusive as chamadas
       // de função: nada garante que estejam no último pedaço.
@@ -81,12 +82,14 @@ export class GeminiLlmProvider implements LlmProvider {
         }
         usage = chunk.usageMetadata ?? usage;
         finishReason = candidate?.finishReason ?? finishReason;
+        modelVersion = chunk.modelVersion ?? modelVersion;
       }
 
       yield {
         type: 'completed',
         usage: toTokenUsage(usage),
         finishReason: toFinishReason(finishReason),
+        ...(modelVersion && { modelVersion }),
       };
     } catch (error) {
       throw translateError(error);

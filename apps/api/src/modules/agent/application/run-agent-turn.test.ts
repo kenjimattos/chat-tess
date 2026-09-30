@@ -177,6 +177,19 @@ describe('RunAgentTurn', () => {
       expect((await memory.load(conversationId)).lastContextTokens).toBe(150);
     });
 
+    it('registra a versão do modelo informada pelo provedor', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'ok',
+        modelVersion: 'scripted-llm-002',
+      });
+
+      await send(buildAgent(llm), 'Oi');
+
+      expect(events.ofType('llm.call_completed')[0]?.payload).toMatchObject({
+        model: 'scripted-llm-002',
+      });
+    });
+
     it('publica o evento de mensagem enviada', async () => {
       await send(buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'ok' })), 'Oi');
 

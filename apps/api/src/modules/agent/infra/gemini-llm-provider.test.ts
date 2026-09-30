@@ -180,6 +180,7 @@ describe('GeminiLlmProvider', () => {
         },
         {
           candidates: [{ content: { parts: [{ text: '' }] }, finishReason: FinishReason.STOP }],
+          modelVersion: 'gemini-teste-001',
           usageMetadata: {
             promptTokenCount: 100,
             candidatesTokenCount: 20,
@@ -206,6 +207,7 @@ describe('GeminiLlmProvider', () => {
           type: 'completed',
           finishReason: 'stop',
           usage: { inputTokens: 100, outputTokens: 56, totalTokens: 156 },
+          modelVersion: 'gemini-teste-001',
         },
       ]);
     });

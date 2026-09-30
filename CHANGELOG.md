@@ -21,6 +21,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Conteúdo de terceiros marcado como externo: tools declaram `returnsExternalContent` e o registro
   entrega o resultado delas ao LLM com um aviso de que é dado não verificado, como defesa contra
   prompt injection. `web_search` e `web_scrape` são marcadas.
+- Consumo e auditoria registram a versão do modelo que o Vertex AI informa ter usado
+  (`modelVersion`), com o nome configurado como alternativa.
 
 ### Changed
 

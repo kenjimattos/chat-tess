@@ -41,7 +41,13 @@ export type LlmFinishReason = 'stop' | 'max_tokens' | 'blocked' | 'other';
 export type LlmStreamEvent =
   | { type: 'text_delta'; text: string }
   | { type: 'tool_call'; call: ToolCallPart }
-  | { type: 'completed'; usage: TokenUsage; finishReason: LlmFinishReason };
+  | {
+      type: 'completed';
+      usage: TokenUsage;
+      finishReason: LlmFinishReason;
+      /** Versão que o provedor informa ter usado; pode diferir do nome configurado. */
+      modelVersion?: string;
+    };
 
 export interface LlmProvider {
   /** Identificador do modelo, registrado no consumo. */

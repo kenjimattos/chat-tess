@@ -11,6 +11,8 @@ export interface ScriptedReply {
   error?: Error;
   /** Motivo de término informado no fim do stream; o padrão é `stop`. */
   finishReason?: LlmFinishReason;
+  /** Versão informada no fim do stream, como um provedor real faria. */
+  modelVersion?: string;
 }
 
 /** Decide a resposta de cada chamada; `callIndex` começa em 0. */
@@ -58,6 +60,7 @@ export class ScriptedLlmProvider implements LlmProvider {
     yield {
       type: 'completed',
       finishReason: reply.finishReason ?? 'stop',
+      ...(reply.modelVersion && { modelVersion: reply.modelVersion }),
       usage: { inputTokens, outputTokens, totalTokens: inputTokens + outputTokens },
     };
   }

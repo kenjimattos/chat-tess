@@ -78,6 +78,7 @@ interface LlmCallResult {
   toolCalls: ToolCallPart[];
   usage: TokenUsage;
   finishReason: LlmFinishReason;
+  modelVersion?: string;
 }
 
 const GENERIC_FAILURE_MESSAGE = 'Não foi possível gerar a resposta. Tente novamente.';
@@ -265,6 +266,7 @@ export class RunAgentTurn {
           case 'completed':
             result.usage = event.usage;
             result.finishReason = event.finishReason;
+            result.modelVersion = event.modelVersion;
             break;
         }
       }
@@ -276,7 +278,7 @@ export class RunAgentTurn {
       throw error;
     }
 
-    await this.recordUsage(turn, result.usage);
+    await this.recordUsage(turn, result);
     yield { type: 'usage', usage: result.usage };
     return result;
   }
@@ -314,7 +316,7 @@ export class RunAgentTurn {
     };
   }
 
-  private async recordUsage(turn: Turn, usage: TokenUsage): Promise<void> {
+  private async recordUsage(turn: Turn, { usage, modelVersion }: LlmCallResult): Promise<void> {
     // O contexto da próxima chamada é, aproximadamente, a entrada e a saída desta.
     await this.deps.memory.recordContextTokens(
       turn.conversation.id,
@@ -326,7 +328,7 @@ export class RunAgentTurn {
       actorUserId: turn.userId,
       payload: {
         conversationId: turn.conversation.id,
-        model: this.deps.llm.model,
+        model: modelVersion ?? this.deps.llm.model,
         purpose: 'chat',
         usage,
       },
