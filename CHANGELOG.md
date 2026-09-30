@@ -161,6 +161,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   executada, preferência persistida e execução registrada na auditoria.
 - `infra/setup-github-deploy.sh`: dá ao GitHub Actions acesso de deploy por Workload Identity
   Federation, sem chave de service account, restrito a este repositório e a este serviço.
+- Deploy contínuo: push na `main` publica uma revisão no Cloud Run depois que lint, testes e e2e
+  passam, e confere o health check da revisão nova.
 
 ### Changed
 
