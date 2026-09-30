@@ -16,6 +16,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `conversation.share_revoked`, `conversation.share_viewed`).
 - Anexos de conversa compartilhada em `/api/shared/:token/attachments/:id`, só para anexos
   enviados em mensagens daquela conversa e sem cache, para sumirem assim que o link é revogado.
+- Botão "Compartilhar" em cada conversa: gera, copia e revoga o link. O link abre uma página
+  somente leitura, com as mensagens e os anexos e sem campo de mensagem. Quem não está logado
+  passa pelo login e volta ao link.
 
 ## [0.2.0] - 2026-09-30
 

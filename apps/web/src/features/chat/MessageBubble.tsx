@@ -2,8 +2,14 @@ import type { AttachmentPart, ConversationMessage, MessagePart } from '@chat-tes
 import { attachmentUrl } from '../../api/attachments-api';
 import { Markdown } from '../../components/Markdown';
 
+export interface MessageBubbleProps {
+  message: ConversationMessage;
+  /** Endereço dos anexos; muda na conversa aberta por link de compartilhamento. */
+  attachmentUrlOf?(attachmentId: string): string;
+}
+
 /** Uma mensagem do usuário ou do assistente. Mensagens de resultado de tool não são exibidas. */
-export function MessageBubble({ message }: { message: ConversationMessage }) {
+export function MessageBubble({ message, attachmentUrlOf = attachmentUrl }: MessageBubbleProps) {
   if (message.role === 'tool') {
     return null;
   }
@@ -20,14 +26,25 @@ export function MessageBubble({ message }: { message: ConversationMessage }) {
         }`}
       >
         {message.parts.map((part, index) => (
-          <MessagePartView key={index} part={part} isUser={isUser} />
+          <MessagePartView
+            key={index}
+            part={part}
+            isUser={isUser}
+            attachmentUrlOf={attachmentUrlOf}
+          />
         ))}
       </div>
     </article>
   );
 }
 
-function MessagePartView({ part, isUser }: { part: MessagePart; isUser: boolean }) {
+interface MessagePartViewProps {
+  part: MessagePart;
+  isUser: boolean;
+  attachmentUrlOf(attachmentId: string): string;
+}
+
+function MessagePartView({ part, isUser, attachmentUrlOf }: MessagePartViewProps) {
   switch (part.type) {
     case 'text':
       return isUser ? (
@@ -36,7 +53,7 @@ function MessagePartView({ part, isUser }: { part: MessagePart; isUser: boolean 
         <Markdown>{part.text}</Markdown>
       );
     case 'attachment':
-      return <AttachmentPreview attachment={part} />;
+      return <AttachmentPreview attachment={part} url={attachmentUrlOf(part.attachmentId)} />;
     case 'tool_call':
       return (
         <p className="text-xs text-slate-500">
@@ -48,8 +65,15 @@ function MessagePartView({ part, isUser }: { part: MessagePart; isUser: boolean 
   }
 }
 
-export function AttachmentPreview({ attachment }: { attachment: AttachmentPart }) {
-  const url = attachmentUrl(attachment.attachmentId);
+export interface AttachmentPreviewProps {
+  attachment: AttachmentPart;
+  url?: string;
+}
+
+export function AttachmentPreview({
+  attachment,
+  url = attachmentUrl(attachment.attachmentId),
+}: AttachmentPreviewProps) {
   if (attachment.mimeType.startsWith('image/')) {
     return (
       <a href={url} target="_blank" rel="noreferrer">

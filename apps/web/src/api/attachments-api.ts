@@ -24,3 +24,8 @@ export async function uploadAttachment(
 export function attachmentUrl(attachmentId: string): string {
   return `/api/attachments/${attachmentId}`;
 }
+
+/** Anexo visto por um link de compartilhamento. */
+export function sharedAttachmentUrl(token: string, attachmentId: string): string {
+  return `/api/shared/${token}/attachments/${attachmentId}`;
+}

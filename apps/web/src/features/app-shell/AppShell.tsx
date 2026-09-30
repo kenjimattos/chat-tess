@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { activeTurns } from '../chat/active-turns-store';
 import { ChatView } from '../chat/ChatView';
 import { ConversationList } from '../conversations/ConversationList';
+import { ShareConversationDialog } from '../sharing/ShareConversationDialog';
 import { ToolSettingsPanel } from '../tools/ToolSettingsPanel';
 import { useConversations } from '../conversations/useConversations';
 import { UsageMeter } from '../usage/UsageMeter';
@@ -20,6 +21,7 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
   const { selectedId, select } = useConversationRoute();
   const { usage, refresh: refreshUsage } = useUsage();
   const [isToolSettingsOpen, setIsToolSettingsOpen] = useState(false);
+  const [sharing, setSharing] = useState<{ conversationId: string; title: string } | null>(null);
   const respondingIds = useSyncExternalStore(activeTurns.subscribe, activeTurns.responding);
 
   function handleTurnFinished() {
@@ -51,6 +53,13 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
   return (
     <div className="flex h-screen flex-col bg-slate-50">
       {isToolSettingsOpen && <ToolSettingsPanel onClose={() => setIsToolSettingsOpen(false)} />}
+      {sharing && (
+        <ShareConversationDialog
+          conversationId={sharing.conversationId}
+          title={sharing.title}
+          onClose={() => setSharing(null)}
+        />
+      )}
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
         <span className="font-semibold text-slate-900">chat-tess</span>
         <div className="flex items-center gap-4 text-sm">
@@ -87,6 +96,7 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
             onSelect={select}
             onCreate={() => void startConversation()}
             onRename={(id, title) => void renameConversation(id, title)}
+            onShare={(conversationId, title) => setSharing({ conversationId, title })}
             onDelete={(id, title) => void deleteConversation(id, title)}
           />
         </aside>

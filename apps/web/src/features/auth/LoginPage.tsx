@@ -1,6 +1,7 @@
 import { loginErrorSchema, type LoginError } from '@chat-tess/shared';
 import { GOOGLE_LOGIN_URL } from '../../api/auth-api';
 import { SystemStatus } from '../system-status/SystemStatus';
+import { rememberReturnPath } from './return-path';
 
 const LOGIN_ERROR_MESSAGE: Record<LoginError, string> = {
   cancelled: 'O login foi cancelado.',
@@ -28,6 +29,7 @@ export function LoginPage() {
 
         <a
           href={GOOGLE_LOGIN_URL}
+          onClick={() => rememberReturnPath(window.location.pathname)}
           className="block rounded-lg bg-slate-900 px-4 py-2.5 font-medium text-white hover:bg-slate-700"
         >
           Entrar com Google

@@ -33,7 +33,10 @@ function stubApi(routes: Record<string, { status: number; body?: unknown }>) {
   return fetchMock;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  window.history.replaceState(null, '', '/');
+});
 
 describe('App', () => {
   it('mostra o login quando não há sessão', async () => {
@@ -74,5 +77,54 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Não foi possível conectar à API.')).toBeInTheDocument();
+  });
+
+  describe('link de compartilhamento', () => {
+    const TOKEN = 'a'.repeat(32);
+
+    it('mostra a conversa compartilhada sem campo de mensagem', async () => {
+      window.history.replaceState(null, '', `/shared/${TOKEN}`);
+      stubApi({
+        '/api/auth/me': { status: 200, body: ana },
+        [`/api/shared/${TOKEN}`]: {
+          status: 200,
+          body: {
+            title: 'Receitas',
+            messages: [
+              {
+                id: 'm1',
+                sequence: 1,
+                role: 'user',
+                parts: [{ type: 'text', text: 'Como fazer bolo?' }],
+                createdAt: '2026-09-30T10:00:00.000Z',
+              },
+            ],
+          },
+        },
+      });
+
+      render(<App />);
+
+      expect(await screen.findByRole('heading', { name: 'Receitas' })).toBeInTheDocument();
+      expect(screen.getByText('Como fazer bolo?')).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: 'Mensagem' })).not.toBeInTheDocument();
+    });
+
+    it('avisa quando o link foi revogado', async () => {
+      window.history.replaceState(null, '', `/shared/${TOKEN}`);
+      stubApi({
+        '/api/auth/me': { status: 200, body: ana },
+        [`/api/shared/${TOKEN}`]: {
+          status: 404,
+          body: { error: { code: 'shared_conversation_not_found' } },
+        },
+      });
+
+      render(<App />);
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Este link de compartilhamento não existe ou foi revogado.',
+      );
+    });
   });
 });

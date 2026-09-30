@@ -8,6 +8,7 @@ export interface ConversationListProps {
   onSelect(conversationId: string): void;
   onCreate(): void;
   onRename(conversationId: string, currentTitle: string): void;
+  onShare(conversationId: string, title: string): void;
   onDelete(conversationId: string, title: string): void;
 }
 
@@ -18,6 +19,7 @@ export function ConversationList({
   onSelect,
   onCreate,
   onRename,
+  onShare,
   onDelete,
 }: ConversationListProps) {
   return (
@@ -66,6 +68,14 @@ export function ConversationList({
                 className="rounded p-1 text-xs text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-200 focus:opacity-100"
               >
                 ✎
+              </button>
+              <button
+                type="button"
+                aria-label={`Compartilhar ${conversation.title}`}
+                onClick={() => onShare(conversation.id, conversation.title)}
+                className="rounded p-1 text-xs text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-200 focus:opacity-100"
+              >
+                ⤴
               </button>
               <button
                 type="button"

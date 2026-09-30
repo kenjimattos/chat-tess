@@ -1,6 +1,7 @@
 import type { CurrentUser } from '@chat-tess/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchCurrentUser, logout } from '../../api/auth-api';
+import { restoreReturnPath } from './return-path';
 
 export type SessionState =
   | { status: 'loading' }
@@ -17,6 +18,9 @@ export function useCurrentUser() {
     fetchCurrentUser().then(
       (user) => {
         if (isCurrent) {
+          if (user) {
+            restoreReturnPath();
+          }
           setSession(user ? { status: 'authenticated', user } : { status: 'anonymous' });
         }
       },
