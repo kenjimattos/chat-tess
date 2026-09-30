@@ -145,6 +145,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Leitura segura de páginas da web para as tools: só endereços públicos (bloqueia loopback, redes
   privadas, metadados do Google Cloud e IPv4 escrito em IPv6), validação do IP na conexão contra
   DNS rebinding, redirecionamentos revalidados e limites de tempo e tamanho.
+- Busca na web com o grounding do Google Search no Gemini, numa chamada separada da conversa, e
+  uma busca simulada para os testes ponta a ponta.
 
 ### Changed
 
