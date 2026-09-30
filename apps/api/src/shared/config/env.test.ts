@@ -39,6 +39,7 @@ describe('loadConfig', () => {
         thresholdRatio: 0.8,
         keepRecentMessages: 6,
         maxToolRounds: 8,
+        maxConcurrentTurnsPerUser: 3,
       },
       files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
       billing: { defaultTokenLimit: 2_000_000 },

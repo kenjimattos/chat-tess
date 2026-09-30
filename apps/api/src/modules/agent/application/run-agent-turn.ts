@@ -16,6 +16,12 @@ import {
 } from '../../conversations/domain/conversation';
 import type { ConversationRepository, MessageRepository } from '../../conversations/domain/ports';
 import {
+  STALE_TURN_AFTER_MS,
+  TooManyActiveTurnsError,
+  TurnInProgressError,
+  type ActiveTurns,
+} from '../domain/active-turns';
+import {
   ContextWindowExceededError,
   EmptyMessageError,
   ResponseBlockedError,
@@ -47,6 +53,8 @@ export interface RunAgentTurnInput {
 export interface AgentSettings extends CompactionThreshold {
   /** Limite de rodadas de tool por turno, para evitar laços infinitos. */
   maxToolRounds: number;
+  /** Respostas simultâneas por usuário, somando todas as conversas. */
+  maxConcurrentTurnsPerUser: number;
 }
 
 export interface AgentTurnDependencies {
@@ -56,6 +64,7 @@ export interface AgentTurnDependencies {
   attachments: AttachmentCatalog;
   toolbox: Toolbox;
   usageLimiter: UsageLimiter;
+  activeTurns: ActiveTurns;
   llm: LlmProvider;
   compactConversation: CompactConversation;
   events: EventPublisher;
@@ -65,6 +74,8 @@ export interface AgentTurnDependencies {
 
 /** Estado de um turno em andamento. */
 interface Turn {
+  /** Reserva em `ActiveTurns`, liberada quando o turno termina. */
+  id: string;
   userId: string;
   conversation: Conversation;
   signal?: AbortSignal;
@@ -92,8 +103,8 @@ export class RunAgentTurn {
 
   /**
    * Valida e grava a mensagem do usuário. Erros desta fase (conversa
-   * inexistente, mensagem vazia, anexo inválido, crédito esgotado) são
-   * lançados normalmente.
+   * inexistente, mensagem vazia, conversa já respondendo, anexo inválido,
+   * crédito esgotado) são lançados normalmente.
    * Devolve o stream da resposta; a partir dele, erros viram eventos `error`.
    */
   async start(input: RunAgentTurnInput): Promise<AsyncIterable<StreamEvent>> {
@@ -108,17 +119,24 @@ export class RunAgentTurn {
       input.conversationId,
       input.userId,
     );
-    await this.deps.usageLimiter.assertCanSpend(input.userId);
-    const attachmentParts = input.attachmentIds.length
-      ? await attachments.findPendingForMessage(input.attachmentIds, {
-          userId: input.userId,
-          conversationId: conversation.id,
-        })
-      : [];
+    const turnId = await this.reserveTurn(input.userId, conversation.id);
 
-    await this.saveUserMessage(input.userId, conversation, text, attachmentParts);
+    try {
+      await this.deps.usageLimiter.assertCanSpend(input.userId);
+      const attachmentParts = input.attachmentIds.length
+        ? await attachments.findPendingForMessage(input.attachmentIds, {
+            userId: input.userId,
+            conversationId: conversation.id,
+          })
+        : [];
+      await this.saveUserMessage(input.userId, conversation, text, attachmentParts);
+    } catch (error) {
+      await this.deps.activeTurns.release(turnId);
+      throw error;
+    }
 
     const turn: Turn = {
+      id: turnId,
       userId: input.userId,
       conversation,
       signal: input.signal,
@@ -126,6 +144,25 @@ export class RunAgentTurn {
       hasForcedCompaction: false,
     };
     return this.respond(turn, text);
+  }
+
+  private async reserveTurn(userId: string, conversationId: string): Promise<string> {
+    const maxPerUser = this.deps.settings.maxConcurrentTurnsPerUser;
+    const result = await this.deps.activeTurns.tryAcquire({
+      userId,
+      conversationId,
+      maxPerUser,
+      staleBefore: new Date(this.deps.clock.now().getTime() - STALE_TURN_AFTER_MS),
+    });
+
+    switch (result.status) {
+      case 'acquired':
+        return result.turnId;
+      case 'conversation_busy':
+        throw new TurnInProgressError();
+      case 'user_limit_reached':
+        throw new TooManyActiveTurnsError(maxPerUser);
+    }
   }
 
   private async saveUserMessage(
@@ -202,6 +239,8 @@ export class RunAgentTurn {
         return;
       }
       yield await this.reportFailure(turn, error);
+    } finally {
+      await this.deps.activeTurns.release(turn.id);
     }
   }
 

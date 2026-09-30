@@ -13,6 +13,7 @@ import type { UsageLimiter } from './domain/usage-limiter';
 import { createMessagesRouter } from './http/messages-router';
 import { fakeChatResponder } from './infra/fake-chat-responder';
 import { GeminiLlmProvider } from './infra/gemini-llm-provider';
+import { PrismaActiveTurns } from './infra/prisma-active-turns';
 import { PrismaConversationMemory } from './infra/prisma-conversation-memory';
 import { ScriptedLlmProvider } from './infra/scripted-llm-provider';
 
@@ -45,6 +46,7 @@ export function createAgentModule(deps: AgentModuleDependencies): AgentModule {
     attachments: deps.attachments,
     toolbox: deps.toolbox,
     usageLimiter: deps.usageLimiter,
+    activeTurns: new PrismaActiveTurns(deps.database),
     llm,
     compactConversation: new CompactConversation(
       llm,

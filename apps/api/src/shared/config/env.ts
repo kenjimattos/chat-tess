@@ -49,6 +49,8 @@ const envSchema = z
     COMPACTION_THRESHOLD_RATIO: z.coerce.number().gt(0).lt(1).default(0.8),
     COMPACTION_KEEP_RECENT_MESSAGES: positiveInteger.default(6),
     MAX_TOOL_ROUNDS: positiveInteger.default(8),
+    /** Respostas em andamento ao mesmo tempo por usuário, somando todas as conversas. */
+    MAX_CONCURRENT_TURNS_PER_USER: positiveInteger.default(3),
     /** Só para testes locais: deixa a tool web_scrape acessar localhost e redes privadas. */
     WEB_FETCH_ALLOW_PRIVATE_NETWORKS: z
       .enum(['true', 'false'])
@@ -123,6 +125,7 @@ export interface AgentConfig {
   thresholdRatio: number;
   keepRecentMessages: number;
   maxToolRounds: number;
+  maxConcurrentTurnsPerUser: number;
 }
 
 export interface AppConfig {
@@ -186,6 +189,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
       thresholdRatio: env.COMPACTION_THRESHOLD_RATIO,
       keepRecentMessages: env.COMPACTION_KEEP_RECENT_MESSAGES,
       maxToolRounds: env.MAX_TOOL_ROUNDS,
+      maxConcurrentTurnsPerUser: env.MAX_CONCURRENT_TURNS_PER_USER,
     },
     files: {
       storage:

@@ -6,8 +6,10 @@ import { ManualClock } from '../../../shared/time/clock';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
 import { ContextWindowExceededError, EmptyMessageError } from '../domain/agent-errors';
-import { unlimitedUsage } from '../domain/usage-limiter';
+import { TooManyActiveTurnsError, TurnInProgressError } from '../domain/active-turns';
+import { unlimitedUsage, type UsageLimiter } from '../domain/usage-limiter';
 import { FakeToolbox } from '../infra/fake-toolbox';
+import { InMemoryActiveTurns } from '../infra/in-memory-active-turns';
 import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
 import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
 import { ScriptedLlmProvider } from '../infra/scripted-llm-provider';
@@ -21,6 +23,7 @@ const defaultSettings: AgentSettings = {
   contextTokenLimit: 100_000,
   thresholdRatio: 0.8,
   maxToolRounds: 3,
+  maxConcurrentTurnsPerUser: 2,
 };
 
 async function collect(stream: AsyncIterable<StreamEvent>): Promise<StreamEvent[]> {
@@ -41,6 +44,7 @@ describe('RunAgentTurn', () => {
   let memory: InMemoryConversationMemory;
   let attachments: InMemoryAttachmentCatalog;
   let events: RecordingEventPublisher;
+  let activeTurns: InMemoryActiveTurns;
   let conversationId: string;
 
   beforeEach(async () => {
@@ -49,12 +53,18 @@ describe('RunAgentTurn', () => {
     memory = new InMemoryConversationMemory();
     attachments = new InMemoryAttachmentCatalog();
     events = new RecordingEventPublisher();
+    activeTurns = new InMemoryActiveTurns(() => clock.now());
     conversationId = (await store.create(ANA, 'Nova conversa')).id;
   });
 
   function buildAgent(
     llm: ScriptedLlmProvider,
-    { toolbox = new FakeToolbox(), settings = defaultSettings, keepRecentMessages = 2 } = {},
+    {
+      toolbox = new FakeToolbox(),
+      settings = defaultSettings,
+      keepRecentMessages = 2,
+      usageLimiter = unlimitedUsage as UsageLimiter,
+    } = {},
   ) {
     return new RunAgentTurn({
       conversations: store,
@@ -62,7 +72,8 @@ describe('RunAgentTurn', () => {
       memory,
       attachments,
       toolbox,
-      usageLimiter: unlimitedUsage,
+      usageLimiter,
+      activeTurns,
       llm,
       compactConversation: new CompactConversation(llm, memory, events, clock, keepRecentMessages),
       events,
@@ -212,32 +223,17 @@ describe('RunAgentTurn', () => {
 
     it('recusa quando o usuário não tem mais crédito, sem gravar a mensagem', async () => {
       const noCredit = new AppError('limit_exceeded', 'credit_limit_reached', 'Sem crédito.');
-      const agent = new RunAgentTurn({
-        conversations: store,
-        messages: store,
-        memory,
-        attachments,
-        toolbox: new FakeToolbox(),
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder(), {
         usageLimiter: {
           assertCanSpend: async () => {
             throw noCredit;
           },
         },
-        llm: ScriptedLlmProvider.replyingInOrder(),
-        compactConversation: new CompactConversation(
-          ScriptedLlmProvider.replyingInOrder(),
-          memory,
-          events,
-          clock,
-          2,
-        ),
-        events,
-        clock,
-        settings: defaultSettings,
       });
 
       await expect(send(agent, 'Oi')).rejects.toBe(noCredit);
       expect(await store.listByConversation(conversationId)).toEqual([]);
+      expect(activeTurns.activeCount).toBe(0);
     });
 
     it('recusa a conversa de outro usuário', async () => {
@@ -252,6 +248,66 @@ describe('RunAgentTurn', () => {
       });
 
       await expect(starting).rejects.toThrow(ConversationNotFoundError);
+    });
+  });
+
+  describe('turnos simultâneos', () => {
+    function startTurn(agent: RunAgentTurn, conversation: string, userId = ANA) {
+      return agent.start({ userId, conversationId: conversation, text: 'Oi', attachmentIds: [] });
+    }
+
+    it('recusa uma segunda mensagem enquanto a conversa ainda responde', async () => {
+      const agent = buildAgent(
+        ScriptedLlmProvider.replyingInOrder({ text: 'primeira' }, { text: 'segunda' }),
+      );
+      const firstReply = await startTurn(agent, conversationId);
+
+      await expect(startTurn(agent, conversationId)).rejects.toThrow(TurnInProgressError);
+      expect((await store.listByConversation(conversationId)).map(({ role }) => role)).toEqual([
+        'user',
+      ]);
+
+      await collect(firstReply);
+      await collect(await startTurn(agent, conversationId));
+      expect(await store.listByConversation(conversationId)).toHaveLength(4);
+    });
+
+    it('limita as respostas simultâneas do usuário somando todas as conversas', async () => {
+      const agent = buildAgent(new ScriptedLlmProvider(() => ({ text: 'ok' })));
+      const second = (await store.create(ANA, 'Segunda')).id;
+      const third = (await store.create(ANA, 'Terceira')).id;
+      await startTurn(agent, conversationId);
+      await startTurn(agent, second);
+
+      await expect(startTurn(agent, third)).rejects.toThrow(TooManyActiveTurnsError);
+    });
+
+    it('não limita um usuário pelas respostas de outro', async () => {
+      const agent = buildAgent(new ScriptedLlmProvider(() => ({ text: 'ok' })));
+      const conversationOfBia = (await store.create(BIA, 'Da Bia')).id;
+      await startTurn(agent, conversationId);
+      await startTurn(agent, (await store.create(ANA, 'Segunda')).id);
+
+      await expect(startTurn(agent, conversationOfBia, BIA)).resolves.toBeDefined();
+    });
+
+    it('libera a conversa quando a resposta falha', async () => {
+      const agent = buildAgent(
+        ScriptedLlmProvider.replyingInOrder({ error: new Error('503') }, { text: 'ok' }),
+      );
+
+      await send(agent, 'Oi');
+
+      expect(activeTurns.activeCount).toBe(0);
+    });
+
+    it('descarta a reserva de uma instância que caiu no meio da resposta', async () => {
+      const agent = buildAgent(new ScriptedLlmProvider(() => ({ text: 'ok' })));
+      await startTurn(agent, conversationId);
+
+      clock.advanceBy(16 * 60 * 1000);
+
+      await expect(startTurn(agent, conversationId)).resolves.toBeDefined();
     });
   });
 
@@ -402,9 +458,8 @@ describe('RunAgentTurn', () => {
 
   describe('compactação automática', () => {
     const lowLimit: AgentSettings = {
+      ...defaultSettings,
       contextTokenLimit: 1000,
-      thresholdRatio: 0.8,
-      maxToolRounds: 3,
     };
 
     it('resume o início da conversa quando o contexto se aproxima do limite', async () => {

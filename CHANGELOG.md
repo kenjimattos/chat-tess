@@ -26,6 +26,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Testes `@live` contra o Gemini real (`GCP_PROJECT_ID=... npm run e2e:live`): leitura de PDF e
   imagem, identidade do modelo e resistência a instruções escondidas numa página lida pela tool.
   Antes, o script filtrava os specs `@live` mas mantinha o LLM roteirizado.
+- Turnos simultâneos limitados: uma resposta por conversa e até `MAX_CONCURRENT_TURNS_PER_USER`
+  (padrão 3) por usuário, com reserva atômica no Postgres (`active_turns`) válida entre instâncias.
+  Uma nova mensagem fora do limite recebe 409 antes do stream. Evita respostas intercaladas no
+  histórico e fecha a brecha em que turnos paralelos passavam juntos pela conferência de crédito.
 
 ### Changed
 

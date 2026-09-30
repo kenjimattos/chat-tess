@@ -13,6 +13,7 @@ import { CompactConversation } from '../application/compact-conversation';
 import { RunAgentTurn } from '../application/run-agent-turn';
 import { unlimitedUsage } from '../domain/usage-limiter';
 import { FakeToolbox } from '../infra/fake-toolbox';
+import { InMemoryActiveTurns } from '../infra/in-memory-active-turns';
 import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
 import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
 import { ScriptedLlmProvider } from '../infra/scripted-llm-provider';
@@ -36,6 +37,7 @@ function parseEventStream(body: string) {
 
 describe('POST /api/conversations/:id/messages', () => {
   let app: ReturnType<typeof createApp>;
+  let activeTurns: InMemoryActiveTurns;
   let conversationId: string;
 
   beforeEach(async () => {
@@ -43,6 +45,7 @@ describe('POST /api/conversations/:id/messages', () => {
     const store = new InMemoryConversationStore(clock);
     const memory = new InMemoryConversationMemory();
     const events = new RecordingEventPublisher();
+    activeTurns = new InMemoryActiveTurns();
     const llm = new ScriptedLlmProvider(() => ({
       text: 'Olá, Ana!',
       usage: { inputTokens: 10, outputTokens: 3 },
@@ -54,11 +57,17 @@ describe('POST /api/conversations/:id/messages', () => {
       attachments: new InMemoryAttachmentCatalog(),
       toolbox: new FakeToolbox(),
       usageLimiter: unlimitedUsage,
+      activeTurns,
       llm,
       compactConversation: new CompactConversation(llm, memory, events, clock, 2),
       events,
       clock,
-      settings: { contextTokenLimit: 100_000, thresholdRatio: 0.8, maxToolRounds: 3 },
+      settings: {
+        contextTokenLimit: 100_000,
+        thresholdRatio: 0.8,
+        maxToolRounds: 3,
+        maxConcurrentTurnsPerUser: 2,
+      },
     });
     const router = createMessagesRouter({
       requireAuthentication: fakeRequireAuthentication,
@@ -96,6 +105,23 @@ describe('POST /api/conversations/:id/messages', () => {
 
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe('conversation_not_found');
+  });
+
+  it('responde 409, antes do stream, quando a conversa ainda está respondendo', async () => {
+    await activeTurns.tryAcquire({
+      userId: ANA,
+      conversationId,
+      maxPerUser: 2,
+      staleBefore: new Date(0),
+    });
+
+    const response = await request(app)
+      .post(`/api/conversations/${conversationId}/messages`)
+      .set(TEST_USER_HEADER, ANA)
+      .send({ text: 'Oi de novo' });
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('turn_in_progress');
   });
 
   it('recusa corpo com formato inválido', async () => {
