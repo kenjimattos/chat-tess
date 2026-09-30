@@ -81,6 +81,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   criação e renomeação.
 - Rotas de conversa (`/api/conversations`): listar, criar, abrir com histórico, renomear e apagar,
   todas autenticadas.
+- Domínio do agente: port `LlmProvider` independente de provedor, ports de tools e anexos,
+  memória da conversa (resumos) e política de compactação, que só corta o histórico no início de
+  um turno para nunca separar uma chamada de tool do resultado.
 
 ### Changed
 
