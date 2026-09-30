@@ -43,6 +43,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Nova tentativa automática quando o Vertex AI responde 429, 500 ou 503: até três novas tentativas
   com espera crescente e variação aleatória, só na abertura da chamada (antes de qualquer texto
   chegar) e interrompidas se o cliente desconectar. Vale para o chat e para a busca na web.
+- Pool de conexões ao banco com tamanho explícito (`DATABASE_POOL_MAX`, padrão 5 por instância),
+  para caber no limite de conexões do Cloud SQL `db-f1-micro` com duas instâncias e a migração.
 
 ### Changed
 

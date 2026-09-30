@@ -21,7 +21,7 @@ describe('loadConfig', () => {
       isProduction: false,
       http: { port: 3000, publicBaseUrl: 'http://localhost:5173' },
       logging: { level: 'info', pretty: true },
-      database: { url: DATABASE_URL },
+      database: { url: DATABASE_URL, poolMax: 5 },
       web: { distDir: undefined },
       session: { secret: SESSION_SECRET, ttlSeconds: 7 * 24 * 60 * 60, secureCookie: false },
       auth: {

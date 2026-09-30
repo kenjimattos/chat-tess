@@ -29,7 +29,7 @@ export interface Application {
  */
 export function composeApplication(config: AppConfig): Application {
   const logger = createLogger(config.logging);
-  const database = createDatabase(config.database.url);
+  const database = createDatabase(config.database.url, config.database.poolMax);
   const clock = systemClock;
   const events = new InProcessEventBus((error, event) =>
     logger.error({ err: error, eventType: event.type }, 'Falha ao processar evento de domínio'),

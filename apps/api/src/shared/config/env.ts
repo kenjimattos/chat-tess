@@ -26,6 +26,8 @@ const envSchema = z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),
     DATABASE_URL: z.string().startsWith('postgresql://'),
+    /** Conexões abertas ao banco por instância da API. */
+    DATABASE_POOL_MAX: positiveInteger.default(5),
     /** Pasta com o build do frontend; quando definida, a API também serve o site. */
     WEB_DIST_DIR: z.string().optional(),
     /** Endereço pelo qual o navegador acessa a aplicação. */
@@ -147,7 +149,7 @@ export interface AppConfig {
   isProduction: boolean;
   http: { port: number; publicBaseUrl: string };
   logging: { level: string; pretty: boolean };
-  database: { url: string };
+  database: { url: string; poolMax: number };
   web: { distDir: string | undefined };
   session: { secret: string; ttlSeconds: number; secureCookie: boolean };
   auth: AuthConfig;
@@ -188,7 +190,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
     isProduction,
     http: { port: env.PORT, publicBaseUrl: env.PUBLIC_BASE_URL.replace(/\/$/, '') },
     logging: { level: env.LOG_LEVEL, pretty: env.NODE_ENV === 'development' },
-    database: { url: env.DATABASE_URL },
+    database: { url: env.DATABASE_URL, poolMax: env.DATABASE_POOL_MAX },
     web: { distDir: env.WEB_DIST_DIR },
     session: {
       secret: env.SESSION_SECRET,
