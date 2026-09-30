@@ -45,7 +45,13 @@ const envSchema = z
     GCP_PROJECT_ID: z.string().optional(),
     GCP_LOCATION: z.string().default('global'),
     GEMINI_MODEL: z.string().default('gemini-3.8-flash'),
-    CONTEXT_TOKEN_LIMIT: positiveInteger.default(1_000_000),
+    /**
+     * Orçamento de contexto da conversa; a compactação dispara numa fração dele.
+     * Não é a janela do modelo (1M no Gemini 3.8 Flash) e nunca deve passar dela:
+     * cada mensagem reenvia o contexto inteiro, então um orçamento menor deixa
+     * cada turno mais barato e mais rápido, com o resumo guardando o essencial.
+     */
+    CONTEXT_TOKEN_LIMIT: positiveInteger.default(100_000),
     COMPACTION_THRESHOLD_RATIO: z.coerce.number().gt(0).lt(1).default(0.8),
     COMPACTION_KEEP_RECENT_MESSAGES: positiveInteger.default(6),
     MAX_TOOL_ROUNDS: positiveInteger.default(8),

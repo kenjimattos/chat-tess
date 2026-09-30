@@ -35,7 +35,7 @@ describe('loadConfig', () => {
       adminEmails: [],
       llm: { mode: 'gemini', project: 'chat-tess', location: 'global', model: 'gemini-3.8-flash' },
       agent: {
-        contextTokenLimit: 1_000_000,
+        contextTokenLimit: 100_000,
         thresholdRatio: 0.8,
         keepRecentMessages: 6,
         maxToolRounds: 8,

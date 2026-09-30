@@ -42,6 +42,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   descontinuada nos runners do GitHub).
 - Página local servida aos specs de scraping movida para `e2e/support/local-page.ts`, para
   reuso entre specs.
+- Compactação mais cedo: `CONTEXT_TOKEN_LIMIT` passa de 1 milhão (a janela do modelo) para 100
+  mil tokens. Cada mensagem reenvia o contexto inteiro; com o orçamento menor, um turno custa no
+  máximo cerca de 80 mil tokens de entrada, em vez de 800 mil.
 
 ## [0.1.0] - 2026-09-30
 
