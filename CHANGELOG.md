@@ -24,6 +24,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   e a auditoria registra quem abriu.
 - README: seção sobre o compartilhamento, com o acesso restrito a usuários logados, a revogação e
   por que a colaboração ficou para depois.
+- README: seção de testes, com o número de arquivos de teste e de specs e2e e o que os specs
+  cobrem.
 
 ### Changed
 
