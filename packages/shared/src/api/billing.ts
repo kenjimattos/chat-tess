@@ -9,7 +9,7 @@ export const usageSummarySchema = z.object({
     z.object({
       conversationId: z.string().nullable(),
       model: z.string(),
-      purpose: z.enum(['chat', 'compaction']),
+      purpose: z.enum(['chat', 'compaction', 'tool']),
       usage: tokenUsageSchema,
       occurredAt: z.string(),
     }),

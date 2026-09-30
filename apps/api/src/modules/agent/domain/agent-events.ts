@@ -1,7 +1,7 @@
 import type { TokenUsage } from '@chat-tess/shared';
 import type { DomainEvent } from '../../../shared/events/domain-event';
 
-export type LlmCallPurpose = 'chat' | 'compaction';
+export type LlmCallPurpose = 'chat' | 'compaction' | 'tool';
 
 export type MessageSent = DomainEvent<
   'message.sent',

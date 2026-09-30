@@ -9,11 +9,13 @@ import type { CreditAccount, UsageLedger, UsageRecord } from '../domain/credit-a
 const PURPOSE_TO_RECORD: Record<LlmCallPurpose, UsagePurpose> = {
   chat: 'CHAT',
   compaction: 'COMPACTION',
+  tool: 'TOOL',
 };
 
-const RECORD_TO_PURPOSE: Partial<Record<UsagePurpose, LlmCallPurpose>> = {
+const RECORD_TO_PURPOSE: Record<UsagePurpose, LlmCallPurpose> = {
   CHAT: 'chat',
   COMPACTION: 'compaction',
+  TOOL: 'tool',
 };
 
 export class PrismaUsageLedger implements UsageLedger {
@@ -81,7 +83,7 @@ export class PrismaUsageLedger implements UsageLedger {
       userId: record.userId,
       conversationId: record.conversationId,
       model: record.model,
-      purpose: RECORD_TO_PURPOSE[record.purpose] ?? 'chat',
+      purpose: RECORD_TO_PURPOSE[record.purpose],
       usage: {
         inputTokens: record.inputTokens,
         outputTokens: record.outputTokens,

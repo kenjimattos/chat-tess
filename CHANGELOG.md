@@ -147,6 +147,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   DNS rebinding, redirecionamentos revalidados e limites de tempo e tamanho.
 - Busca na web com o grounding do Google Search no Gemini, numa chamada separada da conversa, e
   uma busca simulada para os testes ponta a ponta.
+- Tools nativas `web_search` e `web_scrape`, definidas com `defineTool`: o mesmo schema Zod gera o
+  JSON Schema enviado ao LLM e valida os argumentos. O consumo do LLM usado na busca entra na conta
+  do usuário.
 
 ### Changed
 
