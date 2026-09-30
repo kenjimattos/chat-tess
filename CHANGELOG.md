@@ -103,6 +103,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   pelo Vertex AI direto por `gs://`), e repositório Prisma de anexos.
 - Rotas de anexos: `POST /api/conversations/:id/attachments` (multipart) e
   `GET /api/attachments/:id`, com `nosniff` e nome de arquivo codificado.
+- Registro de tools (`ToolRegistry`, padrões Registry e Strategy): junta tools de várias fontes
+  (nativas, conectores e MCP), converte falhas em resultados de erro para o LLM e publica cada
+  execução com entrada, saída e duração.
 
 ### Changed
 
