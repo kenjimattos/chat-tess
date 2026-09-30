@@ -1,7 +1,7 @@
 # chat-tess
 
 Aplicação de chat com agente de IA: múltiplas conversas, imagens e PDFs, compactação automática do
-histórico, tools, controle de consumo, auditoria, conectores e MCP.
+histórico, tools, controle de consumo e auditoria.
 
 > Em desenvolvimento. O [CHANGELOG](CHANGELOG.md) registra o que já foi entregue.
 
@@ -98,7 +98,7 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
   histórico e turnos paralelos passando juntos pela conferência de crédito.
 - **Resposta bloqueada.** Se o Gemini barrar a resposta por segurança ou cortá-la pelo limite de
   saída, o usuário recebe o motivo e a falha vai para a auditoria.
-- **Prompt injection.** Resultados de tools com conteúdo de terceiros (busca e scraping; depois MCP)
+- **Prompt injection.** Resultados de tools com conteúdo de terceiros
   chegam ao modelo marcados como externos, e o system prompt manda tratá-los como dado, nunca como
   instrução. Coberto por um spec `@live`.
 - **Scraping.** Só endereços públicos: bloqueia rede interna, metadados do GCP e DNS rebinding, com
