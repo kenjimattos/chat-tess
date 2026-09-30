@@ -54,6 +54,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   atraso do stream, em vez de surgir em blocos; a tela não rola sozinha enquanto a resposta chega
   (só ao abrir a conversa e ao enviar a pergunta), e um botão "Mais conteúdo abaixo" aparece quando
   há conteúdo fora da área visível. Com `prefers-reduced-motion`, o texto aparece de uma vez.
+- Teste ponta a ponta da leitura: a posição da tela se mantém enquanto a resposta chega e o
+  indicador de conteúdo abaixo leva ao fim da conversa.
 
 ### Changed
 
