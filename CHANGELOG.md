@@ -101,6 +101,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   agente usa para validar anexos pendentes e enviá-los ao LLM, por endereço ou embutidos.
 - Armazenamento de arquivos em disco local (desenvolvimento) e no Cloud Storage (produção, lido
   pelo Vertex AI direto por `gs://`), e repositório Prisma de anexos.
+- Rotas de anexos: `POST /api/conversations/:id/attachments` (multipart) e
+  `GET /api/attachments/:id`, com `nosniff` e nome de arquivo codificado.
 
 ### Changed
 
