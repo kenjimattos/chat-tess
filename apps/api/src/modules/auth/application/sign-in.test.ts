@@ -89,6 +89,40 @@ describe('SignIn', () => {
     });
   });
 
+  describe('papel de administrador', () => {
+    function signInWithAdmins(adminEmailPatterns: string[]) {
+      return new SignIn(
+        users,
+        new InMemoryAllowedEmailRepository(['ana@empresa.com', '@parceiro.com']),
+        new FakeSessionTokens(),
+        events,
+        fixedClock(NOW),
+        adminEmailPatterns,
+      );
+    }
+
+    it('dá o papel de administrador a quem está na lista de administradores', async () => {
+      const { user } = await signInWithAdmins(['ana@empresa.com']).execute(ana);
+
+      expect(user.role).toBe('admin');
+      expect((await users.findByEmail(ana.email))?.role).toBe('admin');
+    });
+
+    it('mantém usuário comum quem não está na lista', async () => {
+      const { user } = await signInWithAdmins(['@outra.com']).execute(ana);
+
+      expect(user.role).toBe('user');
+    });
+
+    it('retira o papel de quem saiu da lista de administradores', async () => {
+      await signInWithAdmins(['ana@empresa.com']).execute(ana);
+
+      const { user } = await signInWithAdmins([]).execute(ana);
+
+      expect(user.role).toBe('user');
+    });
+  });
+
   describe('quando o e-mail não está na lista de permitidos', () => {
     const intruder: VerifiedIdentity = { ...ana, email: 'intruso@outro.com' };
 

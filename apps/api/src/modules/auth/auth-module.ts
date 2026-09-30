@@ -46,7 +46,7 @@ export function createAuthModule({
     ttlSeconds: config.session.ttlSeconds,
   });
 
-  const signIn = new SignIn(users, allowedEmails, sessionTokens, events, clock);
+  const signIn = new SignIn(users, allowedEmails, sessionTokens, events, clock, config.adminEmails);
   const getCurrentUser = new GetCurrentUser(users, sessionTokens);
   const seedAllowedEmails = new SeedAllowedEmails(allowedEmails);
 

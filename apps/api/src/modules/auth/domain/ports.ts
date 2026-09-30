@@ -1,4 +1,4 @@
-import type { User, VerifiedIdentity } from './user';
+import type { User, UserRole, VerifiedIdentity } from './user';
 
 export interface UserRepository {
   findById(id: string): Promise<User | null>;
@@ -6,6 +6,7 @@ export interface UserRepository {
   create(identity: VerifiedIdentity): Promise<User>;
   /** Atualiza nome e foto com os dados mais recentes do provedor de identidade. */
   updateProfile(id: string, profile: Pick<VerifiedIdentity, 'name' | 'avatarUrl'>): Promise<User>;
+  updateRole(id: string, role: UserRole): Promise<User>;
 }
 
 export interface AllowedEmailRepository {

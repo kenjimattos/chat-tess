@@ -1,7 +1,7 @@
 import type { Database } from '../../../shared/database/database';
 import type { User as UserRecord } from '../../../generated/prisma/client';
 import type { UserRepository } from '../domain/ports';
-import type { User, VerifiedIdentity } from '../domain/user';
+import type { User, UserRole, VerifiedIdentity } from '../domain/user';
 
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly database: Database) {}
@@ -18,6 +18,14 @@ export class PrismaUserRepository implements UserRepository {
 
   async create(identity: VerifiedIdentity): Promise<User> {
     const record = await this.database.user.create({ data: identity });
+    return toUser(record);
+  }
+
+  async updateRole(id: string, role: UserRole): Promise<User> {
+    const record = await this.database.user.update({
+      where: { id },
+      data: { role: role === 'admin' ? 'ADMIN' : 'USER' },
+    });
     return toUser(record);
   }
 

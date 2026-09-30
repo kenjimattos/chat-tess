@@ -32,6 +32,7 @@ describe('loadConfig', () => {
         },
       },
       allowedEmails: [],
+      adminEmails: [],
       llm: { mode: 'gemini', project: 'chat-tess', location: 'global', model: 'gemini-3.8-flash' },
       agent: {
         contextTokenLimit: 1_000_000,
@@ -71,6 +72,12 @@ describe('loadConfig', () => {
     });
 
     expect(config.allowedEmails).toEqual(['ana@empresa.com', '@parceiro.com']);
+  });
+
+  it('separa a lista de administradores por vírgula', () => {
+    const config = loadConfig({ ...requiredEnv, ADMIN_EMAILS: 'ana@empresa.com,@ti.empresa.com' });
+
+    expect(config.adminEmails).toEqual(['ana@empresa.com', '@ti.empresa.com']);
   });
 
   it('trata variável em branco como não definida', () => {

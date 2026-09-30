@@ -1,4 +1,5 @@
 import type { RequestHandler, Response } from 'express';
+import { AppError } from '../../../shared/errors/app-error';
 import type { GetCurrentUser } from '../application/get-current-user';
 import type { User } from '../domain/user';
 import type { SessionCookie } from './session-cookie';
@@ -24,3 +25,11 @@ export function authenticatedUser(response: Response): User {
   }
   return user;
 }
+
+/** Depois de `requireAuthentication`: permite só administradores. */
+export const requireAdmin: RequestHandler = (_request, response, next) => {
+  if (authenticatedUser(response).role !== 'admin') {
+    throw new AppError('forbidden', 'admin_only', 'Apenas administradores podem fazer isso.');
+  }
+  next();
+};

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { UserRepository } from '../domain/ports';
-import type { User, VerifiedIdentity } from '../domain/user';
+import type { User, UserRole, VerifiedIdentity } from '../domain/user';
 
 export class InMemoryUserRepository implements UserRepository {
   private readonly usersById = new Map<string, User>();
@@ -19,16 +19,23 @@ export class InMemoryUserRepository implements UserRepository {
     return user;
   }
 
+  async updateRole(id: string, role: UserRole): Promise<User> {
+    return this.update(id, { role });
+  }
+
   async updateProfile(
     id: string,
     { name, avatarUrl }: Pick<VerifiedIdentity, 'name' | 'avatarUrl'>,
   ): Promise<User> {
+    return this.update(id, { name, avatarUrl });
+  }
+
+  private update(id: string, changes: Partial<User>): User {
     const user = this.usersById.get(id);
     if (!user) {
       throw new Error(`Usuário não encontrado: ${id}`);
     }
-
-    const updatedUser = { ...user, name, avatarUrl };
+    const updatedUser = { ...user, ...changes };
     this.usersById.set(id, updatedUser);
     return updatedUser;
   }

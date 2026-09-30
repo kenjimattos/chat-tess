@@ -38,6 +38,7 @@ const envSchema = z
     GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
     GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
     ALLOWED_EMAILS: commaSeparatedList,
+    ADMIN_EMAILS: commaSeparatedList,
 
     // LLM e agente
     LLM_MODE: z.enum(['gemini', 'fake']).default('gemini'),
@@ -113,6 +114,8 @@ export interface AppConfig {
   auth: AuthConfig;
   /** Padrões garantidos na lista de permitidos durante a inicialização. */
   allowedEmails: string[];
+  /** E-mails ou domínios que recebem o papel de administrador no login. */
+  adminEmails: string[];
   llm: LlmConfig;
   agent: AgentConfig;
   files: { storage: FileStorageConfig; maxSizeBytes: number };
@@ -152,6 +155,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
     },
     auth: toAuthConfig(env),
     allowedEmails: env.ALLOWED_EMAILS,
+    adminEmails: env.ADMIN_EMAILS,
     llm: toLlmConfig(env),
     agent: {
       contextTokenLimit: env.CONTEXT_TOKEN_LIMIT,

@@ -125,6 +125,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   alternar, renomear e apagar conversas; anexos de PDF e imagem, tipo não suportado; e compactação
   automática sem interromper o chat nem apagar mensagens. Cada teste usa um usuário próprio.
 - Teste do registro de tools para falhas que não são instâncias de `Error`.
+- Papel de administrador definido por `ADMIN_EMAILS` e reaplicado a cada login: quem sai da lista
+  volta a ser usuário comum. Middleware `requireAdmin` para rotas administrativas.
 
 ### Changed
 

@@ -39,6 +39,15 @@ describe('PrismaUserRepository', () => {
     expect(await users.findById(created.id)).toEqual(updated);
   });
 
+  it('troca o papel do usuário', async () => {
+    const created = await users.create(anaIdentity);
+
+    const promoted = await users.updateRole(created.id, 'admin');
+
+    expect(promoted.role).toBe('admin');
+    expect((await users.findById(created.id))?.role).toBe('admin');
+  });
+
   it('não permite dois usuários com o mesmo e-mail', async () => {
     await users.create(anaIdentity);
 

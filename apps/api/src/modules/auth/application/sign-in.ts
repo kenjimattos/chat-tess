@@ -4,7 +4,7 @@ import { EmailNotAllowedError } from '../domain/auth-errors';
 import type { LoginDenied, LoginSucceeded } from '../domain/auth-events';
 import { isEmailAllowed, normalizeEmail } from '../domain/email-allowlist';
 import type { AllowedEmailRepository, SessionTokens, UserRepository } from '../domain/ports';
-import type { User, VerifiedIdentity } from '../domain/user';
+import type { User, UserRole, VerifiedIdentity } from '../domain/user';
 
 export interface SignInResult {
   user: User;
@@ -14,6 +14,7 @@ export interface SignInResult {
 /**
  * Conclui o login de uma identidade já confirmada pelo provedor: aplica a
  * lista de permitidos, cria o usuário no primeiro acesso e abre a sessão.
+ * O papel de administrador vem da configuração e é reaplicado a cada login.
  */
 export class SignIn {
   constructor(
@@ -22,6 +23,7 @@ export class SignIn {
     private readonly sessionTokens: SessionTokens,
     private readonly events: EventPublisher,
     private readonly clock: Clock,
+    private readonly adminEmailPatterns: readonly string[] = [],
   ) {}
 
   async execute(verifiedIdentity: VerifiedIdentity): Promise<SignInResult> {
@@ -30,9 +32,10 @@ export class SignIn {
     await this.assertEmailIsAllowed(identity.email);
 
     const existingUser = await this.users.findByEmail(identity.email);
-    const user = existingUser
+    const profileUser = existingUser
       ? await this.users.updateProfile(existingUser.id, identity)
       : await this.users.create(identity);
+    const user = await this.applyConfiguredRole(profileUser);
     const sessionToken = await this.sessionTokens.issue(user.id);
 
     await this.events.publish({
@@ -43,6 +46,11 @@ export class SignIn {
     } satisfies LoginSucceeded);
 
     return { user, sessionToken };
+  }
+
+  private async applyConfiguredRole(user: User): Promise<User> {
+    const role: UserRole = isEmailAllowed(user.email, this.adminEmailPatterns) ? 'admin' : 'user';
+    return user.role === role ? user : this.users.updateRole(user.id, role);
   }
 
   private async assertEmailIsAllowed(email: string): Promise<void> {
