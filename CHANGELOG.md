@@ -124,6 +124,7 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Testes ponta a ponta do chat: enviar e receber, título automático, histórico após recarregar,
   alternar, renomear e apagar conversas; anexos de PDF e imagem, tipo não suportado; e compactação
   automática sem interromper o chat nem apagar mensagens. Cada teste usa um usuário próprio.
+- Teste do registro de tools para falhas que não são instâncias de `Error`.
 
 ### Changed
 

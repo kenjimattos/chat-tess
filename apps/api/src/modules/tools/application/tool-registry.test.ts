@@ -73,6 +73,24 @@ describe('ToolRegistry', () => {
     expect(result).toMatchObject({ output: 'site fora do ar', isError: true });
   });
 
+  it('aceita falhas que não são instâncias de Error', async () => {
+    const registry = new ToolRegistry(
+      [
+        provider(
+          tool('legacy', async () => {
+            throw 'tempo esgotado';
+          }),
+        ),
+      ],
+      new RecordingEventPublisher(),
+      new ManualClock('2026-09-30T10:00:00Z'),
+    );
+
+    const result = await registry.execute(callOf('legacy'), context);
+
+    expect(result).toMatchObject({ output: 'tempo esgotado', isError: true });
+  });
+
   it('responde com erro quando a tool não existe', async () => {
     const registry = new ToolRegistry(
       [],
