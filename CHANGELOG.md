@@ -134,6 +134,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Testes ponta a ponta da auditoria: fluxo completo registrado e isolamento entre usuários.
 - Port `UsageLimiter` no agente: o crédito é verificado antes de aceitar a mensagem, que não é
   gravada quando o usuário está sem saldo.
+- Créditos: cada chamada ao LLM (chat e compactação) é registrada em `usage_records` e somada ao
+  consumo do usuário; `CreditGuard` bloqueia novos turnos ao atingir o cap, com mensagem clara;
+  administradores ajustam o limite de um usuário pelo e-mail.
 
 ### Changed
 
