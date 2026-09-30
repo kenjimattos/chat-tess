@@ -127,6 +127,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Teste do registro de tools para falhas que não são instâncias de `Error`.
 - Papel de administrador definido por `ADMIN_EMAILS` e reaplicado a cada login: quem sai da lista
   volta a ser usuário comum. Middleware `requireAdmin` para rotas administrativas.
+- Auditoria: todo evento de domínio (login, conversas, mensagens, anexos, chamadas ao LLM,
+  compactação, tools e falhas) é gravado em `audit_events` com o conteúdo compactado.
+  `GET /api/audit-events` pagina a trilha; usuários veem só os próprios eventos e administradores
+  veem todos.
 
 ### Changed
 

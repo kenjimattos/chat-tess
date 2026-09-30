@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { createApp } from './app';
 import { createAgentModule } from './modules/agent/agent-module';
+import { createAuditModule } from './modules/audit/audit-module';
 import { createAuthModule } from './modules/auth/auth-module';
 import { createConversationsModule } from './modules/conversations/conversations-module';
 import { createFilesModule } from './modules/files/files-module';
@@ -44,6 +45,7 @@ export function composeApplication(config: AppConfig): Application {
     storage: config.files.storage,
     maxSizeBytes: config.files.maxSizeBytes,
   });
+  const audit = createAuditModule({ database, eventBus: events, requireAuthentication });
   const tools = createToolsModule({ events, clock });
   const agent = createAgentModule({
     ...shared,
@@ -58,7 +60,7 @@ export function composeApplication(config: AppConfig): Application {
 
   const app = createApp({
     logger,
-    apiRouters: [auth.router, conversations.router, files.router, agent.router],
+    apiRouters: [auth.router, conversations.router, files.router, agent.router, audit.router],
     readinessChecks: {
       database: () => assertDatabaseIsReachable(database),
     },
