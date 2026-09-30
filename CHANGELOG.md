@@ -99,6 +99,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   não pelo nome ou tipo declarado, e nome de arquivo higienizado.
 - Use cases de anexos: upload com limite de tamanho, leitura restrita ao dono e catálogo que o
   agente usa para validar anexos pendentes e enviá-los ao LLM, por endereço ou embutidos.
+- Armazenamento de arquivos em disco local (desenvolvimento) e no Cloud Storage (produção, lido
+  pelo Vertex AI direto por `gs://`), e repositório Prisma de anexos.
 
 ### Changed
 

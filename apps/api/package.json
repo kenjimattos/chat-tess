@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@chat-tess/shared": "*",
+    "@google-cloud/storage": "^8.2.0",
     "@google/genai": "^2.24.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
@@ -22,6 +23,7 @@
     "express": "^5.2.1",
     "google-auth-library": "^11.1.0",
     "jose": "^6.2.12",
+    "multer": "^2.4.0",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "prisma": "^7.10.0",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "pino-pretty": "^13.1.3",
