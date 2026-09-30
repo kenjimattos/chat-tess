@@ -118,6 +118,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Camada de API do frontend: conversas, anexos e envio de mensagem com leitura de Server-Sent
   Events por `fetch` (o `EventSource` do navegador só faz GET), validando cada evento com o contrato
   compartilhado.
+- Interface do chat: lista de conversas com criar, renomear e apagar; conversa aberta na URL;
+  respostas em stream com Markdown; anexos com prévia de imagem e link de PDF; indicação de tools
+  em uso; aviso de compactação; botão para interromper a resposta.
 
 ### Changed
 

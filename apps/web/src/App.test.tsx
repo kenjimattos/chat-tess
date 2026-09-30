@@ -11,10 +11,15 @@ const ana = {
   role: 'user',
 };
 
+const DEFAULT_ROUTES: Record<string, { status: number; body?: unknown }> = {
+  '/api/conversations': { status: 200, body: [] },
+  '/api/health/ready': { status: 200, body: { status: 'ok' } },
+};
+
 /** Responde cada rota da API com o status e corpo informados. */
 function stubApi(routes: Record<string, { status: number; body?: unknown }>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const route = routes[String(input)] ?? { status: 200, body: {} };
+    const route = routes[String(input)] ?? DEFAULT_ROUTES[String(input)] ?? { status: 404 };
     const hasBody = route.status !== 204;
     return new Response(hasBody ? JSON.stringify(route.body ?? {}) : null, {
       status: route.status,
