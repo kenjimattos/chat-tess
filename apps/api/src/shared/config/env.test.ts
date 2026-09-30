@@ -42,7 +42,7 @@ describe('loadConfig', () => {
         maxConcurrentTurnsPerUser: 3,
       },
       files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
-      billing: { defaultTokenLimit: 2_000_000 },
+      billing: { defaultTokenLimit: 500_000 },
       rateLimits: { messagesPerMinute: 20, uploadsPerMinute: 30 },
       tools: {
         webFetch: {

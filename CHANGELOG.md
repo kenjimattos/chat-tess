@@ -45,6 +45,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Compactação mais cedo: `CONTEXT_TOKEN_LIMIT` passa de 1 milhão (a janela do modelo) para 100
   mil tokens. Cada mensagem reenvia o contexto inteiro; com o orçamento menor, um turno custa no
   máximo cerca de 80 mil tokens de entrada, em vez de 800 mil.
+- Limite padrão de tokens por usuário reduzido de 2 milhões para 500 mil, vitalício. Uma migração
+  leva as contas que ainda estavam no padrão antigo para o novo; limites ajustados por um
+  administrador são mantidos.
 
 ## [0.1.0] - 2026-09-30
 

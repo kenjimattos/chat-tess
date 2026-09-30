@@ -65,8 +65,8 @@ const envSchema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
-    /** Cap de tokens de cada usuário novo. */
-    DEFAULT_TOKEN_LIMIT: z.coerce.number().int().nonnegative().default(2_000_000),
+    /** Cap vitalício de tokens de cada usuário novo; não renova. */
+    DEFAULT_TOKEN_LIMIT: z.coerce.number().int().nonnegative().default(500_000),
 
     // Arquivos
     FILE_STORAGE: z.enum(['local', 'gcs']).default('local'),
