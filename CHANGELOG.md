@@ -157,6 +157,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   ao LLM nem executadas. Cada execução é gravada em `tool_calls` e o catálogo das tools nativas é
   sincronizado na inicialização.
 - Painel "Ferramentas" no cabeçalho para ligar e desligar as tools do agente.
+- Testes ponta a ponta das tools: busca na web, scraping de página local, tool desligada não
+  executada, preferência persistida e execução registrada na auditoria.
 
 ### Changed
 

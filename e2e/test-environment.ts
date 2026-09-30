@@ -38,4 +38,6 @@ export const apiEnvironment: Record<string, string> = {
   // Limite baixo para que a compactação aconteça depois de poucas mensagens.
   CONTEXT_TOKEN_LIMIT: String(E2E_CONTEXT_TOKEN_LIMIT),
   COMPACTION_KEEP_RECENT_MESSAGES: '2',
+  // O spec de tools faz scraping de uma página servida localmente pelo próprio teste.
+  WEB_FETCH_ALLOW_PRIVATE_NETWORKS: 'true',
 };
