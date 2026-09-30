@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import type { GeminiConnection } from '../../agent/infra/gemini-llm-provider';
+import { defaultRetryPolicy, retryTransient } from '../../agent/infra/retry-transient';
 import type { WebSearchEngine, WebSearchResult } from '../domain/ports';
 
 const SEARCH_INSTRUCTIONS =
@@ -22,15 +23,20 @@ export class GeminiGroundedSearch implements WebSearchEngine {
   }
 
   async search(query: string, signal?: AbortSignal): Promise<WebSearchResult> {
-    const response = await this.models.generateContent({
-      model: this.model,
-      contents: [{ role: 'user', parts: [{ text: query }] }],
-      config: {
-        systemInstruction: SEARCH_INSTRUCTIONS,
-        tools: [{ googleSearch: {} }],
-        abortSignal: signal,
-      },
-    });
+    const response = await retryTransient(
+      () =>
+        this.models.generateContent({
+          model: this.model,
+          contents: [{ role: 'user', parts: [{ text: query }] }],
+          config: {
+            systemInstruction: SEARCH_INSTRUCTIONS,
+            tools: [{ googleSearch: {} }],
+            abortSignal: signal,
+          },
+        }),
+      defaultRetryPolicy,
+      signal,
+    );
 
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
     const sources = chunks.flatMap(({ web }) =>

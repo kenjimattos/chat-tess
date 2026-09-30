@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { ContextWindowExceededError } from '../domain/agent-errors';
 import type { LlmRequest, LlmStreamEvent } from '../domain/llm';
 import { GeminiLlmProvider, type GeminiModelsClient } from './gemini-llm-provider';
+import { noRetry } from './retry-transient';
 
 /** Cliente falso: grava a requisição e devolve os pedaços informados. */
 function fakeClient(chunks: Partial<GenerateContentResponse>[] | Error) {
@@ -254,8 +255,33 @@ describe('GeminiLlmProvider', () => {
       const { client } = fakeClient(unavailable);
 
       await expect(
-        collect(new GeminiLlmProvider('gemini-teste', client), simpleRequest),
+        collect(new GeminiLlmProvider('gemini-teste', client, noRetry), simpleRequest),
       ).rejects.toBe(unavailable);
+    });
+
+    it('tenta de novo quando o Vertex está sobrecarregado, antes de o texto chegar', async () => {
+      const { client: working } = fakeClient([
+        { candidates: [{ content: { parts: [{ text: 'Enfim' }] } }] },
+      ]);
+      let calls = 0;
+      const client: GeminiModelsClient = {
+        async generateContentStream(parameters) {
+          calls++;
+          if (calls === 1) {
+            throw new ApiError({ status: 429, message: 'Resource exhausted' });
+          }
+          return working.generateContentStream(parameters);
+        },
+      };
+      const immediateRetry = { delaysMs: [0], sleep: async () => {} };
+
+      const events = await collect(
+        new GeminiLlmProvider('gemini-teste', client, immediateRetry),
+        simpleRequest,
+      );
+
+      expect(calls).toBe(2);
+      expect(events[0]).toEqual({ type: 'text_delta', text: 'Enfim' });
     });
   });
 });

@@ -40,6 +40,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Teste ponta a ponta de resposta que continua chegando enquanto o usuário usa outra conversa.
 - Testes ponta a ponta dos limites de uso: aviso de rate limit com registro na auditoria e recusa
   de uma segunda mensagem enquanto a conversa ainda responde.
+- Nova tentativa automática quando o Vertex AI responde 429, 500 ou 503: até três novas tentativas
+  com espera crescente e variação aleatória, só na abertura da chamada (antes de qualquer texto
+  chegar) e interrompidas se o cliente desconectar. Vale para o chat e para a busca na web.
 
 ### Changed
 

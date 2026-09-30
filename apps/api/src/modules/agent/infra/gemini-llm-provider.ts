@@ -19,6 +19,7 @@ import type {
   LlmRequest,
   LlmStreamEvent,
 } from '../domain/llm';
+import { defaultRetryPolicy, retryTransient, type RetryPolicy } from './retry-transient';
 
 /** Parte do SDK usada aqui; permite trocar o cliente real por um falso nos testes. */
 export interface GeminiModelsClient {
@@ -40,6 +41,7 @@ export class GeminiLlmProvider implements LlmProvider {
   constructor(
     readonly model: string,
     private readonly client: GeminiModelsClient,
+    private readonly retryPolicy: RetryPolicy = defaultRetryPolicy,
   ) {}
 
   static connect(model: string, { project, location }: GeminiConnection): GeminiLlmProvider {
@@ -49,25 +51,12 @@ export class GeminiLlmProvider implements LlmProvider {
 
   async *stream(request: LlmRequest, signal?: AbortSignal): AsyncIterable<LlmStreamEvent> {
     try {
-      const chunks = await this.client.generateContentStream({
-        model: this.model,
-        contents: request.messages.map(toContent),
-        config: {
-          systemInstruction: request.systemPrompt,
-          abortSignal: signal,
-          ...(request.tools.length > 0 && {
-            tools: [
-              {
-                functionDeclarations: request.tools.map((tool) => ({
-                  name: tool.name,
-                  description: tool.description,
-                  parametersJsonSchema: tool.inputSchema,
-                })),
-              },
-            ],
-          }),
-        },
-      });
+      // Sobrecarga do Vertex (429/503) é repetida aqui, antes de qualquer texto chegar.
+      const chunks = await retryTransient(
+        () => this.client.generateContentStream(this.toParameters(request, signal)),
+        this.retryPolicy,
+        signal,
+      );
 
       let usage: GenerateContentResponseUsageMetadata | undefined;
       let finishReason: FinishReason | undefined;
@@ -94,6 +83,28 @@ export class GeminiLlmProvider implements LlmProvider {
     } catch (error) {
       throw translateError(error);
     }
+  }
+
+  private toParameters(request: LlmRequest, signal?: AbortSignal): GenerateContentParameters {
+    return {
+      model: this.model,
+      contents: request.messages.map(toContent),
+      config: {
+        systemInstruction: request.systemPrompt,
+        abortSignal: signal,
+        ...(request.tools.length > 0 && {
+          tools: [
+            {
+              functionDeclarations: request.tools.map((tool) => ({
+                name: tool.name,
+                description: tool.description,
+                parametersJsonSchema: tool.inputSchema,
+              })),
+            },
+          ],
+        }),
+      },
+    };
   }
 }
 
