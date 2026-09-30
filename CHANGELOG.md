@@ -93,6 +93,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Adapter do Gemini no Vertex AI (`GeminiLlmProvider`): streaming, anexos por URI do Cloud Storage
   ou conteúdo embutido, chamadas de função com a `thoughtSignature` preservada entre turnos,
   consumo somando os tokens de raciocínio e tradução do estouro de contexto.
+- Memória da conversa no Postgres (`PrismaConversationMemory`): resumos de compactação e tamanho
+  do contexto da última chamada.
 
 ### Changed
 
