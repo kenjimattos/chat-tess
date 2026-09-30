@@ -150,6 +150,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Tools nativas `web_search` e `web_scrape`, definidas com `defineTool`: o mesmo schema Zod gera o
   JSON Schema enviado ao LLM e valida os argumentos. O consumo do LLM usado na busca entra na conta
   do usuário.
+- Preferências de tools sem chave estrangeira para o catálogo, para aceitar tools de servidores MCP
+  descobertas em tempo de execução; nova origem de tool `MCP`.
 
 ### Changed
 

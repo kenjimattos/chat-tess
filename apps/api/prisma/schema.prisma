@@ -146,6 +146,7 @@ model Attachment {
 enum ToolSource {
   BUILT_IN
   CONNECTOR
+  MCP
 }
 
 /// Catálogo das tools nativas e de conectores, sincronizado com o registro em
@@ -158,18 +159,17 @@ model Tool {
   enabledByDefault Boolean    @default(true) @map("enabled_by_default")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  userSettings UserToolSetting[]
-
   @@map("tools")
 }
 
+/// Preferência do usuário por tool. Sem chave estrangeira para `tools`: tools de
+/// servidores MCP são descobertas em tempo de execução e não estão no catálogo.
 model UserToolSetting {
   userId   String  @map("user_id") @db.Uuid
   toolName String  @map("tool_name")
   enabled  Boolean
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tool Tool @relation(fields: [toolName], references: [name], onDelete: Cascade)
 
   @@id([userId, toolName])
   @@map("user_tool_settings")
