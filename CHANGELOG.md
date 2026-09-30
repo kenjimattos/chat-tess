@@ -58,6 +58,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Limite padrão de tokens por usuário reduzido de 2 milhões para 500 mil, vitalício. Uma migração
   leva as contas que ainda estavam no padrão antigo para o novo; limites ajustados por um
   administrador são mantidos.
+- Migrações do banco saem da inicialização do contêiner: o deploy roda o Cloud Run Job
+  `chat-tess-migrate` com a imagem nova antes de publicar a revisão, e uma migração que falha
+  interrompe o deploy. A inicialização fica mais curta, o que reduz o cold start.
+  `infra/setup-github-deploy.sh` cria o job e aplica as migrações pendentes.
 
 ### Fixed
 

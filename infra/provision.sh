@@ -10,6 +10,9 @@
 #   ./infra/provision.sh                         # usa o projeto ativo no gcloud
 #   PROJECT_ID=meu-projeto ./infra/provision.sh
 #
+# Depois dele, rode infra/setup-github-deploy.sh: ele cria o job que aplica as
+# migrações do banco (o contêiner não migra ao iniciar) e liga o deploy contínuo.
+#
 # Pré-requisitos: gcloud autenticado, faturamento ativo no projeto e as variáveis
 # GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET definidas no ambiente ou no
 # .env da raiz. ALLOWED_EMAILS e ADMIN_EMAILS (opcionais) são lidos da mesma forma.

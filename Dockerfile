@@ -36,5 +36,6 @@ COPY --from=build /app/apps/web/dist /app/web
 USER node
 EXPOSE 8080
 
-# Aplica as migrações pendentes e sobe a API.
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# As migrações rodam antes de cada deploy, no Cloud Run Job `chat-tess-migrate`, com esta
+# mesma imagem e o comando `npx prisma migrate deploy`. Assim a inicialização fica mais curta.
+CMD ["node", "dist/main.js"]

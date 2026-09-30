@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 #
-# Dá ao GitHub Actions permissão para publicar o chat-tess no Cloud Run.
+# Dá ao GitHub Actions permissão para publicar o chat-tess no Cloud Run e cria o
+# Cloud Run Job que aplica as migrações do banco antes de cada deploy.
 #
 # A autenticação usa Workload Identity Federation: o GitHub apresenta um token
 # OIDC da execução do workflow e recebe credenciais temporárias. Nenhuma chave de
 # service account é criada nem guardada no GitHub. Só workflows do repositório
 # informado em GITHUB_REPOSITORY conseguem assumir a conta de deploy.
 #
-# Rode depois de infra/provision.sh. Pode ser executado mais de uma vez.
+# Rode depois de infra/provision.sh. Pode ser executado mais de uma vez; a cada
+# execução, aplica as migrações pendentes.
 #
 # Uso:
 #   GITHUB_REPOSITORY=dono/repo ./infra/setup-github-deploy.sh
@@ -27,6 +29,9 @@ PROVIDER="github-actions"
 DEPLOYER="${SERVICE}-deployer"
 DEPLOYER_EMAIL="${DEPLOYER}@${PROJECT_ID}.iam.gserviceaccount.com"
 RUNTIME_EMAIL="${SERVICE}-run@${PROJECT_ID}.iam.gserviceaccount.com"
+MIGRATION_JOB="${SERVICE}-migrate"
+SQL_INSTANCE="${SQL_INSTANCE:-chat-tess-db}"
+DATABASE_URL_SECRET="${SERVICE}-database-url"
 
 gcloud_project() { gcloud --project "$PROJECT_ID" --quiet "$@"; }
 step() { printf '\n==> %s\n' "$1"; }
@@ -59,6 +64,27 @@ gcloud_project run services add-iam-policy-binding "$SERVICE" \
 # A revisão roda com a conta do serviço; o deploy precisa poder atribuí-la.
 gcloud_project iam service-accounts add-iam-policy-binding "$RUNTIME_EMAIL" \
   --member "serviceAccount:${DEPLOYER_EMAIL}" --role roles/iam.serviceAccountUser >/dev/null
+
+step "Job de migração do banco"
+# Roda com a imagem publicada e a conta do serviço, que já lê o segredo do banco.
+if ! exists gcloud_project run jobs describe "$MIGRATION_JOB" --region "$REGION"; then
+  current_image="$(gcloud_project run services describe "$SERVICE" --region "$REGION" \
+    --format 'value(spec.template.spec.containers[0].image)')"
+  gcloud_project run jobs create "$MIGRATION_JOB" \
+    --region "$REGION" \
+    --image "$current_image" \
+    --command npx --args prisma,migrate,deploy \
+    --service-account "$RUNTIME_EMAIL" \
+    --set-cloudsql-instances "${PROJECT_ID}:${REGION}:${SQL_INSTANCE}" \
+    --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
+    --max-retries 0 \
+    --task-timeout 300
+fi
+# Atualiza a imagem e executa este job só.
+gcloud_project run jobs add-iam-policy-binding "$MIGRATION_JOB" \
+  --region "$REGION" \
+  --member "serviceAccount:${DEPLOYER_EMAIL}" --role roles/run.developer >/dev/null
+gcloud_project run jobs execute "$MIGRATION_JOB" --region "$REGION" --wait
 
 step "Workload Identity Federation para o GitHub"
 if ! exists gcloud_project iam workload-identity-pools describe "$POOL" --location global; then
@@ -96,6 +122,7 @@ set_workflow_variable GCP_PROJECT_ID "$PROJECT_ID"
 set_workflow_variable GCP_REGION "$REGION"
 set_workflow_variable CLOUD_RUN_SERVICE "$SERVICE"
 set_workflow_variable IMAGE_REPOSITORY "$IMAGE_REPOSITORY"
+set_workflow_variable MIGRATION_JOB "$MIGRATION_JOB"
 set_workflow_variable GCP_DEPLOYER_SERVICE_ACCOUNT "$DEPLOYER_EMAIL"
 set_workflow_variable GCP_WORKLOAD_IDENTITY_PROVIDER "$WORKLOAD_IDENTITY_PROVIDER"
 

@@ -102,6 +102,14 @@ jobs:
       - run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
       - run: docker build --tag "$IMAGE" .
       - run: docker push "$IMAGE"
+      # Migra o banco com a imagem nova antes de ela receber tráfego. Uma migração
+      # que falha interrompe o deploy e a revisão atual continua no ar.
+      - name: Aplica as migrações do banco
+        run: |
+          gcloud run jobs update ${{ vars.MIGRATION_JOB }} \
+            --project ${{ vars.GCP_PROJECT_ID }} --region ${{ vars.GCP_REGION }} --image "$IMAGE"
+          gcloud run jobs execute ${{ vars.MIGRATION_JOB }} \
+            --project ${{ vars.GCP_PROJECT_ID }} --region ${{ vars.GCP_REGION }} --wait
       # Troca só a imagem: variáveis, segredos e recursos continuam os do serviço.
       - name: Publica a revisão
         run: >-
