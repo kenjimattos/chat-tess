@@ -3,12 +3,16 @@ import { COMPACTION_INSTRUCTIONS } from '../domain/system-prompt';
 import type { ScriptedReply } from './scripted-llm-provider';
 
 const TOOL_COMMAND = /^\/tool\s+(\w+)\s*(\{.*\})?\s*$/s;
+const SLOW_REPLY =
+  'Resposta lenta: um dois três quatro cinco seis sete oito nove dez onze doze treze ' +
+  'catorze quinze dezesseis dezessete dezoito dezenove vinte. Fim da resposta lenta.';
 
 /**
  * Respostas previsíveis para `LLM_MODE=fake`, usado nos testes ponta a ponta:
  * - pedido de compactação: devolve um resumo das perguntas do usuário;
  * - "/tool nome {json}": chama a tool; na volta, relata o resultado;
  * - "/blocked": simula uma resposta bloqueada por política de segurança;
+ * - "/slow": responde devagar (cerca de 4 s), para testar respostas em andamento;
  * - demais mensagens: repete o texto e lista os anexos recebidos.
  */
 export function fakeChatResponder(request: LlmRequest): ScriptedReply {
@@ -24,6 +28,9 @@ export function fakeChatResponder(request: LlmRequest): ScriptedReply {
   const text = textOf(lastMessage);
   if (text === '/blocked') {
     return { finishReason: 'blocked' };
+  }
+  if (text === '/slow') {
+    return { text: SLOW_REPLY, chunkDelayMs: 400 };
   }
 
   const toolCommand = TOOL_COMMAND.exec(text);

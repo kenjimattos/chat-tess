@@ -35,6 +35,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   por janela fixa no Postgres (`rate_limit_windows`), válidos entre instâncias; acima do limite a
   API responde 429 com `Retry-After`, e a primeira recusa de cada janela vai para a auditoria
   (`rate_limit.exceeded`). O upload é recusado antes de o arquivo ser recebido.
+- LLM falso ganha o comando `/slow`, que responde em cerca de 4 segundos, para testar respostas
+  em andamento.
 
 ### Changed
 

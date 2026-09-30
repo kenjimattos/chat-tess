@@ -27,6 +27,15 @@ describe('fakeChatResponder', () => {
     expect(reply).toEqual({ finishReason: 'blocked' });
   });
 
+  it('responde devagar com /slow', () => {
+    const reply = fakeChatResponder(
+      chatRequest([{ role: 'user', parts: [{ type: 'text', text: '/slow' }] }]),
+    );
+
+    expect(reply).toMatchObject({ chunkDelayMs: 400 });
+    expect(reply.text).toMatch(/Fim da resposta lenta\.$/);
+  });
+
   it('lista os anexos recebidos', () => {
     const reply = fakeChatResponder(
       chatRequest([

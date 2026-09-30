@@ -13,6 +13,8 @@ export interface ScriptedReply {
   finishReason?: LlmFinishReason;
   /** Versão informada no fim do stream, como um provedor real faria. */
   modelVersion?: string;
+  /** Espera entre os pedaços do texto, para simular um modelo lento. */
+  chunkDelayMs?: number;
 }
 
 /** Decide a resposta de cada chamada; `callIndex` começa em 0. */
@@ -48,6 +50,9 @@ export class ScriptedLlmProvider implements LlmProvider {
 
     const text = reply.text ?? '';
     for (const chunk of splitIntoChunks(text)) {
+      if (reply.chunkDelayMs) {
+        await delay(reply.chunkDelayMs);
+      }
       signal?.throwIfAborted();
       yield { type: 'text_delta', text: chunk };
     }
@@ -64,6 +69,10 @@ export class ScriptedLlmProvider implements LlmProvider {
       usage: { inputTokens, outputTokens, totalTokens: inputTokens + outputTokens },
     };
   }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 /** Divide o texto em pedaços de até três palavras, imitando um stream real. */
