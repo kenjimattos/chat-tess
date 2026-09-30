@@ -159,6 +159,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Painel "Ferramentas" no cabeçalho para ligar e desligar as tools do agente.
 - Testes ponta a ponta das tools: busca na web, scraping de página local, tool desligada não
   executada, preferência persistida e execução registrada na auditoria.
+- `infra/setup-github-deploy.sh`: dá ao GitHub Actions acesso de deploy por Workload Identity
+  Federation, sem chave de service account, restrito a este repositório e a este serviço.
 
 ### Changed
 
