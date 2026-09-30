@@ -19,6 +19,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Botão "Compartilhar" em cada conversa: gera, copia e revoga o link. O link abre uma página
   somente leitura, com as mensagens e os anexos e sem campo de mensagem. Quem não está logado
   passa pelo login e volta ao link.
+- Spec e2e do compartilhamento: outro usuário vê a conversa e a imagem sem poder enviar
+  mensagens, o link revogado para de funcionar, quem não está logado volta ao link depois do login
+  e a auditoria registra quem abriu.
 
 ## [0.2.0] - 2026-09-30
 
