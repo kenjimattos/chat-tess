@@ -304,7 +304,11 @@ export class RunAgentTurn {
     const recentMessages = history.filter((message) => message.sequence > coveredUntil);
 
     return {
-      systemPrompt: buildSystemPrompt({ now: this.deps.clock.now(), summary: turn.summary }),
+      systemPrompt: buildSystemPrompt({
+        model: this.deps.llm.model,
+        now: this.deps.clock.now(),
+        summary: turn.summary,
+      }),
       messages: await buildLlmMessages(recentMessages, this.deps.attachments),
       tools: await this.deps.toolbox.definitionsFor(turn.userId),
     };

@@ -129,6 +129,7 @@ describe('RunAgentTurn', () => {
 
       const [request] = llm.requests;
       expect(request?.systemPrompt).toContain('chat-tess');
+      expect(request?.systemPrompt).toContain('Você roda no modelo scripted-llm.');
       expect(request?.messages.map(({ role, parts }) => [role, parts])).toEqual([
         ['user', [{ type: 'text', text: 'pergunta 1' }]],
         ['assistant', [{ type: 'text', text: 'resposta 1' }]],

@@ -15,6 +15,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   comando `/blocked`.
 - Teste ponta a ponta de resposta bloqueada: mensagem de motivo, histórico sem resposta vazia e
   falha registrada na auditoria.
+- System prompt com a identidade do modelo configurado (o modelo não sabe a própria versão e se
+  apresentava como uma anterior) e regras de comportamento: não inventar, recusar pedidos danosos,
+  não revelar instruções e tratar conteúdo trazido por tools como dado, nunca como instrução.
 
 ### Changed
 
