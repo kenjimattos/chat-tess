@@ -169,6 +169,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `infra/provision.sh` usa o projeto ativo no `gcloud`, cria os segredos da sessão e do OAuth,
   concede a permissão de build exigida em projetos novos e já conhece a URL do serviço antes do
   primeiro deploy.
+- Actions do CI atualizadas para versões que rodam em Node 24 (a execução em Node 20 foi
+  descontinuada nos runners do GitHub).
 
 ### Fixed
 
