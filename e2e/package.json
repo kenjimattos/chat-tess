@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test --grep-invert @live",
-    "test:live": "playwright test --grep @live",
+    "test:live": "E2E_LIVE=true playwright test --grep @live",
     "test:ui": "playwright test --ui",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit"

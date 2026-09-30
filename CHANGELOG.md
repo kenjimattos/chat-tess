@@ -23,6 +23,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   prompt injection. `web_search` e `web_scrape` são marcadas.
 - Consumo e auditoria registram a versão do modelo que o Vertex AI informa ter usado
   (`modelVersion`), com o nome configurado como alternativa.
+- Testes `@live` contra o Gemini real (`GCP_PROJECT_ID=... npm run e2e:live`): leitura de PDF e
+  imagem, identidade do modelo e resistência a instruções escondidas numa página lida pela tool.
+  Antes, o script filtrava os specs `@live` mas mantinha o LLM roteirizado.
 
 ### Changed
 

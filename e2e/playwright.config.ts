@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { API_URL, WEB_PORT, WEB_URL, apiEnvironment } from './test-environment';
+import { API_URL, IS_LIVE, WEB_PORT, WEB_URL, apiEnvironment } from './test-environment';
 
 const isCi = Boolean(process.env.CI);
 
@@ -11,6 +11,9 @@ export default defineConfig({
   forbidOnly: isCi,
   retries: isCi ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: './playwright-report' }]],
+  // O Gemini real leva segundos para responder; o LLM roteirizado, milissegundos.
+  timeout: IS_LIVE ? 180_000 : 30_000,
+  expect: { timeout: IS_LIVE ? 90_000 : 5_000 },
 
   use: {
     baseURL: WEB_URL,

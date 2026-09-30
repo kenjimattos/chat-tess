@@ -19,6 +19,25 @@ export const ALLOWED_TEST_DOMAIN = '@e2e.test';
 /** Recebe o papel de administrador no login (ADMIN_EMAILS). */
 export const ADMIN_TEST_EMAIL = 'admin@e2e.test';
 
+/**
+ * `npm run e2e:live` roda os specs marcados com @live contra o Gemini real no
+ * Vertex AI, com as credenciais locais do gcloud (ADC). Custa tokens de verdade.
+ */
+export const IS_LIVE = process.env.E2E_LIVE === 'true';
+
+function liveLlmEnvironment(): Record<string, string> {
+  const project = process.env.GCP_PROJECT_ID;
+  if (!project) {
+    throw new Error('Defina GCP_PROJECT_ID para rodar os testes @live contra o Gemini.');
+  }
+  return {
+    LLM_MODE: 'gemini',
+    GCP_PROJECT_ID: project,
+    // Contexto folgado: os specs @live não testam compactação.
+    CONTEXT_TOKEN_LIMIT: '100000',
+  };
+}
+
 /** Variáveis de ambiente da API durante os testes. */
 export const apiEnvironment: Record<string, string> = {
   NODE_ENV: 'test',
@@ -40,4 +59,5 @@ export const apiEnvironment: Record<string, string> = {
   COMPACTION_KEEP_RECENT_MESSAGES: '2',
   // O spec de tools faz scraping de uma página servida localmente pelo próprio teste.
   WEB_FETCH_ALLOW_PRIVATE_NETWORKS: 'true',
+  ...(IS_LIVE && liveLlmEnvironment()),
 };
