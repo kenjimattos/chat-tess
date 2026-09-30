@@ -7,14 +7,19 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-30
+
+Guardrails do agente, limites de uso, ajustes de desempenho para vários usuários e leitura da
+resposta sem rolagem automática.
+
 ### Added
+
+#### Guardrails
 
 - Resposta bloqueada pelo modelo por política de segurança ou cortada pelo limite de saída: o
   texto já transmitido é guardado, tools pedidas pela metade são descartadas e o usuário recebe o
   motivo (`response_blocked`, `response_truncated`), registrado na auditoria. O LLM falso ganha o
   comando `/blocked`.
-- Teste ponta a ponta de resposta bloqueada: mensagem de motivo, histórico sem resposta vazia e
-  falha registrada na auditoria.
 - System prompt com a identidade do modelo configurado (o modelo não sabe a própria versão e se
   apresentava como uma anterior) e regras de comportamento: não inventar, recusar pedidos danosos,
   não revelar instruções e tratar conteúdo trazido por tools como dado, nunca como instrução.
@@ -23,9 +28,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   prompt injection. `web_search` e `web_scrape` são marcadas.
 - Consumo e auditoria registram a versão do modelo que o Vertex AI informa ter usado
   (`modelVersion`), com o nome configurado como alternativa.
-- Testes `@live` contra o Gemini real (`GCP_PROJECT_ID=... npm run e2e:live`): leitura de PDF e
-  imagem, identidade do modelo e resistência a instruções escondidas numa página lida pela tool.
-  Antes, o script filtrava os specs `@live` mas mantinha o LLM roteirizado.
+
+#### Limites de uso
+
 - Turnos simultâneos limitados: uma resposta por conversa e até `MAX_CONCURRENT_TURNS_PER_USER`
   (padrão 3) por usuário, com reserva atômica no Postgres (`active_turns`) válida entre instâncias.
   Uma nova mensagem fora do limite recebe 409 antes do stream. Evita respostas intercaladas no
@@ -35,27 +40,44 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   por janela fixa no Postgres (`rate_limit_windows`), válidos entre instâncias; acima do limite a
   API responde 429 com `Retry-After`, e a primeira recusa de cada janela vai para a auditoria
   (`rate_limit.exceeded`). O upload é recusado antes de o arquivo ser recebido.
-- LLM falso ganha o comando `/slow`, que responde em cerca de 4 segundos, para testar respostas
-  em andamento.
-- Teste ponta a ponta de resposta que continua chegando enquanto o usuário usa outra conversa.
-- Testes ponta a ponta dos limites de uso: aviso de rate limit com registro na auditoria e recusa
-  de uma segunda mensagem enquanto a conversa ainda responde.
+
+#### Desempenho
+
 - Nova tentativa automática quando o Vertex AI responde 429, 500 ou 503: até três novas tentativas
   com espera crescente e variação aleatória, só na abertura da chamada (antes de qualquer texto
   chegar) e interrompidas se o cliente desconectar. Vale para o chat e para a busca na web.
 - Pool de conexões ao banco com tamanho explícito (`DATABASE_POOL_MAX`, padrão 5 por instância),
   para caber no limite de conexões do Cloud SQL `db-f1-micro` com duas instâncias e a migração.
-- Teste de carga (`npm run load-test`): sobe a API com o LLM falso e mede o tempo de resposta com
-  1, 5 e 20 usuários simultâneos. Localmente os três cenários ficam em cerca de 3,7 s, a própria
-  duração da resposta simulada.
-- README com as seções "Limites e proteções" e "Desempenho", e o deploy atualizado com o fluxo
-  contínuo e o job de migração.
+
+#### Interface
+
 - Leitura da resposta mais calma: o texto em stream aparece aos poucos, em ritmo que acompanha o
   atraso do stream, em vez de surgir em blocos; a tela não rola sozinha enquanto a resposta chega
   (só ao abrir a conversa e ao enviar a pergunta), e um botão "Mais conteúdo abaixo" aparece quando
   há conteúdo fora da área visível. Com `prefers-reduced-motion`, o texto aparece de uma vez.
+
+#### Testes
+
+- Teste ponta a ponta de resposta bloqueada: mensagem de motivo, histórico sem resposta vazia e
+  falha registrada na auditoria.
+- Testes `@live` contra o Gemini real (`GCP_PROJECT_ID=... npm run e2e:live`): leitura de PDF e
+  imagem, identidade do modelo e resistência a instruções escondidas numa página lida pela tool.
+  Antes, o script filtrava os specs `@live` mas mantinha o LLM roteirizado.
+- LLM falso ganha o comando `/slow`, que responde em cerca de 4 segundos, para testar respostas
+  em andamento.
+- Teste ponta a ponta de resposta que continua chegando enquanto o usuário usa outra conversa.
+- Testes ponta a ponta dos limites de uso: aviso de rate limit com registro na auditoria e recusa
+  de uma segunda mensagem enquanto a conversa ainda responde.
+- Teste de carga (`npm run load-test`): sobe a API com o LLM falso e mede o tempo de resposta com
+  1, 5 e 20 usuários simultâneos. Localmente os três cenários ficam em cerca de 3,7 s, a própria
+  duração da resposta simulada.
 - Teste ponta a ponta da leitura: a posição da tela se mantém enquanto a resposta chega e o
   indicador de conteúdo abaixo leva ao fim da conversa.
+
+#### Documentação
+
+- README com as seções "Limites e proteções" e "Desempenho", e o deploy atualizado com o fluxo
+  contínuo e o job de migração.
 
 ### Changed
 
@@ -287,5 +309,6 @@ Primeira versão em produção: fases 1 e 2 do desafio e deploy contínuo.
 - `infra/provision.sh` passa `ADMIN_EMAILS` ao Cloud Run; antes, rodar o script de novo removia
   o papel de administrador em produção.
 
-[Unreleased]: https://github.com/kenjimattos/chat-tess/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kenjimattos/chat-tess/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/kenjimattos/chat-tess/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/kenjimattos/chat-tess/releases/tag/v0.1.0
