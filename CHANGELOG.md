@@ -156,6 +156,7 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   ou MCP) e estado, e `PUT /api/tools/:nome` liga ou desliga. Tools desligadas não são oferecidas
   ao LLM nem executadas. Cada execução é gravada em `tool_calls` e o catálogo das tools nativas é
   sincronizado na inicialização.
+- Painel "Ferramentas" no cabeçalho para ligar e desligar as tools do agente.
 
 ### Changed
 

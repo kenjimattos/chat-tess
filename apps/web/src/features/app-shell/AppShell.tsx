@@ -1,6 +1,8 @@
 import type { CurrentUser } from '@chat-tess/shared';
+import { useState } from 'react';
 import { ChatView } from '../chat/ChatView';
 import { ConversationList } from '../conversations/ConversationList';
+import { ToolSettingsPanel } from '../tools/ToolSettingsPanel';
 import { useConversations } from '../conversations/useConversations';
 import { UsageMeter } from '../usage/UsageMeter';
 import { useUsage } from '../usage/useUsage';
@@ -16,6 +18,7 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
   const { conversations, loadError, create, rename, remove, refresh } = useConversations();
   const { selectedId, select } = useConversationRoute();
   const { usage, refresh: refreshUsage } = useUsage();
+  const [isToolSettingsOpen, setIsToolSettingsOpen] = useState(false);
 
   function handleTurnFinished() {
     void refresh();
@@ -45,10 +48,18 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
 
   return (
     <div className="flex h-screen flex-col bg-slate-50">
+      {isToolSettingsOpen && <ToolSettingsPanel onClose={() => setIsToolSettingsOpen(false)} />}
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
         <span className="font-semibold text-slate-900">chat-tess</span>
         <div className="flex items-center gap-4 text-sm">
           {usage && <UsageMeter usage={usage} />}
+          <button
+            type="button"
+            onClick={() => setIsToolSettingsOpen(true)}
+            className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100"
+          >
+            Ferramentas
+          </button>
           <span className="text-slate-700">{user.name}</span>
           <button
             type="button"
