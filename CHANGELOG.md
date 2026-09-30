@@ -38,6 +38,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - LLM falso ganha o comando `/slow`, que responde em cerca de 4 segundos, para testar respostas
   em andamento.
 - Teste ponta a ponta de resposta que continua chegando enquanto o usuário usa outra conversa.
+- Testes ponta a ponta dos limites de uso: aviso de rate limit com registro na auditoria e recusa
+  de uma segunda mensagem enquanto a conversa ainda responde.
 
 ### Changed
 
