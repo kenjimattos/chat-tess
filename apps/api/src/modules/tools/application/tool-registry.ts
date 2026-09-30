@@ -3,6 +3,7 @@ import type { EventPublisher } from '../../../shared/events/domain-event';
 import type { Clock } from '../../../shared/time/clock';
 import type { LlmToolDefinition } from '../../agent/domain/llm';
 import type { ToolExecutionContext, Toolbox } from '../../agent/domain/toolbox';
+import { markAsExternal } from '../domain/external-content';
 import type { ToolPreferences } from '../domain/ports';
 import type { CatalogEntry, Tool, ToolProvider } from '../domain/tool';
 import type { ToolExecuted } from '../domain/tool-events';
@@ -11,6 +12,7 @@ import type { ToolExecuted } from '../domain/tool-events';
  * Junta as tools de todas as fontes e as executa para o agente. Cada usuário
  * pode desligar tools; as não configuradas ficam ligadas. Uma falha na tool
  * vira um resultado de erro que o LLM lê, e não uma exceção que interrompe o turno.
+ * Resultados com conteúdo de terceiros chegam ao LLM marcados como externos.
  */
 export class ToolRegistry implements Toolbox {
   constructor(
@@ -82,7 +84,11 @@ async function runSafely(
   context: ToolExecutionContext,
 ): Promise<{ output: unknown; isError: boolean }> {
   try {
-    return { output: await tool.execute(input, context), isError: false };
+    const output = await tool.execute(input, context);
+    return {
+      output: tool.returnsExternalContent ? markAsExternal(output) : output,
+      isError: false,
+    };
   } catch (error) {
     return { output: error instanceof Error ? error.message : String(error), isError: true };
   }

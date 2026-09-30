@@ -16,6 +16,7 @@ export function createWebSearchTool(
     description:
       'Pesquisa na internet informações atuais ou que você não conhece. ' +
       'Devolve uma resposta resumida e as fontes consultadas; cite as fontes para o usuário.',
+    returnsExternalContent: true,
     input: z.object({
       query: z.string().min(2).max(500).describe('O que pesquisar, em linguagem natural'),
     }),

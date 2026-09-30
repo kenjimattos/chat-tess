@@ -11,6 +11,7 @@ export function createWebScrapeTool(reader: PageReader): Tool {
     description:
       'Lê uma página pública da web e devolve o título e o texto principal. ' +
       'Use quando o usuário enviar um link ou quando precisar do conteúdo completo de uma página.',
+    returnsExternalContent: true,
     input: z.object({
       url: z.url().describe('Endereço http ou https da página'),
       maxCharacters: z

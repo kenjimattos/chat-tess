@@ -6,6 +6,8 @@ export interface ToolDefinition<TSchema extends z.ZodObject> {
   name: string;
   description: string;
   input: TSchema;
+  /** Ver `Tool.returnsExternalContent`. */
+  returnsExternalContent: boolean;
   run(input: z.infer<TSchema>, context: ToolExecutionContext): Promise<unknown>;
 }
 
@@ -20,6 +22,7 @@ export function defineTool<TSchema extends z.ZodObject>(definition: ToolDefiniti
     name: definition.name,
     description: definition.description,
     inputSchema,
+    returnsExternalContent: definition.returnsExternalContent,
     async execute(rawInput, context) {
       const parsed = definition.input.safeParse(rawInput);
       if (!parsed.success) {

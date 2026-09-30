@@ -11,6 +11,11 @@ export interface Tool {
   readonly description: string;
   /** JSON Schema dos argumentos. */
   readonly inputSchema: Record<string, unknown>;
+  /**
+   * Verdadeiro quando o resultado traz conteúdo de terceiros (páginas, buscas,
+   * e-mails). O registro marca esse conteúdo como externo antes de devolvê-lo ao LLM.
+   */
+  readonly returnsExternalContent: boolean;
   /** Devolve o resultado para o LLM. Erros lançados viram resultado com `isError`. */
   execute(input: Record<string, unknown>, context: ToolExecutionContext): Promise<unknown>;
 }

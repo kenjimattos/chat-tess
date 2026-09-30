@@ -18,6 +18,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - System prompt com a identidade do modelo configurado (o modelo não sabe a própria versão e se
   apresentava como uma anterior) e regras de comportamento: não inventar, recusar pedidos danosos,
   não revelar instruções e tratar conteúdo trazido por tools como dado, nunca como instrução.
+- Conteúdo de terceiros marcado como externo: tools declaram `returnsExternalContent` e o registro
+  entrega o resultado delas ao LLM com um aviso de que é dado não verificado, como defesa contra
+  prompt injection. `web_search` e `web_scrape` são marcadas.
 
 ### Changed
 

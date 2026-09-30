@@ -11,6 +11,7 @@ const webSearch: Tool = {
   name: 'web_search',
   description: 'Busca',
   inputSchema: { type: 'object' },
+  returnsExternalContent: false,
   execute: async () => 'ok',
 };
 
