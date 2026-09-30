@@ -13,6 +13,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   texto já transmitido é guardado, tools pedidas pela metade são descartadas e o usuário recebe o
   motivo (`response_blocked`, `response_truncated`), registrado na auditoria. O LLM falso ganha o
   comando `/blocked`.
+- Teste ponta a ponta de resposta bloqueada: mensagem de motivo, histórico sem resposta vazia e
+  falha registrada na auditoria.
 
 ### Changed
 
