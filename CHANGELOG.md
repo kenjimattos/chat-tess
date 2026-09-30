@@ -90,6 +90,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   com limite de rodadas, compacta antes de estourar o contexto e, se o modelo recusar por excesso
   de contexto, compacta e tenta de novo sem interromper o chat.
 - LLM roteirizado (`ScriptedLlmProvider`) e dublês em memória para testar o agente sem rede.
+- Adapter do Gemini no Vertex AI (`GeminiLlmProvider`): streaming, anexos por URI do Cloud Storage
+  ou conteúdo embutido, chamadas de função com a `thoughtSignature` preservada entre turnos,
+  consumo somando os tokens de raciocínio e tradução do estouro de contexto.
 
 ### Changed
 
