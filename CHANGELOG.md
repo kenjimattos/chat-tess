@@ -121,6 +121,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Interface do chat: lista de conversas com criar, renomear e apagar; conversa aberta na URL;
   respostas em stream com Markdown; anexos com prévia de imagem e link de PDF; indicação de tools
   em uso; aviso de compactação; botão para interromper a resposta.
+- Testes ponta a ponta do chat: enviar e receber, título automático, histórico após recarregar,
+  alternar, renomear e apagar conversas; anexos de PDF e imagem, tipo não suportado; e compactação
+  automática sem interromper o chat nem apagar mensagens. Cada teste usa um usuário próprio.
 
 ### Changed
 
