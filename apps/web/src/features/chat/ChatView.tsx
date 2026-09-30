@@ -11,7 +11,7 @@ export interface ChatViewProps {
 }
 
 export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
-  const { messages, isLoading, reply, isStreaming, sendError, send, stop } = useChat(
+  const { messages, isLoading, loadError, reply, isStreaming, send, stop } = useChat(
     conversationId,
     {
       onTurnFinished,
@@ -38,9 +38,9 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
         ))}
 
         {reply && <ReplyStatus reply={reply} isStreaming={isStreaming} />}
-        {sendError && (
+        {loadError && (
           <p role="alert" className="text-center text-sm text-red-700">
-            {sendError}
+            {loadError}
           </p>
         )}
         <div ref={bottom} />

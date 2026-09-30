@@ -51,6 +51,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   leva as contas que ainda estavam no padrão antigo para o novo; limites ajustados por um
   administrador são mantidos.
 
+### Fixed
+
+- Respostas continuam chegando ao trocar de conversa: o estado dos turnos saiu do componente do
+  chat para um store do app (`active-turns-store`). Só o botão "Parar" e o fechamento da aba
+  encerram a resposta, e a barra lateral indica as conversas que estão respondendo. Antes, abrir
+  outra conversa cortava a resposta em andamento.
+
 ## [0.1.0] - 2026-09-30
 
 Primeira versão em produção: fases 1 e 2 do desafio e deploy contínuo.

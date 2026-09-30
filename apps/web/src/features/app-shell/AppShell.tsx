@@ -1,5 +1,6 @@
 import type { CurrentUser } from '@chat-tess/shared';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+import { activeTurns } from '../chat/active-turns-store';
 import { ChatView } from '../chat/ChatView';
 import { ConversationList } from '../conversations/ConversationList';
 import { ToolSettingsPanel } from '../tools/ToolSettingsPanel';
@@ -19,6 +20,7 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
   const { selectedId, select } = useConversationRoute();
   const { usage, refresh: refreshUsage } = useUsage();
   const [isToolSettingsOpen, setIsToolSettingsOpen] = useState(false);
+  const respondingIds = useSyncExternalStore(activeTurns.subscribe, activeTurns.responding);
 
   function handleTurnFinished() {
     void refresh();
@@ -81,6 +83,7 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
           <ConversationList
             conversations={conversations}
             selectedId={selectedId}
+            respondingIds={respondingIds}
             onSelect={select}
             onCreate={() => void startConversation()}
             onRename={(id, title) => void renameConversation(id, title)}

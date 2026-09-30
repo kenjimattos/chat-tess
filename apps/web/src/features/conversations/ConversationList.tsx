@@ -3,6 +3,8 @@ import type { ConversationSummary } from '@chat-tess/shared';
 export interface ConversationListProps {
   conversations: ConversationSummary[];
   selectedId: string | null;
+  /** Conversas com resposta chegando, mesmo que não estejam abertas. */
+  respondingIds: ReadonlySet<string>;
   onSelect(conversationId: string): void;
   onCreate(): void;
   onRename(conversationId: string, currentTitle: string): void;
@@ -12,6 +14,7 @@ export interface ConversationListProps {
 export function ConversationList({
   conversations,
   selectedId,
+  respondingIds,
   onSelect,
   onCreate,
   onRename,
@@ -48,6 +51,14 @@ export function ConversationList({
               >
                 {conversation.title}
               </button>
+              {respondingIds.has(conversation.id) && (
+                <span
+                  role="status"
+                  aria-label={`Respondendo em ${conversation.title}`}
+                  title="Respondendo…"
+                  className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500"
+                />
+              )}
               <button
                 type="button"
                 aria-label={`Renomear ${conversation.title}`}
