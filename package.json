@@ -24,7 +24,8 @@
     "db:generate": "npm run db:generate -w @chat-tess/api",
     "db:migrate": "npm run db:migrate -w @chat-tess/api",
     "e2e": "npm run test -w @chat-tess/e2e",
-    "e2e:live": "npm run test:live -w @chat-tess/e2e"
+    "e2e:live": "npm run test:live -w @chat-tess/e2e",
+    "load-test": "tsx e2e/load/concurrent-users.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -45,6 +45,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   chegar) e interrompidas se o cliente desconectar. Vale para o chat e para a busca na web.
 - Pool de conexões ao banco com tamanho explícito (`DATABASE_POOL_MAX`, padrão 5 por instância),
   para caber no limite de conexões do Cloud SQL `db-f1-micro` com duas instâncias e a migração.
+- Teste de carga (`npm run load-test`): sobe a API com o LLM falso e mede o tempo de resposta com
+  1, 5 e 20 usuários simultâneos. Localmente os três cenários ficam em cerca de 3,7 s, a própria
+  duração da resposta simulada.
 
 ### Changed
 
