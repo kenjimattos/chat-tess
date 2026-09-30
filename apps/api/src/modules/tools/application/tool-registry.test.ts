@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import type { Tool, ToolProvider } from '../domain/tool';
+import { InMemoryToolPreferences } from '../infra/in-memory-tool-preferences';
 import { ToolRegistry } from './tool-registry';
 
 const context = { userId: 'user-ana', conversationId: 'conversation-1' };
@@ -11,7 +12,16 @@ function tool(name: string, execute: Tool['execute']): Tool {
 }
 
 function provider(...tools: Tool[]): ToolProvider {
-  return { toolsFor: async () => tools };
+  return { source: 'built_in', toolsFor: async () => tools };
+}
+
+function registryWith(providers: ToolProvider[], preferences = new InMemoryToolPreferences()) {
+  return new ToolRegistry(
+    providers,
+    preferences,
+    new RecordingEventPublisher(),
+    new ManualClock('2026-09-30T10:00:00Z'),
+  );
 }
 
 function callOf(toolName: string, input: Record<string, unknown> = {}) {
@@ -20,14 +30,10 @@ function callOf(toolName: string, input: Record<string, unknown> = {}) {
 
 describe('ToolRegistry', () => {
   it('junta as definições de todas as fontes', async () => {
-    const registry = new ToolRegistry(
-      [
-        provider(tool('web_search', async () => 'ok')),
-        provider(tool('drive_search', async () => 'ok')),
-      ],
-      new RecordingEventPublisher(),
-      new ManualClock('2026-09-30T10:00:00Z'),
-    );
+    const registry = registryWith([
+      provider(tool('web_search', async () => 'ok')),
+      provider(tool('drive_search', async () => 'ok')),
+    ]);
 
     const definitions = await registry.definitionsFor('user-ana');
 
@@ -38,11 +44,9 @@ describe('ToolRegistry', () => {
   });
 
   it('executa a tool e devolve o resultado', async () => {
-    const registry = new ToolRegistry(
-      [provider(tool('echo', async (input, { userId }) => `${userId}: ${String(input.text)}`))],
-      new RecordingEventPublisher(),
-      new ManualClock('2026-09-30T10:00:00Z'),
-    );
+    const registry = registryWith([
+      provider(tool('echo', async (input, { userId }) => `${userId}: ${String(input.text)}`)),
+    ]);
 
     const result = await registry.execute(callOf('echo', { text: 'oi' }), context);
 
@@ -56,17 +60,13 @@ describe('ToolRegistry', () => {
   });
 
   it('transforma a falha da tool em resultado de erro', async () => {
-    const registry = new ToolRegistry(
-      [
-        provider(
-          tool('broken', async () => {
-            throw new Error('site fora do ar');
-          }),
-        ),
-      ],
-      new RecordingEventPublisher(),
-      new ManualClock('2026-09-30T10:00:00Z'),
-    );
+    const registry = registryWith([
+      provider(
+        tool('broken', async () => {
+          throw new Error('site fora do ar');
+        }),
+      ),
+    ]);
 
     const result = await registry.execute(callOf('broken'), context);
 
@@ -74,17 +74,13 @@ describe('ToolRegistry', () => {
   });
 
   it('aceita falhas que não são instâncias de Error', async () => {
-    const registry = new ToolRegistry(
-      [
-        provider(
-          tool('legacy', async () => {
-            throw 'tempo esgotado';
-          }),
-        ),
-      ],
-      new RecordingEventPublisher(),
-      new ManualClock('2026-09-30T10:00:00Z'),
-    );
+    const registry = registryWith([
+      provider(
+        tool('legacy', async () => {
+          throw 'tempo esgotado';
+        }),
+      ),
+    ]);
 
     const result = await registry.execute(callOf('legacy'), context);
 
@@ -92,11 +88,7 @@ describe('ToolRegistry', () => {
   });
 
   it('responde com erro quando a tool não existe', async () => {
-    const registry = new ToolRegistry(
-      [],
-      new RecordingEventPublisher(),
-      new ManualClock('2026-09-30T10:00:00Z'),
-    );
+    const registry = registryWith([]);
 
     const result = await registry.execute(callOf('inexistente'), context);
 
@@ -110,7 +102,12 @@ describe('ToolRegistry', () => {
       clock.advanceBy(250);
       return 'pronto';
     });
-    const registry = new ToolRegistry([provider(slow)], events, clock);
+    const registry = new ToolRegistry(
+      [provider(slow)],
+      new InMemoryToolPreferences(),
+      events,
+      clock,
+    );
 
     await registry.execute(callOf('slow', { q: 1 }), context);
 
@@ -130,5 +127,59 @@ describe('ToolRegistry', () => {
         },
       },
     ]);
+  });
+
+  describe('preferências do usuário', () => {
+    const search = tool('web_search', async () => 'resultado');
+    const scrape = tool('web_scrape', async () => 'página');
+
+    it('liga todas as tools por padrão', async () => {
+      const catalog = await registryWith([provider(search, scrape)]).catalogFor('user-ana');
+
+      expect(catalog.map(({ tool: { name }, source, enabled }) => [name, source, enabled])).toEqual(
+        [
+          ['web_search', 'built_in', true],
+          ['web_scrape', 'built_in', true],
+        ],
+      );
+    });
+
+    it('não oferece ao LLM a tool que o usuário desligou', async () => {
+      const preferences = new InMemoryToolPreferences();
+      await preferences.set('user-ana', 'web_search', false);
+
+      const definitions = await registryWith(
+        [provider(search, scrape)],
+        preferences,
+      ).definitionsFor('user-ana');
+
+      expect(definitions.map(({ name }) => name)).toEqual(['web_scrape']);
+    });
+
+    it('não executa a tool desligada, mesmo que o LLM a peça', async () => {
+      const preferences = new InMemoryToolPreferences();
+      await preferences.set('user-ana', 'web_search', false);
+
+      const result = await registryWith([provider(search)], preferences).execute(
+        callOf('web_search'),
+        context,
+      );
+
+      expect(result).toMatchObject({
+        isError: true,
+        output: expect.stringContaining('não está habilitada'),
+      });
+    });
+
+    it('aplica a preferência só ao usuário que a definiu', async () => {
+      const preferences = new InMemoryToolPreferences();
+      await preferences.set('user-bia', 'web_search', false);
+
+      const definitions = await registryWith([provider(search)], preferences).definitionsFor(
+        'user-ana',
+      );
+
+      expect(definitions).toHaveLength(1);
+    });
   });
 });

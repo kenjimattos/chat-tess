@@ -49,6 +49,11 @@ const envSchema = z
     COMPACTION_THRESHOLD_RATIO: z.coerce.number().gt(0).lt(1).default(0.8),
     COMPACTION_KEEP_RECENT_MESSAGES: positiveInteger.default(6),
     MAX_TOOL_ROUNDS: positiveInteger.default(8),
+    /** Só para testes locais: deixa a tool web_scrape acessar localhost e redes privadas. */
+    WEB_FETCH_ALLOW_PRIVATE_NETWORKS: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
     /** Cap de tokens de cada usuário novo. */
     DEFAULT_TOKEN_LIMIT: z.coerce.number().int().nonnegative().default(2_000_000),
 
@@ -65,6 +70,12 @@ const envSchema = z
     if (env.NODE_ENV === 'production') {
       if (env.AUTH_MODE === 'test') {
         fail('AUTH_MODE', 'o modo "test" permite entrar sem senha e é proibido em produção');
+      }
+      if (env.WEB_FETCH_ALLOW_PRIVATE_NETWORKS) {
+        fail(
+          'WEB_FETCH_ALLOW_PRIVATE_NETWORKS',
+          'expõe a rede interna às tools e é proibido em produção',
+        );
       }
       if (env.LLM_MODE === 'fake') {
         fail('LLM_MODE', 'o modo "fake" responde com texto roteirizado e é proibido em produção');
@@ -98,6 +109,15 @@ export type LlmConfig =
 export type FileStorageConfig =
   { kind: 'local'; rootDir: string } | { kind: 'gcs'; bucket: string };
 
+export interface ToolsConfig {
+  webFetch: {
+    timeoutMs: number;
+    maxBytes: number;
+    maxRedirects: number;
+    allowPrivateNetworks: boolean;
+  };
+}
+
 export interface AgentConfig {
   contextTokenLimit: number;
   thresholdRatio: number;
@@ -122,6 +142,7 @@ export interface AppConfig {
   agent: AgentConfig;
   files: { storage: FileStorageConfig; maxSizeBytes: number };
   billing: { defaultTokenLimit: number };
+  tools: ToolsConfig;
 }
 
 export class InvalidConfigError extends Error {
@@ -174,6 +195,14 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
       maxSizeBytes: env.MAX_UPLOAD_MB * 1024 * 1024,
     },
     billing: { defaultTokenLimit: env.DEFAULT_TOKEN_LIMIT },
+    tools: {
+      webFetch: {
+        timeoutMs: 15_000,
+        maxBytes: 3 * 1024 * 1024,
+        maxRedirects: 5,
+        allowPrivateNetworks: env.WEB_FETCH_ALLOW_PRIVATE_NETWORKS,
+      },
+    },
   };
 }
 

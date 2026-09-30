@@ -152,6 +152,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   do usuário.
 - Preferências de tools sem chave estrangeira para o catálogo, para aceitar tools de servidores MCP
   descobertas em tempo de execução; nova origem de tool `MCP`.
+- Configuração de tools por usuário: `GET /api/tools` lista as tools com origem (nativa, conector
+  ou MCP) e estado, e `PUT /api/tools/:nome` liga ou desliga. Tools desligadas não são oferecidas
+  ao LLM nem executadas. Cada execução é gravada em `tool_calls` e o catálogo das tools nativas é
+  sincronizado na inicialização.
 
 ### Changed
 

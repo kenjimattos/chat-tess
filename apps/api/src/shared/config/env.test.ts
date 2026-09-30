@@ -42,6 +42,14 @@ describe('loadConfig', () => {
       },
       files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
       billing: { defaultTokenLimit: 2_000_000 },
+      tools: {
+        webFetch: {
+          timeoutMs: 15_000,
+          maxBytes: 3 * 1024 * 1024,
+          maxRedirects: 5,
+          allowPrivateNetworks: false,
+        },
+      },
     });
   });
 
@@ -146,6 +154,17 @@ describe('loadConfig', () => {
 
     it('exige o projeto do Google Cloud para usar o Gemini', () => {
       expect(() => loadConfig({ ...requiredEnv, GCP_PROJECT_ID: '' })).toThrow(/GCP_PROJECT_ID/);
+    });
+
+    it('proíbe liberar a rede interna para as tools em produção', () => {
+      const load = () =>
+        loadConfig({
+          ...requiredEnv,
+          WEB_FETCH_ALLOW_PRIVATE_NETWORKS: 'true',
+          NODE_ENV: 'production',
+        });
+
+      expect(load).toThrow(/WEB_FETCH_ALLOW_PRIVATE_NETWORKS/);
     });
 
     it('proíbe o LLM falso em produção', () => {

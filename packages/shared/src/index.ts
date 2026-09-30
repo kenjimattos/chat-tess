@@ -3,5 +3,6 @@ export * from './api/auth';
 export * from './api/billing';
 export * from './api/conversations';
 export * from './api/messages';
+export * from './api/tools';
 export * from './message-parts';
 export * from './stream-events';

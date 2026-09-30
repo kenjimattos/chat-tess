@@ -55,7 +55,14 @@ export function composeApplication(config: AppConfig): Application {
     users: auth.users,
     defaultTokenLimit: config.billing.defaultTokenLimit,
   });
-  const tools = createToolsModule({ events, clock });
+  const tools = createToolsModule({
+    database,
+    eventBus: events,
+    clock,
+    requireAuthentication,
+    llmConfig: config.llm,
+    toolsConfig: config.tools,
+  });
   const agent = createAgentModule({
     ...shared,
     requireAuthentication,
@@ -87,7 +94,10 @@ export function composeApplication(config: AppConfig): Application {
   return {
     app,
     logger,
-    initialize: () => auth.seedAllowedEmails(),
+    initialize: async () => {
+      await auth.seedAllowedEmails();
+      await tools.syncCatalog();
+    },
     shutDown: () => database.$disconnect(),
   };
 }

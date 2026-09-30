@@ -12,3 +12,8 @@ export type ToolExecuted = DomainEvent<
     durationMs: number;
   }
 >;
+
+export type ToolPreferenceChanged = DomainEvent<
+  'tool.preference_changed',
+  { toolName: string; enabled: boolean }
+>;
