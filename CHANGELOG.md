@@ -97,6 +97,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   do contexto da última chamada.
 - Domínio de anexos: tipo detectado pelos primeiros bytes do conteúdo (PDF, PNG, JPEG e WEBP), e
   não pelo nome ou tipo declarado, e nome de arquivo higienizado.
+- Use cases de anexos: upload com limite de tamanho, leitura restrita ao dono e catálogo que o
+  agente usa para validar anexos pendentes e enviá-los ao LLM, por endereço ou embutidos.
 
 ### Changed
 
