@@ -1,7 +1,10 @@
 import type { Express } from 'express';
 import { createApp } from './app';
+import { createAgentModule } from './modules/agent/agent-module';
 import { createAuthModule } from './modules/auth/auth-module';
 import { createConversationsModule } from './modules/conversations/conversations-module';
+import { createFilesModule } from './modules/files/files-module';
+import { createToolsModule } from './modules/tools/tools-module';
 import type { AppConfig } from './shared/config/env';
 import { assertDatabaseIsReachable, createDatabase } from './shared/database/database';
 import { InProcessEventBus } from './shared/events/in-process-event-bus';
@@ -29,17 +32,33 @@ export function composeApplication(config: AppConfig): Application {
     logger.error({ err: error, eventType: event.type }, 'Falha ao processar evento de domínio'),
   );
 
-  const auth = createAuthModule({ config, database, events, clock, logger });
-  const conversations = createConversationsModule({
-    database,
-    events,
-    clock,
-    requireAuthentication: auth.requireAuthentication,
+  const shared = { database, events, clock };
+
+  const auth = createAuthModule({ ...shared, config, logger });
+  const { requireAuthentication } = auth;
+  const conversations = createConversationsModule({ ...shared, requireAuthentication });
+  const files = createFilesModule({
+    ...shared,
+    requireAuthentication,
+    conversations: conversations.conversations,
+    storage: config.files.storage,
+    maxSizeBytes: config.files.maxSizeBytes,
+  });
+  const tools = createToolsModule({ events, clock });
+  const agent = createAgentModule({
+    ...shared,
+    requireAuthentication,
+    llmConfig: config.llm,
+    agentConfig: config.agent,
+    conversations: conversations.conversations,
+    messages: conversations.messages,
+    attachments: files.attachmentCatalog,
+    toolbox: tools.toolbox,
   });
 
   const app = createApp({
     logger,
-    apiRouters: [auth.router, conversations.router],
+    apiRouters: [auth.router, conversations.router, files.router, agent.router],
     readinessChecks: {
       database: () => assertDatabaseIsReachable(database),
     },

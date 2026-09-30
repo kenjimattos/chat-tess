@@ -113,6 +113,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   anexos, resume no pedido de compactação e chama tools com o comando `/tool nome {json}`.
 - `POST /api/conversations/:id/messages`: envia a mensagem e devolve a resposta do agente em
   Server-Sent Events, com heartbeat e cancelamento quando o cliente desconecta.
+- Agente, anexos e tools montados na aplicação. Validado com o Gemini real: upload de PDF, resposta
+  em stream baseada no conteúdo do arquivo e pergunta seguinte usando o histórico.
 
 ### Changed
 

@@ -10,6 +10,9 @@ export const API_URL = `http://localhost:${API_PORT}`;
 export const TEST_DATABASE_URL =
   process.env.E2E_DATABASE_URL ?? 'postgresql://chat_tess:chat_tess@localhost:5433/chat_tess_test';
 
+/** Com a compactação a 80%, ela dispara quando o contexto passa de 1.600 tokens estimados. */
+export const E2E_CONTEXT_TOKEN_LIMIT = 2000;
+
 /** E-mails liberados na lista de permitidos durante os testes. */
 export const ALLOWED_TEST_EMAIL = 'ana@e2e.test';
 
@@ -24,4 +27,11 @@ export const apiEnvironment: Record<string, string> = {
   // Habilita POST /api/auth/test-login: o login real do Google não é automatizável.
   AUTH_MODE: 'test',
   ALLOWED_EMAILS: ALLOWED_TEST_EMAIL,
+  // LLM roteirizado: respostas previsíveis, sem rede e sem custo.
+  LLM_MODE: 'fake',
+  FILE_STORAGE: 'local',
+  LOCAL_STORAGE_DIR: 'e2e/.storage',
+  // Limite baixo para que a compactação aconteça depois de poucas mensagens.
+  CONTEXT_TOKEN_LIMIT: String(E2E_CONTEXT_TOKEN_LIMIT),
+  COMPACTION_KEEP_RECENT_MESSAGES: '2',
 };
