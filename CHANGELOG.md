@@ -142,6 +142,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Medidor de consumo de tokens no cabeçalho, atualizado ao fim de cada resposta.
 - Testes ponta a ponta dos créditos: medidor atualizado, bloqueio ao atingir o limite definido por
   um administrador e recusa de mudança de limite por usuário comum.
+- Leitura segura de páginas da web para as tools: só endereços públicos (bloqueia loopback, redes
+  privadas, metadados do Google Cloud e IPv4 escrito em IPv6), validação do IP na conexão contra
+  DNS rebinding, redirecionamentos revalidados e limites de tempo e tamanho.
 
 ### Changed
 
