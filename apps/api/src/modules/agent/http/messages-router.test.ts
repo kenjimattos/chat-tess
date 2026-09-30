@@ -1,0 +1,112 @@
+import request from 'supertest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createApp } from '../../../app';
+import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { silentLogger } from '../../../shared/logging/logger';
+import { ManualClock } from '../../../shared/time/clock';
+import {
+  TEST_USER_HEADER,
+  fakeRequireAuthentication,
+} from '../../auth/http/fake-authentication.test-support';
+import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
+import { CompactConversation } from '../application/compact-conversation';
+import { RunAgentTurn } from '../application/run-agent-turn';
+import { FakeToolbox } from '../infra/fake-toolbox';
+import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
+import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
+import { ScriptedLlmProvider } from '../infra/scripted-llm-provider';
+import { createMessagesRouter } from './messages-router';
+
+const ANA = 'user-ana';
+
+/** Separa o corpo SSE em eventos { event, data }. */
+function parseEventStream(body: string) {
+  return body
+    .split('\n\n')
+    .filter((block) => block.startsWith('event:'))
+    .map((block) => {
+      const [eventLine, dataLine] = block.split('\n');
+      return {
+        event: eventLine?.slice('event: '.length),
+        data: JSON.parse(dataLine?.slice('data: '.length) ?? 'null'),
+      };
+    });
+}
+
+describe('POST /api/conversations/:id/messages', () => {
+  let app: ReturnType<typeof createApp>;
+  let conversationId: string;
+
+  beforeEach(async () => {
+    const clock = new ManualClock('2026-09-30T10:00:00Z');
+    const store = new InMemoryConversationStore(clock);
+    const memory = new InMemoryConversationMemory();
+    const events = new RecordingEventPublisher();
+    const llm = new ScriptedLlmProvider(() => ({
+      text: 'Olá, Ana!',
+      usage: { inputTokens: 10, outputTokens: 3 },
+    }));
+    const runAgentTurn = new RunAgentTurn({
+      conversations: store,
+      messages: store,
+      memory,
+      attachments: new InMemoryAttachmentCatalog(),
+      toolbox: new FakeToolbox(),
+      llm,
+      compactConversation: new CompactConversation(llm, memory, events, clock, 2),
+      events,
+      clock,
+      settings: { contextTokenLimit: 100_000, thresholdRatio: 0.8, maxToolRounds: 3 },
+    });
+    const router = createMessagesRouter({
+      requireAuthentication: fakeRequireAuthentication,
+      runAgentTurn,
+    });
+    app = createApp({ logger: silentLogger, apiRouters: [router], readinessChecks: {} });
+    conversationId = (await store.create(ANA, 'Nova conversa')).id;
+  });
+
+  const send = (id: string, body: object) =>
+    request(app).post(`/api/conversations/${id}/messages`).set(TEST_USER_HEADER, ANA).send(body);
+
+  it('responde com a resposta do agente em Server-Sent Events', async () => {
+    const response = await send(conversationId, { text: 'Oi' });
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toBe('text/event-stream; charset=utf-8');
+    const events = parseEventStream(response.text);
+    expect(events.map(({ event }) => event)).toEqual(['text_delta', 'usage', 'done']);
+    expect(events[0]).toEqual({
+      event: 'text_delta',
+      data: { type: 'text_delta', text: 'Olá, Ana!' },
+    });
+  });
+
+  it('responde em JSON, antes do stream, quando a mensagem é vazia', async () => {
+    const response = await send(conversationId, { text: '  ' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('empty_message');
+  });
+
+  it('responde em JSON, antes do stream, quando a conversa não existe', async () => {
+    const response = await send('00000000-0000-4000-8000-000000000000', { text: 'Oi' });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe('conversation_not_found');
+  });
+
+  it('recusa corpo com formato inválido', async () => {
+    const response = await send(conversationId, { text: 'Oi', attachmentIds: 'não é lista' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('exige autenticação', async () => {
+    const response = await request(app)
+      .post(`/api/conversations/${conversationId}/messages`)
+      .send({ text: 'Oi' });
+
+    expect(response.status).toBe(401);
+  });
+});

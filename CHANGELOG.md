@@ -111,6 +111,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   rodadas de tool, armazenamento (`local` ou `gcs`) e tamanho máximo de upload.
 - LLM roteirizado para os testes ponta a ponta (`LLM_MODE=fake`): repete a mensagem, lista os
   anexos, resume no pedido de compactação e chama tools com o comando `/tool nome {json}`.
+- `POST /api/conversations/:id/messages`: envia a mensagem e devolve a resposta do agente em
+  Server-Sent Events, com heartbeat e cancelamento quando o cliente desconecta.
 
 ### Changed
 
