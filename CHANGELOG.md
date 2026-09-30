@@ -109,6 +109,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Configuração do LLM, do agente e dos anexos: `LLM_MODE` (`gemini` ou `fake`, este proibido em
   produção), modelo e projeto do Vertex AI, limite de contexto e limiar de compactação, limite de
   rodadas de tool, armazenamento (`local` ou `gcs`) e tamanho máximo de upload.
+- LLM roteirizado para os testes ponta a ponta (`LLM_MODE=fake`): repete a mensagem, lista os
+  anexos, resume no pedido de compactação e chama tools com o comando `/tool nome {json}`.
 
 ### Changed
 

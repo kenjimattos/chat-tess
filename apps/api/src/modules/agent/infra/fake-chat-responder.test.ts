@@ -1,0 +1,112 @@
+import { describe, expect, it } from 'vitest';
+import type { LlmRequest } from '../domain/llm';
+import { COMPACTION_INSTRUCTIONS } from '../domain/system-prompt';
+import { fakeChatResponder } from './fake-chat-responder';
+
+function chatRequest(
+  messages: LlmRequest['messages'],
+  systemPrompt = 'Você é o chat-tess.',
+): LlmRequest {
+  return { systemPrompt, tools: [], messages };
+}
+
+describe('fakeChatResponder', () => {
+  it('repete o texto do usuário', () => {
+    const reply = fakeChatResponder(
+      chatRequest([{ role: 'user', parts: [{ type: 'text', text: 'Oi' }] }]),
+    );
+
+    expect(reply).toEqual({ text: 'Você disse: "Oi".' });
+  });
+
+  it('lista os anexos recebidos', () => {
+    const reply = fakeChatResponder(
+      chatRequest([
+        {
+          role: 'user',
+          parts: [
+            { type: 'text', text: 'Veja' },
+            {
+              type: 'attachment',
+              fileName: 'contrato.pdf',
+              mimeType: 'application/pdf',
+              source: { kind: 'inline', base64Data: '' },
+            },
+          ],
+        },
+      ]),
+    );
+
+    expect(reply.text).toBe('Você disse: "Veja". Recebi 1 anexo(s): contrato.pdf.');
+  });
+
+  it('avisa quando está usando um resumo', () => {
+    const reply = fakeChatResponder(
+      chatRequest(
+        [{ role: 'user', parts: [{ type: 'text', text: 'E agora?' }] }],
+        'Resumo automático: x',
+      ),
+    );
+
+    expect(reply.text).toContain('(Estou usando o resumo do início da conversa.)');
+  });
+
+  it('chama a tool pedida com o comando /tool', () => {
+    const reply = fakeChatResponder(
+      chatRequest([
+        { role: 'user', parts: [{ type: 'text', text: '/tool web_search {"query":"vitest"}' }] },
+      ]),
+    );
+
+    expect(reply.toolCalls).toEqual([
+      {
+        type: 'tool_call',
+        callId: 'fake-call-1',
+        toolName: 'web_search',
+        input: { query: 'vitest' },
+      },
+    ]);
+  });
+
+  it('relata o resultado da tool', () => {
+    const reply = fakeChatResponder(
+      chatRequest([
+        {
+          role: 'tool',
+          parts: [
+            {
+              type: 'tool_result',
+              callId: 'c1',
+              toolName: 'web_search',
+              output: 'achei',
+              isError: false,
+            },
+          ],
+        },
+      ]),
+    );
+
+    expect(reply.text).toBe('Resultado da tool: web_search -> "achei"');
+  });
+
+  it('resume as perguntas do usuário no pedido de compactação', () => {
+    const reply = fakeChatResponder(
+      chatRequest(
+        [
+          {
+            role: 'user',
+            parts: [
+              {
+                type: 'text',
+                text: 'Conversa a resumir:\n\nUsuário: primeira\n\nAssistente: ok\n\nUsuário: segunda',
+              },
+            ],
+          },
+        ],
+        COMPACTION_INSTRUCTIONS,
+      ),
+    );
+
+    expect(reply.text).toBe('Resumo automático: primeira | segunda');
+  });
+});
