@@ -28,6 +28,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 - Actions do CI atualizadas para versões que rodam em Node 24 (a execução em Node 20 foi
   descontinuada nos runners do GitHub).
+- Página local servida aos specs de scraping movida para `e2e/support/local-page.ts`, para
+  reuso entre specs.
 
 ## [0.1.0] - 2026-09-30
 
