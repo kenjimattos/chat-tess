@@ -10,6 +10,8 @@ export const conversationSummarySchema = z.object({
 });
 export type ConversationSummary = z.infer<typeof conversationSummarySchema>;
 
+export const conversationListSchema = z.array(conversationSummarySchema);
+
 export const conversationMessageSchema = z.object({
   id: z.string(),
   sequence: z.number().int().positive(),

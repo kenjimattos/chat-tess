@@ -16,18 +16,32 @@ export async function requestJson<TResponse>(path: string, init?: RequestInit): 
     credentials: 'same-origin',
     headers: { Accept: 'application/json', ...init?.headers },
   });
-  const body: unknown = await response.json().catch(() => null);
-
   if (!response.ok) {
-    throw toApiError(response.status, body);
+    throw await toApiError(response);
   }
-  return body as TResponse;
+  return response.status === 204
+    ? (undefined as TResponse)
+    : ((await response.json()) as TResponse);
 }
 
-function toApiError(status: number, body: unknown): ApiError {
+/** Envia um corpo JSON. */
+export function sendJson<TResponse>(
+  path: string,
+  method: string,
+  body: unknown,
+): Promise<TResponse> {
+  return requestJson<TResponse>(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function toApiError(response: Response): Promise<ApiError> {
+  const body: unknown = await response.json().catch(() => null);
   const error = (body as { error?: { code?: string; message?: string } } | null)?.error;
   return new ApiError(
-    status,
+    response.status,
     error?.code ?? 'unknown_error',
     error?.message ?? 'Não foi possível concluir a requisição.',
   );

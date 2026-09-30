@@ -115,6 +115,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   Server-Sent Events, com heartbeat e cancelamento quando o cliente desconecta.
 - Agente, anexos e tools montados na aplicação. Validado com o Gemini real: upload de PDF, resposta
   em stream baseada no conteúdo do arquivo e pergunta seguinte usando o histórico.
+- Camada de API do frontend: conversas, anexos e envio de mensagem com leitura de Server-Sent
+  Events por `fetch` (o `EventSource` do navegador só faz GET), validando cada evento com o contrato
+  compartilhado.
 
 ### Changed
 
