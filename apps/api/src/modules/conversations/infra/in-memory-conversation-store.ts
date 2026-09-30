@@ -1,15 +1,24 @@
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../../../shared/time/clock';
 import type { Conversation, Message } from '../domain/conversation';
-import type { ConversationRepository, MessageRepository, NewMessage } from '../domain/ports';
+import type { ConversationShare } from '../domain/conversation-share';
+import type {
+  ConversationRepository,
+  ConversationShareRepository,
+  MessageRepository,
+  NewMessage,
+} from '../domain/ports';
 
 /**
- * Conversas e mensagens em memória, para testes. Implementa os dois ports
- * porque, como no banco, apagar uma conversa apaga as mensagens dela.
+ * Conversas, mensagens e links em memória, para testes. Implementa os três
+ * ports porque, como no banco, apagar uma conversa apaga o que depende dela.
  */
-export class InMemoryConversationStore implements ConversationRepository, MessageRepository {
+export class InMemoryConversationStore
+  implements ConversationRepository, MessageRepository, ConversationShareRepository
+{
   private readonly conversationsById = new Map<string, Conversation>();
   private readonly messagesByConversation = new Map<string, Message[]>();
+  private readonly sharesByConversation = new Map<string, ConversationShare>();
 
   constructor(private readonly clock: Clock) {}
 
@@ -39,6 +48,7 @@ export class InMemoryConversationStore implements ConversationRepository, Messag
   async delete(conversationId: string): Promise<void> {
     this.conversationsById.delete(conversationId);
     this.messagesByConversation.delete(conversationId);
+    this.sharesByConversation.delete(conversationId);
   }
 
   async append(conversationId: string, { role, parts }: NewMessage): Promise<Message> {
@@ -62,6 +72,29 @@ export class InMemoryConversationStore implements ConversationRepository, Messag
 
   async listByConversation(conversationId: string): Promise<Message[]> {
     return [...(this.messagesByConversation.get(conversationId) ?? [])];
+  }
+
+  async findByConversation(conversationId: string): Promise<ConversationShare | null> {
+    return this.sharesByConversation.get(conversationId) ?? null;
+  }
+
+  async createIfAbsent(conversationId: string, token: string): Promise<ConversationShare> {
+    const existing = this.sharesByConversation.get(conversationId);
+    if (existing) {
+      return existing;
+    }
+    const share = { conversationId, token, createdAt: this.clock.now() };
+    this.sharesByConversation.set(conversationId, share);
+    return share;
+  }
+
+  async findSharedConversation(token: string): Promise<Conversation | null> {
+    const share = [...this.sharesByConversation.values()].find((item) => item.token === token);
+    return (share && this.conversationsById.get(share.conversationId)) ?? null;
+  }
+
+  async revoke(conversationId: string): Promise<void> {
+    this.sharesByConversation.delete(conversationId);
   }
 
   private update(conversationId: string, changes: Partial<Conversation>): Conversation {

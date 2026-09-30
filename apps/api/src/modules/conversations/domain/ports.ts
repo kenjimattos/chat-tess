@@ -1,5 +1,6 @@
 import type { MessagePart } from '@chat-tess/shared';
 import type { Conversation, Message, MessageRole } from './conversation';
+import type { ConversationShare } from './conversation-share';
 
 /** Todas as consultas recebem o dono: um usuário nunca alcança conversas de outro. */
 export interface ConversationRepository {
@@ -21,4 +22,16 @@ export interface MessageRepository {
   append(conversationId: string, message: NewMessage): Promise<Message>;
   /** Em ordem de sequência. */
   listByConversation(conversationId: string): Promise<Message[]>;
+}
+
+export interface ConversationShareRepository {
+  findByConversation(conversationId: string): Promise<ConversationShare | null>;
+  /**
+   * Grava o link com o token informado, se a conversa ainda não tiver um.
+   * Devolve o link que ficou valendo: o novo ou o que já existia.
+   */
+  createIfAbsent(conversationId: string, token: string): Promise<ConversationShare>;
+  /** Conversa do link, ou `null` se o token não existe ou foi revogado. */
+  findSharedConversation(token: string): Promise<Conversation | null>;
+  revoke(conversationId: string): Promise<void>;
 }

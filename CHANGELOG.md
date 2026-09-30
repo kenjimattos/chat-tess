@@ -7,6 +7,14 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Added
+
+- Compartilhamento de conversa por link somente leitura. O dono gera o link (token aleatório de
+  32 caracteres, um por conversa), consulta e revoga em `/api/conversations/:id/share` (`PUT`,
+  `GET` e `DELETE`). Qualquer usuário logado abre a conversa em `/api/shared/:token`, sem os
+  resultados de tools. Gerar, revogar e abrir o link vão para a auditoria (`conversation.shared`,
+  `conversation.share_revoked`, `conversation.share_viewed`).
+
 ## [0.2.0] - 2026-09-30
 
 Guardrails do agente, limites de uso, ajustes de desempenho para vários usuários e leitura da

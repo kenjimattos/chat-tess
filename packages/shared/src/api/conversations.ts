@@ -34,3 +34,23 @@ export const createConversationRequestSchema = z.object({
 export const renameConversationRequestSchema = z.object({
   title: z.string(),
 });
+
+/** Link somente leitura; a página fica em `/shared/{token}`. */
+export const conversationShareSchema = z.object({
+  token: z.string(),
+  createdAt: z.string(),
+});
+export type ConversationShareResponse = z.infer<typeof conversationShareSchema>;
+
+/** Estado do compartilhamento para o dono: `share` é `null` enquanto não há link. */
+export const conversationShareStateSchema = z.object({
+  share: conversationShareSchema.nullable(),
+});
+export type ConversationShareState = z.infer<typeof conversationShareStateSchema>;
+
+/** O que quem abre o link vê: título e mensagens, sem dados do dono. */
+export const sharedConversationSchema = z.object({
+  title: z.string(),
+  messages: z.array(conversationMessageSchema),
+});
+export type SharedConversation = z.infer<typeof sharedConversationSchema>;

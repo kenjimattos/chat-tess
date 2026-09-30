@@ -78,9 +78,22 @@ model Conversation {
   toolCalls    ToolCall[]
   usageRecords UsageRecord[]
   activeTurn   ActiveTurn?
+  share        ConversationShare?
 
   @@index([userId, updatedAt(sort: Desc)])
   @@map("conversations")
+}
+
+/// Link somente leitura da conversa: um por conversa. Revogar apaga o registro,
+/// e compartilhar de novo gera outro token.
+model ConversationShare {
+  conversationId String   @id @map("conversation_id") @db.Uuid
+  token          String   @unique
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("conversation_shares")
 }
 
 enum MessageRole {

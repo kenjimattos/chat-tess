@@ -12,8 +12,12 @@ import {
 import { CreateConversation } from '../application/create-conversation';
 import { DeleteConversation } from '../application/delete-conversation';
 import { GetConversation } from '../application/get-conversation';
+import { GetConversationShare } from '../application/get-conversation-share';
 import { ListConversations } from '../application/list-conversations';
 import { RenameConversation } from '../application/rename-conversation';
+import { RevokeConversationShare } from '../application/revoke-conversation-share';
+import { ShareConversation } from '../application/share-conversation';
+import { ViewSharedConversation } from '../application/view-shared-conversation';
 import { InMemoryConversationStore } from '../infra/in-memory-conversation-store';
 import { createConversationsRouter } from './conversations-router';
 
@@ -35,6 +39,10 @@ describe('rotas de conversa', () => {
       getConversation: new GetConversation(store, store),
       renameConversation: new RenameConversation(store, events, clock),
       deleteConversation: new DeleteConversation(store, events, clock),
+      shareConversation: new ShareConversation(store, store, events, clock),
+      getConversationShare: new GetConversationShare(store, store),
+      revokeConversationShare: new RevokeConversationShare(store, store, events, clock),
+      viewSharedConversation: new ViewSharedConversation(store, store, events, clock),
     });
     app = createApp({ logger: silentLogger, apiRouters: [router], readinessChecks: {} });
   });
@@ -130,5 +138,83 @@ describe('rotas de conversa', () => {
 
     expect(deleted.status).toBe(204);
     expect(reopened.status).toBe(404);
+  });
+
+  describe('compartilhamento', () => {
+    async function sharedConversation() {
+      const conversation = await store.create(ANA, 'Receitas');
+      await store.append(conversation.id, { role: 'user', parts: [{ type: 'text', text: 'Oi' }] });
+      const shared = await request(app)
+        .put(`/api/conversations/${conversation.id}/share`)
+        .set(as(ANA));
+      return { conversation, token: shared.body.token as string, shared };
+    }
+
+    it('gera o link e o dono consulta o estado dele', async () => {
+      const { conversation, shared } = await sharedConversation();
+
+      const state = await request(app)
+        .get(`/api/conversations/${conversation.id}/share`)
+        .set(as(ANA));
+
+      expect(shared.status).toBe(200);
+      expect(shared.body).toEqual({ token: expect.any(String), createdAt: expect.any(String) });
+      expect(state.body).toEqual({ share: shared.body });
+    });
+
+    it('informa quando a conversa não foi compartilhada', async () => {
+      const conversation = await store.create(ANA, 'Só minha');
+
+      const state = await request(app)
+        .get(`/api/conversations/${conversation.id}/share`)
+        .set(as(ANA));
+
+      expect(state.body).toEqual({ share: null });
+    });
+
+    it('outro usuário logado abre a conversa pelo link', async () => {
+      const { token } = await sharedConversation();
+
+      const response = await request(app).get(`/api/shared/${token}`).set(as(BIA));
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        title: 'Receitas',
+        messages: [
+          expect.objectContaining({ role: 'user', parts: [{ type: 'text', text: 'Oi' }] }),
+        ],
+      });
+    });
+
+    it('exige login para abrir o link', async () => {
+      const { token } = await sharedConversation();
+
+      const response = await request(app).get(`/api/shared/${token}`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('o link revogado deixa de funcionar', async () => {
+      const { conversation, token } = await sharedConversation();
+
+      const revoked = await request(app)
+        .delete(`/api/conversations/${conversation.id}/share`)
+        .set(as(ANA));
+      const response = await request(app).get(`/api/shared/${token}`).set(as(BIA));
+
+      expect(revoked.status).toBe(204);
+      expect(response.status).toBe(404);
+      expect(response.body.error.code).toBe('shared_conversation_not_found');
+    });
+
+    it('só o dono gera o link', async () => {
+      const conversation = await store.create(ANA, 'Receitas');
+
+      const response = await request(app)
+        .put(`/api/conversations/${conversation.id}/share`)
+        .set(as(BIA));
+
+      expect(response.status).toBe(404);
+    });
   });
 });
