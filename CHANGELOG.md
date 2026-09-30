@@ -132,6 +132,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `GET /api/audit-events` pagina a trilha; usuários veem só os próprios eventos e administradores
   veem todos.
 - Testes ponta a ponta da auditoria: fluxo completo registrado e isolamento entre usuários.
+- Port `UsageLimiter` no agente: o crédito é verificado antes de aceitar a mensagem, que não é
+  gravada quando o usuário está sem saldo.
 
 ### Changed
 

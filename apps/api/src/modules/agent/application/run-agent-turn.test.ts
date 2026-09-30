@@ -1,10 +1,12 @@
 import type { StreamEvent } from '@chat-tess/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { AppError } from '../../../shared/errors/app-error';
 import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
 import { ContextWindowExceededError, EmptyMessageError } from '../domain/agent-errors';
+import { unlimitedUsage } from '../domain/usage-limiter';
 import { FakeToolbox } from '../infra/fake-toolbox';
 import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
 import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
@@ -60,6 +62,7 @@ describe('RunAgentTurn', () => {
       memory,
       attachments,
       toolbox,
+      usageLimiter: unlimitedUsage,
       llm,
       compactConversation: new CompactConversation(llm, memory, events, clock, keepRecentMessages),
       events,
@@ -190,6 +193,36 @@ describe('RunAgentTurn', () => {
       const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
 
       await expect(send(agent, '   ')).rejects.toThrow(EmptyMessageError);
+      expect(await store.listByConversation(conversationId)).toEqual([]);
+    });
+
+    it('recusa quando o usuário não tem mais crédito, sem gravar a mensagem', async () => {
+      const noCredit = new AppError('limit_exceeded', 'credit_limit_reached', 'Sem crédito.');
+      const agent = new RunAgentTurn({
+        conversations: store,
+        messages: store,
+        memory,
+        attachments,
+        toolbox: new FakeToolbox(),
+        usageLimiter: {
+          assertCanSpend: async () => {
+            throw noCredit;
+          },
+        },
+        llm: ScriptedLlmProvider.replyingInOrder(),
+        compactConversation: new CompactConversation(
+          ScriptedLlmProvider.replyingInOrder(),
+          memory,
+          events,
+          clock,
+          2,
+        ),
+        events,
+        clock,
+        settings: defaultSettings,
+      });
+
+      await expect(send(agent, 'Oi')).rejects.toBe(noCredit);
       expect(await store.listByConversation(conversationId)).toEqual([]);
     });
 

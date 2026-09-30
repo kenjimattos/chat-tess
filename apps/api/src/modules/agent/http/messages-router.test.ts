@@ -11,6 +11,7 @@ import {
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
 import { CompactConversation } from '../application/compact-conversation';
 import { RunAgentTurn } from '../application/run-agent-turn';
+import { unlimitedUsage } from '../domain/usage-limiter';
 import { FakeToolbox } from '../infra/fake-toolbox';
 import { InMemoryAttachmentCatalog } from '../infra/in-memory-attachment-catalog';
 import { InMemoryConversationMemory } from '../infra/in-memory-conversation-memory';
@@ -52,6 +53,7 @@ describe('POST /api/conversations/:id/messages', () => {
       memory,
       attachments: new InMemoryAttachmentCatalog(),
       toolbox: new FakeToolbox(),
+      usageLimiter: unlimitedUsage,
       llm,
       compactConversation: new CompactConversation(llm, memory, events, clock, 2),
       events,

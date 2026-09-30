@@ -26,6 +26,7 @@ import type {
 import type { LlmProvider, LlmRequest } from '../domain/llm';
 import { buildSystemPrompt } from '../domain/system-prompt';
 import type { Toolbox } from '../domain/toolbox';
+import type { UsageLimiter } from '../domain/usage-limiter';
 import { buildLlmMessages } from './build-llm-messages';
 import type { CompactConversation } from './compact-conversation';
 
@@ -49,6 +50,7 @@ export interface AgentTurnDependencies {
   memory: ConversationMemoryRepository;
   attachments: AttachmentCatalog;
   toolbox: Toolbox;
+  usageLimiter: UsageLimiter;
   llm: LlmProvider;
   compactConversation: CompactConversation;
   events: EventPublisher;
@@ -83,7 +85,8 @@ export class RunAgentTurn {
 
   /**
    * Valida e grava a mensagem do usuário. Erros desta fase (conversa
-   * inexistente, mensagem vazia, anexo inválido) são lançados normalmente.
+   * inexistente, mensagem vazia, anexo inválido, crédito esgotado) são
+   * lançados normalmente.
    * Devolve o stream da resposta; a partir dele, erros viram eventos `error`.
    */
   async start(input: RunAgentTurnInput): Promise<AsyncIterable<StreamEvent>> {
@@ -98,6 +101,7 @@ export class RunAgentTurn {
       input.conversationId,
       input.userId,
     );
+    await this.deps.usageLimiter.assertCanSpend(input.userId);
     const attachmentParts = input.attachmentIds.length
       ? await attachments.findPendingForMessage(input.attachmentIds, {
           userId: input.userId,
