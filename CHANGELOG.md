@@ -95,6 +95,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   consumo somando os tokens de raciocínio e tradução do estouro de contexto.
 - Memória da conversa no Postgres (`PrismaConversationMemory`): resumos de compactação e tamanho
   do contexto da última chamada.
+- Domínio de anexos: tipo detectado pelos primeiros bytes do conteúdo (PDF, PNG, JPEG e WEBP), e
+  não pelo nome ou tipo declarado, e nome de arquivo higienizado.
 
 ### Changed
 
