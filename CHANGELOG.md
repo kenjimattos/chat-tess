@@ -84,6 +84,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Domínio do agente: port `LlmProvider` independente de provedor, ports de tools e anexos,
   memória da conversa (resumos) e política de compactação, que só corta o histórico no início de
   um turno para nunca separar uma chamada de tool do resultado.
+- Compactação automática do histórico (`CompactConversation`): resume as mensagens antigas com o
+  LLM, mantém as recentes intactas, acumula resumos anteriores e preserva as mensagens originais.
 
 ### Changed
 
