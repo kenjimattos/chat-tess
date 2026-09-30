@@ -12,7 +12,7 @@
 #
 # Pré-requisitos: gcloud autenticado, faturamento ativo no projeto e as variáveis
 # GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET definidas no ambiente ou no
-# .env da raiz. ALLOWED_EMAILS (opcional) é lido da mesma forma.
+# .env da raiz. ALLOWED_EMAILS e ADMIN_EMAILS (opcionais) são lidos da mesma forma.
 
 set -euo pipefail
 
@@ -58,6 +58,7 @@ create_secret_if_missing() {
 GOOGLE_OAUTH_CLIENT_ID="$(read_setting GOOGLE_OAUTH_CLIENT_ID)"
 GOOGLE_OAUTH_CLIENT_SECRET="$(read_setting GOOGLE_OAUTH_CLIENT_SECRET)"
 ALLOWED_EMAILS="$(read_setting ALLOWED_EMAILS)"
+ADMIN_EMAILS="$(read_setting ADMIN_EMAILS)"
 : "${GOOGLE_OAUTH_CLIENT_ID:?Defina GOOGLE_OAUTH_CLIENT_ID no ambiente ou no .env}"
 : "${GOOGLE_OAUTH_CLIENT_SECRET:?Defina GOOGLE_OAUTH_CLIENT_SECRET no ambiente ou no .env}"
 
@@ -138,6 +139,7 @@ PUBLIC_BASE_URL: "${SERVICE_URL}"
 AUTH_MODE: "google"
 GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_OAUTH_CLIENT_ID}"
 ALLOWED_EMAILS: "${ALLOWED_EMAILS}"
+ADMIN_EMAILS: "${ADMIN_EMAILS}"
 LLM_MODE: "gemini"
 GCP_PROJECT_ID: "${PROJECT_ID}"
 GCP_LOCATION: "global"

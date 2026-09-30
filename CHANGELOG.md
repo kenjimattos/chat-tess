@@ -170,3 +170,5 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 - Rotas de configuração de tools (`/api/tools`) montadas na aplicação; o commit que as adicionou
   não as registrou no composition root.
+- `infra/provision.sh` passa `ADMIN_EMAILS` ao Cloud Run; antes, rodar o script de novo removia
+  o papel de administrador em produção.
