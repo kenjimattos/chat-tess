@@ -84,6 +84,7 @@ export function composeApplication(config: AppConfig): Application {
       agent.router,
       audit.router,
       billing.router,
+      tools.router,
     ],
     readinessChecks: {
       database: () => assertDatabaseIsReachable(database),

@@ -162,3 +162,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `infra/provision.sh` usa o projeto ativo no `gcloud`, cria os segredos da sessão e do OAuth,
   concede a permissão de build exigida em projetos novos e já conhece a URL do serviço antes do
   primeiro deploy.
+
+### Fixed
+
+- Rotas de configuração de tools (`/api/tools`) montadas na aplicação; o commit que as adicionou
+  não as registrou no composition root.
