@@ -121,13 +121,6 @@ Políticas e comportamentos que o usuário percebe. Todos configuráveis sem mud
 - Na POC, compartilhar é **só visualizar**: o dono gera um link, quem o abre vê a conversa sem poder enviar mensagens, e o dono pode revogá-lo quando quiser.
 - O link mostra a conversa no estado atual, inclusive mensagens enviadas depois de compartilhar. O token é aleatório e longo.
 - **Só usuários autenticados abrem o link**, ou seja, e-mails de `ALLOWED_EMAILS` e administradores de `ADMIN_EMAILS`. Quem não está logado é levado ao login e volta ao link depois. Motivos: um link vazado não expõe a conversa (nem anexos) a quem está fora da lista; o acesso fica na auditoria com o usuário que visualizou; e reaproveita a autenticação existente, sem uma rota pública a mais para proteger. Custo: compartilhar com alguém de fora exige incluí-lo na lista. Link público, se produto quiser, é um campo de visibilidade na mesma tabela.
-- **Colaboração (várias pessoas conversando no mesmo chat) fica para depois.** Custo estimado de fazer agora:
-  - créditos: decidir quem paga cada turno (quem enviou ou o dono) e o que acontece quando um deles fica sem saldo;
-  - concorrência: a reserva de "1 resposta por conversa" passa a valer entre usuários, e é preciso explicar na tela por que um não pode enviar enquanto o outro espera resposta;
-  - tempo real: quem está com a conversa aberta precisa receber as respostas iniciadas por outra pessoa, o que exige um canal de eventos (SSE ou WebSocket) além do stream do próprio turno;
-  - permissões e privacidade: papéis (dono, editor, leitor), convites, anexos e dados de conectores (Drive, Gmail) de um usuário expostos aos demais;
-  - estimativa de 2 a 3 dias com testes, contra meio dia para o link somente leitura.
-- Oportunidade de expansão: a tabela de compartilhamento já pode ganhar um campo de papel; quando houver colaboração, "leitor" continua sendo o link atual e "editor" reaproveita a reserva de turnos e os créditos existentes.
 
 **Segurança de conteúdo**
 
