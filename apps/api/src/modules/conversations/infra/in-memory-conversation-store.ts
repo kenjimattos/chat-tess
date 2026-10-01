@@ -1,3 +1,4 @@
+import type { MessagePart } from '@chat-tess/shared';
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../../../shared/time/clock';
 import type { Conversation, Message } from '../domain/conversation';
@@ -75,6 +76,23 @@ export class InMemoryConversationStore
   async listByConversation(conversationId: string, afterSequence = 0): Promise<Message[]> {
     const messages = this.messagesByConversation.get(conversationId) ?? [];
     return messages.filter((message) => message.sequence > afterSequence);
+  }
+
+  async replaceParts(messageId: string, parts: MessagePart[]): Promise<void> {
+    for (const [conversationId, messages] of this.messagesByConversation) {
+      this.messagesByConversation.set(
+        conversationId,
+        messages.map((message) => (message.id === messageId ? { ...message, parts } : message)),
+      );
+    }
+  }
+
+  async deleteAfter(conversationId: string, sequence: number): Promise<void> {
+    const messages = this.messagesByConversation.get(conversationId) ?? [];
+    this.messagesByConversation.set(
+      conversationId,
+      messages.filter((message) => message.sequence <= sequence),
+    );
   }
 
   async listPage(

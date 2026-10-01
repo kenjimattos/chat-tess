@@ -102,6 +102,38 @@ describe('repositórios Prisma de conversas e mensagens', () => {
     expect(withoutTools.hasEarlier).toBe(true);
   });
 
+  it('apaga as mensagens posteriores a uma sequência e reaproveita as sequências', async () => {
+    const conversation = await conversations.create(anaId, 'Refeita');
+    for (const text of ['pergunta', 'resposta antiga']) {
+      await messages.append(conversation.id, { role: 'user', parts: [{ type: 'text', text }] });
+    }
+
+    await messages.deleteAfter(conversation.id, 1);
+    await messages.append(conversation.id, {
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'resposta nova' }],
+    });
+
+    const listed = await messages.listByConversation(conversation.id);
+    expect(listed.map(({ sequence, parts }) => [sequence, parts])).toEqual([
+      [1, [{ type: 'text', text: 'pergunta' }]],
+      [2, [{ type: 'text', text: 'resposta nova' }]],
+    ]);
+  });
+
+  it('troca o conteúdo de uma mensagem', async () => {
+    const conversation = await conversations.create(anaId, 'Editada');
+    const message = await messages.append(conversation.id, {
+      role: 'user',
+      parts: [{ type: 'text', text: 'antes' }],
+    });
+
+    await messages.replaceParts(message.id, [{ type: 'text', text: 'depois' }]);
+
+    const [edited] = await messages.listByConversation(conversation.id);
+    expect(edited?.parts).toEqual([{ type: 'text', text: 'depois' }]);
+  });
+
   it('não repete a sequência em gravações simultâneas', async () => {
     const conversation = await conversations.create(anaId, 'Concorrência');
 

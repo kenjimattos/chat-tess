@@ -40,6 +40,10 @@ export interface MessageRepository {
    * o agente usa para não carregar o que o resumo da conversa já cobre.
    */
   listByConversation(conversationId: string, afterSequence?: number): Promise<Message[]>;
+  /** Troca o conteúdo de uma mensagem já gravada. */
+  replaceParts(messageId: string, parts: MessagePart[]): Promise<void>;
+  /** Apaga as mensagens posteriores a `sequence`, para refazer o fim da conversa. */
+  deleteAfter(conversationId: string, sequence: number): Promise<void>;
   /** Uma página do histórico para exibição, das mensagens mais recentes para as mais antigas. */
   listPage(conversationId: string, request: MessagePageRequest): Promise<MessagePage>;
 }

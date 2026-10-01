@@ -367,6 +367,131 @@ describe('RunAgentTurn', () => {
     });
   });
 
+  describe('reenvio da última mensagem', () => {
+    async function resend(agent: RunAgentTurn, text?: string) {
+      return collect(await agent.resend({ userId: ANA, conversationId, text }));
+    }
+
+    async function savedMessages() {
+      const saved = await store.listByConversation(conversationId);
+      return saved.map(({ role, parts }) => [role, parts]);
+    }
+
+    it('substitui a resposta anterior por uma nova para a mesma pergunta', async () => {
+      await seedHistory(2);
+      const llm = ScriptedLlmProvider.replyingInOrder({ text: 'resposta nova' });
+
+      const streamed = await resend(buildAgent(llm));
+
+      expect(await savedMessages()).toEqual([
+        ['user', [{ type: 'text', text: 'pergunta 1' }]],
+        ['assistant', [{ type: 'text', text: 'resposta 1' }]],
+        ['user', [{ type: 'text', text: 'pergunta 2' }]],
+        ['assistant', [{ type: 'text', text: 'resposta nova' }]],
+      ]);
+      expect(textOf(streamed)).toBe('resposta nova');
+      expect(llm.requests[0]?.messages.at(-1)).toEqual({
+        role: 'user',
+        parts: [{ type: 'text', text: 'pergunta 2' }],
+      });
+    });
+
+    it('apaga também as chamadas de tools do turno refeito', async () => {
+      const call = { type: 'tool_call' as const, callId: 'c1', toolName: 'weather', input: {} };
+      const toolbox = new FakeToolbox({ weather: () => 'sol' });
+      const agent = buildAgent(
+        ScriptedLlmProvider.replyingInOrder(
+          { toolCalls: [call] },
+          { text: 'Faz sol.' },
+          { text: 'Sem consultar: não sei.' },
+        ),
+        { toolbox },
+      );
+      await send(agent, 'Clima?');
+
+      await resend(agent);
+
+      expect(await savedMessages()).toEqual([
+        ['user', [{ type: 'text', text: 'Clima?' }]],
+        ['assistant', [{ type: 'text', text: 'Sem consultar: não sei.' }]],
+      ]);
+    });
+
+    it('edita o texto da última mensagem e mantém os anexos dela', async () => {
+      const pdf = {
+        type: 'attachment' as const,
+        attachmentId: 'att-pdf',
+        fileName: 'contrato.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 2048,
+      };
+      attachments.add(pdf, { userId: ANA, conversationId });
+      const agent = buildAgent(
+        ScriptedLlmProvider.replyingInOrder({ text: 'Resumo.' }, { text: 'Tradução.' }),
+      );
+      await send(agent, 'Resuma', { attachmentIds: ['att-pdf'] });
+
+      await resend(agent, '  Traduza  ');
+
+      expect(await savedMessages()).toEqual([
+        ['user', [{ type: 'text', text: 'Traduza' }, pdf]],
+        ['assistant', [{ type: 'text', text: 'Tradução.' }]],
+      ]);
+    });
+
+    it('registra o reenvio e se a mensagem foi editada', async () => {
+      await seedHistory(1);
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder({ text: 'a' }, { text: 'b' }));
+      const [question] = await store.listByConversation(conversationId);
+
+      await resend(agent);
+      await resend(agent, 'pergunta melhor');
+
+      expect(events.ofType('message.resent').map(({ payload }) => payload)).toEqual([
+        { conversationId, messageId: question?.id, edited: false },
+        { conversationId, messageId: question?.id, edited: true },
+      ]);
+    });
+
+    it('recusa quando a conversa ainda não tem mensagem do usuário', async () => {
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      await expect(resend(agent)).rejects.toMatchObject({ code: 'no_message_to_resend' });
+      expect(activeTurns.activeCount).toBe(0);
+    });
+
+    it('recusa a edição que deixaria a mensagem vazia, sem apagar a resposta', async () => {
+      await seedHistory(1);
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      await expect(resend(agent, '   ')).rejects.toMatchObject({ code: 'empty_message' });
+      expect(await store.listByConversation(conversationId)).toHaveLength(2);
+    });
+
+    it('recusa sem crédito, sem apagar a resposta', async () => {
+      await seedHistory(1);
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder(), {
+        usageLimiter: {
+          assertCanSpend: async () => {
+            throw new AppError('limit_exceeded', 'credit_limit_reached', 'Sem crédito.');
+          },
+        },
+      });
+
+      await expect(resend(agent)).rejects.toMatchObject({ code: 'credit_limit_reached' });
+      expect(await store.listByConversation(conversationId)).toHaveLength(2);
+    });
+
+    it('recusa a conversa de outro usuário', async () => {
+      await seedHistory(1);
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      const resending = agent.resend({ userId: BIA, conversationId });
+
+      await expect(resending).rejects.toMatchObject({ code: 'conversation_not_found' });
+    });
+  });
+
   describe('tools', () => {
     const weatherCall = {
       type: 'tool_call' as const,

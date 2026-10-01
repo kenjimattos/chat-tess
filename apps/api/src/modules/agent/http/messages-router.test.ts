@@ -140,4 +140,40 @@ describe('POST /api/conversations/:id/messages', () => {
 
     expect(response.status).toBe(401);
   });
+
+  describe('POST /api/conversations/:id/messages/last/resend', () => {
+    const resend = (body?: object) =>
+      request(app)
+        .post(`/api/conversations/${conversationId}/messages/last/resend`)
+        .set(TEST_USER_HEADER, ANA)
+        .send(body);
+
+    it('refaz o último turno e responde em Server-Sent Events', async () => {
+      await send(conversationId, { text: 'Oi' });
+
+      const response = await resend();
+
+      expect(response.status).toBe(200);
+      expect(parseEventStream(response.text).map(({ event }) => event)).toEqual([
+        'text_delta',
+        'usage',
+        'done',
+      ]);
+    });
+
+    it('aceita o novo texto da mensagem', async () => {
+      await send(conversationId, { text: 'Oi' });
+
+      const response = await resend({ text: 'Olá' });
+
+      expect(response.status).toBe(200);
+    });
+
+    it('responde em JSON, antes do stream, quando não há mensagem para reenviar', async () => {
+      const response = await resend();
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe('no_message_to_resend');
+    });
+  });
 });

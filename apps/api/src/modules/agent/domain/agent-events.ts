@@ -8,6 +8,12 @@ export type MessageSent = DomainEvent<
   { conversationId: string; messageId: string; attachmentCount: number }
 >;
 
+/** O usuário refez o último turno; `edited` diz se ele mudou o texto da mensagem antes. */
+export type MessageResent = DomainEvent<
+  'message.resent',
+  { conversationId: string; messageId: string; edited: boolean }
+>;
+
 /** Uma chamada ao LLM terminou; base para o consumo de créditos. */
 export type LlmCallCompleted = DomainEvent<
   'llm.call_completed',

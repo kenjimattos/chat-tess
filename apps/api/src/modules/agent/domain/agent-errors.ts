@@ -6,6 +6,16 @@ export class EmptyMessageError extends AppError {
   }
 }
 
+export class NoMessageToResendError extends AppError {
+  constructor() {
+    super(
+      'validation',
+      'no_message_to_resend',
+      'Esta conversa ainda não tem uma mensagem sua para reenviar.',
+    );
+  }
+}
+
 /** Lançado pelo adapter quando o contexto enviado passa do limite do modelo. */
 export class ContextWindowExceededError extends AppError {
   constructor() {

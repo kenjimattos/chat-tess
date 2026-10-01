@@ -37,6 +37,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   vagas do Cloud Run, conexões do banco, reserva de turno, auditoria síncrona, retenção e cota do
   Gemini), quando cada um aparece e a correção. Substitui a nota sobre uploads, que atribuía ao
   rate limit um teto que ele não impõe.
+- Refazer o último turno: `POST /api/conversations/:id/messages/last/resend` apaga a resposta à
+  última mensagem do usuário e gera outra, em stream. Com `text`, edita a mensagem antes, mantendo
+  os anexos dela. A resposta anterior é substituída, não guardada; valem o rate limit, o crédito e
+  a reserva de turno do envio normal, e a auditoria registra `message.resent`.
 - Anexos pendentes na API: `GET /api/conversations/:id/attachments/pending` lista o que já subiu
   e ainda não foi enviado em uma mensagem, e `DELETE /api/attachments/:id` remove um deles,
   apagando o registro e o arquivo no armazenamento (`attachment.removed` na auditoria). Anexo já

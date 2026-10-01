@@ -26,10 +26,16 @@ import {
 import {
   ContextWindowExceededError,
   EmptyMessageError,
+  NoMessageToResendError,
   ResponseBlockedError,
   ResponseTruncatedError,
 } from '../domain/agent-errors';
-import type { AgentTurnFailed, LlmCallCompleted, MessageSent } from '../domain/agent-events';
+import type {
+  AgentTurnFailed,
+  LlmCallCompleted,
+  MessageResent,
+  MessageSent,
+} from '../domain/agent-events';
 import type { AttachmentCatalog } from '../domain/attachment-catalog';
 import { shouldCompact, type CompactionThreshold } from '../domain/compaction-policy';
 import type {
@@ -43,13 +49,22 @@ import type { UsageLimiter } from '../domain/usage-limiter';
 import { buildLlmMessages } from './build-llm-messages';
 import type { CompactConversation } from './compact-conversation';
 
-export interface RunAgentTurnInput {
+/** O que todo pedido de turno traz. */
+interface TurnRequest {
   userId: string;
   conversationId: string;
-  text: string;
-  attachmentIds: string[];
   /** Disparado quando o cliente desconecta; interrompe a geração. */
   signal?: AbortSignal;
+}
+
+export interface RunAgentTurnInput extends TurnRequest {
+  text: string;
+  attachmentIds: string[];
+}
+
+export interface ResendLastMessageInput extends TurnRequest {
+  /** Novo texto da mensagem; sem ele, a mensagem é reenviada como está. */
+  text?: string;
 }
 
 export interface AgentSettings extends CompactionThreshold {
@@ -115,28 +130,54 @@ export class RunAgentTurn {
    * Devolve o stream da resposta; a partir dele, erros viram eventos `error`.
    */
   async start(input: RunAgentTurnInput): Promise<AsyncIterable<StreamEvent>> {
-    const { conversations, attachments } = this.deps;
     const text = input.text.trim();
     if (!text && input.attachmentIds.length === 0) {
       throw new EmptyMessageError();
     }
 
-    const conversation = await findOwnedConversation(
-      conversations,
-      input.conversationId,
-      input.userId,
-    );
-    const turnId = await this.reserveTurn(input.userId, conversation.id);
-
-    try {
-      await this.deps.usageLimiter.assertCanSpend(input.userId);
+    return this.beginTurn(input, async (conversation) => {
       const attachmentParts = input.attachmentIds.length
-        ? await attachments.findPendingForMessage(input.attachmentIds, {
+        ? await this.deps.attachments.findPendingForMessage(input.attachmentIds, {
             userId: input.userId,
             conversationId: conversation.id,
           })
         : [];
       await this.saveUserMessage(input.userId, conversation, text, attachmentParts);
+      return text;
+    });
+  }
+
+  /**
+   * Refaz o último turno: apaga a resposta à última mensagem do usuário e gera
+   * outra. Com `text`, a mensagem é editada antes; os anexos dela continuam.
+   * A resposta anterior é substituída, não guardada. Erros e stream como em `start`.
+   */
+  async resend(input: ResendLastMessageInput): Promise<AsyncIterable<StreamEvent>> {
+    return this.beginTurn(input, (conversation) =>
+      this.rewindToLastUserMessage(input.userId, conversation, input.text),
+    );
+  }
+
+  /**
+   * Passos comuns a todo turno: confere a conversa, reserva o turno e confere
+   * o crédito. `prepareHistory` deixa a mensagem do usuário no fim do
+   * histórico e devolve o texto dela.
+   */
+  private async beginTurn(
+    { userId, conversationId, signal }: TurnRequest,
+    prepareHistory: (conversation: Conversation) => Promise<string>,
+  ): Promise<AsyncIterable<StreamEvent>> {
+    const conversation = await findOwnedConversation(
+      this.deps.conversations,
+      conversationId,
+      userId,
+    );
+    const turnId = await this.reserveTurn(userId, conversation.id);
+
+    let incomingText: string;
+    try {
+      await this.deps.usageLimiter.assertCanSpend(userId);
+      incomingText = await prepareHistory(conversation);
     } catch (error) {
       await this.deps.activeTurns.release(turnId);
       throw error;
@@ -144,13 +185,13 @@ export class RunAgentTurn {
 
     const turn: Turn = {
       id: turnId,
-      userId: input.userId,
+      userId,
       conversation,
-      signal: input.signal,
+      signal,
       summary: null,
       hasForcedCompaction: false,
     };
-    return this.respond(turn, text);
+    return this.respond(turn, incomingText);
   }
 
   private async reserveTurn(userId: string, conversationId: string): Promise<string> {
@@ -208,6 +249,47 @@ export class RunAgentTurn {
         attachmentCount: attachmentParts.length,
       },
     } satisfies MessageSent);
+  }
+
+  /**
+   * Volta a conversa ao ponto em que a última mensagem do usuário acabou de
+   * chegar: apaga o que veio depois dela e, se houver texto novo, troca o dela.
+   */
+  private async rewindToLastUserMessage(
+    userId: string,
+    conversation: Conversation,
+    newText: string | undefined,
+  ): Promise<string> {
+    const { messages } = await this.deps.messages.listPage(conversation.id, {
+      limit: 1,
+      roles: ['user'],
+    });
+    const lastUserMessage = messages[0];
+    if (!lastUserMessage) {
+      throw new NoMessageToResendError();
+    }
+
+    const isEdited = newText !== undefined;
+    const parts = isEdited
+      ? withText(lastUserMessage.parts, newText.trim())
+      : lastUserMessage.parts;
+    if (parts.length === 0) {
+      throw new EmptyMessageError();
+    }
+
+    await this.deps.messages.deleteAfter(conversation.id, lastUserMessage.sequence);
+    if (isEdited) {
+      await this.deps.messages.replaceParts(lastUserMessage.id, parts);
+    }
+
+    await this.deps.events.publish({
+      type: 'message.resent',
+      occurredAt: this.deps.clock.now(),
+      actorUserId: userId,
+      payload: { conversationId: conversation.id, messageId: lastUserMessage.id, edited: isEdited },
+    } satisfies MessageResent);
+
+    return textOf(parts);
   }
 
   private async *respond(turn: Turn, incomingText: string): AsyncGenerator<StreamEvent> {
@@ -457,4 +539,14 @@ export class RunAgentTurn {
 
     return { type: 'error', code, message };
   }
+}
+
+/** As partes da mensagem com o texto trocado, mantendo os anexos. */
+function withText(parts: readonly MessagePart[], text: string): MessagePart[] {
+  const attachments = parts.filter((part) => part.type === 'attachment');
+  return [...(text ? [{ type: 'text' as const, text }] : []), ...attachments];
+}
+
+function textOf(parts: readonly MessagePart[]): string {
+  return parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n');
 }

@@ -1,4 +1,4 @@
-import { messagePartsSchema } from '@chat-tess/shared';
+import { messagePartsSchema, type MessagePart } from '@chat-tess/shared';
 import type { Database } from '../../../shared/database/database';
 import type {
   Message as MessageRecord,
@@ -65,6 +65,19 @@ export class PrismaMessageRepository implements MessageRepository {
       orderBy: { sequence: 'asc' },
     });
     return records.map(toMessage);
+  }
+
+  async replaceParts(messageId: string, parts: MessagePart[]): Promise<void> {
+    await this.database.message.update({
+      where: { id: messageId },
+      data: { parts: parts as Prisma.InputJsonValue },
+    });
+  }
+
+  async deleteAfter(conversationId: string, sequence: number): Promise<void> {
+    await this.database.message.deleteMany({
+      where: { conversationId, sequence: { gt: sequence } },
+    });
   }
 
   async listPage(
