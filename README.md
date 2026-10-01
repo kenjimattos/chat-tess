@@ -36,7 +36,7 @@ Abra http://localhost:5173.
 
 ## Testes
 
-São 75 arquivos de teste unitário e de integração (Vitest) e 13 specs ponta a ponta (Playwright),
+São 77 arquivos de teste unitário e de integração (Vitest) e 14 specs ponta a ponta (Playwright),
 que rodam no CI antes de todo deploy.
 
 Os specs e2e usam o navegador contra a API e o Postgres reais, com um LLM roteirizado no lugar do
@@ -44,6 +44,7 @@ Gemini. Cobrem:
 
 - login, lista de permitidos e sessão;
 - conversas: envio, histórico, troca de conversa com resposta em andamento, renomear e apagar;
+- histórico em páginas, na conversa do dono e no link compartilhado;
 - anexos de imagem e PDF;
 - compactação automática do histórico;
 - tools (busca e scraping), preferências e auditoria de cada execução;

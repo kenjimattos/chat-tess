@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Markdown } from '../../components/Markdown';
 import { Composer } from './Composer';
+import { EarlierMessagesButton } from './EarlierMessagesButton';
 import { MessageBubble } from './MessageBubble';
 import { useGradualText } from './gradual-text';
 import type { StreamingReply, ToolActivity } from './streaming-reply';
 import { useChat } from './useChat';
-import { scrollToBottom, useScrollPosition } from './useScrollPosition';
+import { scrollToBottom, useKeepPositionOnPrepend, useScrollPosition } from './useScrollPosition';
 
 export interface ChatViewProps {
   conversationId: string;
@@ -13,14 +14,21 @@ export interface ChatViewProps {
 }
 
 export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
-  const { messages, isLoading, loadError, reply, isStreaming, send, stop } = useChat(
-    conversationId,
-    {
-      onTurnFinished,
-    },
-  );
+  const {
+    messages,
+    isLoading,
+    loadError,
+    hasEarlierMessages,
+    isLoadingEarlier,
+    loadEarlier,
+    reply,
+    isStreaming,
+    send,
+    stop,
+  } = useChat(conversationId, { onTurnFinished });
   const scrollArea = useRef<HTMLDivElement>(null);
   const { hasContentBelow } = useScrollPosition(scrollArea);
+  const { rememberPosition } = useKeepPositionOnPrepend(scrollArea, messages[0]?.id);
 
   // Rola até o fim só ao abrir a conversa. Enquanto a resposta chega, a tela
   // fica parada e o indicador avisa que há mais conteúdo abaixo.
@@ -36,6 +44,11 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
     await sending;
   }
 
+  function loadEarlierKeepingPosition() {
+    rememberPosition();
+    void loadEarlier();
+  }
+
   return (
     <section aria-label="Chat" className="relative flex h-full min-h-0 flex-col">
       <div ref={scrollArea} className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -46,6 +59,9 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
           </p>
         )}
 
+        {hasEarlierMessages && (
+          <EarlierMessagesButton isLoading={isLoadingEarlier} onLoad={loadEarlierKeepingPosition} />
+        )}
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}

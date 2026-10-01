@@ -20,8 +20,17 @@ export async function createConversation(): Promise<ConversationSummary> {
   return conversationSummarySchema.parse(await sendJson('/conversations', 'POST', {}));
 }
 
-export async function getConversation(conversationId: string): Promise<ConversationDetail> {
-  return conversationDetailSchema.parse(await requestJson(`/conversations/${conversationId}`));
+/**
+ * Abre a conversa com a página mais recente do histórico ou, com
+ * `beforeSequence`, com as mensagens anteriores a essa sequência.
+ */
+export async function getConversation(
+  conversationId: string,
+  beforeSequence?: number,
+): Promise<ConversationDetail> {
+  return conversationDetailSchema.parse(
+    await requestJson(`/conversations/${conversationId}${earlierPageQuery(beforeSequence)}`),
+  );
 }
 
 export async function renameConversation(
@@ -58,8 +67,17 @@ export async function revokeConversationShare(conversationId: string): Promise<v
   await requestJson(`/conversations/${conversationId}/share`, { method: 'DELETE' });
 }
 
-export async function getSharedConversation(token: string): Promise<SharedConversation> {
-  return sharedConversationSchema.parse(await requestJson(`/shared/${token}`));
+export async function getSharedConversation(
+  token: string,
+  beforeSequence?: number,
+): Promise<SharedConversation> {
+  return sharedConversationSchema.parse(
+    await requestJson(`/shared/${token}${earlierPageQuery(beforeSequence)}`),
+  );
+}
+
+function earlierPageQuery(beforeSequence?: number): string {
+  return beforeSequence === undefined ? '' : `?before=${beforeSequence}`;
 }
 
 /** Endereço da página que mostra a conversa compartilhada. */

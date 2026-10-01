@@ -30,6 +30,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   as 50 mensagens mais recentes e `hasEarlierMessages`; `?before=<sequência>` traz as anteriores
   (`?limit=` até 100). Antes, abrir uma conversa trazia todas as mensagens, sem limite. No link
   compartilhado, a auditoria registra a abertura, não cada página.
+- Tela do chat e do link compartilhado abrem pelas mensagens mais recentes e mostram o botão
+  "Carregar mensagens anteriores" enquanto houver mais; a posição de leitura é mantida ao carregar.
+  Coberto pelo spec e2e `history.spec.ts`.
 - Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
   modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
   processada; as que passam do limite esperam a vez, sem falhar.
