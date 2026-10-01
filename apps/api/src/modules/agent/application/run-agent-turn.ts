@@ -5,6 +5,7 @@ import type {
   ToolCallPart,
   TokenUsage,
 } from '@chat-tess/shared';
+import { mapWithConcurrency } from '../../../shared/concurrency/map-with-concurrency';
 import { AppError } from '../../../shared/errors/app-error';
 import type { EventPublisher } from '../../../shared/events/domain-event';
 import type { Clock } from '../../../shared/time/clock';
@@ -54,6 +55,11 @@ export interface RunAgentTurnInput {
 export interface AgentSettings extends CompactionThreshold {
   /** Limite de rodadas de tool por turno, para evitar laços infinitos. */
   maxToolRounds: number;
+  /**
+   * Tools executando ao mesmo tempo numa rodada. O modelo pode pedir várias de
+   * uma vez, e cada página lida ocupa memória enquanto é processada.
+   */
+  maxParallelToolCalls: number;
   /** Respostas simultâneas por usuário, somando todas as conversas. */
   maxConcurrentTurnsPerUser: number;
 }
@@ -391,14 +397,15 @@ export class RunAgentTurn {
       };
     }
 
-    const results = await Promise.all(
-      calls.map((call) =>
+    const results = await mapWithConcurrency(
+      calls,
+      this.deps.settings.maxParallelToolCalls,
+      (call) =>
         this.deps.toolbox.execute(call, {
           userId: turn.userId,
           conversationId: turn.conversation.id,
           signal: turn.signal,
         }),
-      ),
     );
     await this.deps.messages.append(turn.conversation.id, { role: 'tool', parts: results });
 

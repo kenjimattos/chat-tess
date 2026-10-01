@@ -67,6 +67,7 @@ describe('POST /api/conversations/:id/messages', () => {
         contextTokenLimit: 100_000,
         thresholdRatio: 0.8,
         maxToolRounds: 3,
+        maxParallelToolCalls: 3,
         maxConcurrentTurnsPerUser: 2,
       },
     });

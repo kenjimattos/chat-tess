@@ -7,12 +7,6 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
-### Changed
-
-- O agente carrega do banco só as mensagens que o resumo da conversa ainda não cobre. Antes,
-  cada chamada ao LLM (até nove por turno, com tools) trazia e validava o histórico inteiro, que
-  cresce sem limite, para depois descartar em memória a parte já resumida.
-  
 ### Added
 
 - Compartilhamento de conversa por link somente leitura. O dono gera o link (token aleatório de
@@ -32,12 +26,18 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   por que a colaboração ficou para depois.
 - README: seção de testes, com o número de arquivos de teste e de specs e2e e o que os specs
   cobrem.
+- Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
+  modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
+  processada; as que passam do limite esperam a vez, sem falhar.
 
 ### Changed
 
 - Documentação, comentários e testes passam a chamar a plataforma do Google Cloud pelo nome atual,
   Agent Platform (antes Vertex AI). A opção `vertexai` do SDK mantém o nome antigo.
 - README deixa de citar conectores e MCP entre os recursos, porque ainda não foram entregues.
+- O agente carrega do banco só as mensagens que o resumo da conversa ainda não cobre. Antes,
+  cada chamada ao LLM (até nove por turno, com tools) trazia e validava o histórico inteiro, que
+  cresce sem limite, para depois descartar em memória a parte já resumida.
 
 ## [0.2.0] - 2026-09-30
 

@@ -118,6 +118,9 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
 - **Turnos simultâneos.** Uma resposta por conversa e até 3 por usuário
   (`MAX_CONCURRENT_TURNS_PER_USER`), com reserva atômica no banco. Impede respostas intercaladas no
   histórico e turnos paralelos passando juntos pela conferência de crédito.
+- **Tools em paralelo.** Até 3 tools executam ao mesmo tempo numa rodada
+  (`MAX_PARALLEL_TOOL_CALLS`) e até 8 rodadas por turno (`MAX_TOOL_ROUNDS`). O modelo pode pedir
+  várias páginas de uma vez; as que passam do limite esperam a vez.
 - **Resposta bloqueada.** Se o Gemini barrar a resposta por segurança ou cortá-la pelo limite de
   saída, o usuário recebe o motivo e a falha vai para a auditoria.
 - **Prompt injection.** Resultados de tools com conteúdo de terceiros

@@ -23,6 +23,7 @@ const defaultSettings: AgentSettings = {
   contextTokenLimit: 100_000,
   thresholdRatio: 0.8,
   maxToolRounds: 3,
+  maxParallelToolCalls: 3,
   maxConcurrentTurnsPerUser: 2,
 };
 
@@ -414,6 +415,29 @@ describe('RunAgentTurn', () => {
       await send(buildAgent(llm, { toolbox }), 'Oi');
 
       expect(llm.requests[0]?.tools.map(({ name }) => name)).toEqual(['weather']);
+    });
+
+    it('limita quantas tools executam ao mesmo tempo numa rodada', async () => {
+      let running = 0;
+      let peak = 0;
+      const toolbox = new FakeToolbox({
+        weather: async () => {
+          peak = Math.max(peak, ++running);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          running--;
+          return 'ok';
+        },
+      });
+      const calls = ['a', 'b', 'c', 'd', 'e'].map((callId) => ({ ...weatherCall, callId }));
+      const llm = ScriptedLlmProvider.replyingInOrder({ toolCalls: calls }, { text: 'Pronto.' });
+
+      await send(
+        buildAgent(llm, { toolbox, settings: { ...defaultSettings, maxParallelToolCalls: 2 } }),
+        'Clima em cinco cidades?',
+      );
+
+      expect(peak).toBe(2);
+      expect(toolbox.executions.map(({ call }) => call.callId)).toEqual(['a', 'b', 'c', 'd', 'e']);
     });
 
     it('devolve ao LLM a falha da tool, sem interromper o turno', async () => {

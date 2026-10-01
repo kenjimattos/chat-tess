@@ -57,6 +57,8 @@ const envSchema = z
     COMPACTION_THRESHOLD_RATIO: z.coerce.number().gt(0).lt(1).default(0.8),
     COMPACTION_KEEP_RECENT_MESSAGES: positiveInteger.default(6),
     MAX_TOOL_ROUNDS: positiveInteger.default(8),
+    /** Tools executando ao mesmo tempo numa rodada; as demais esperam a vez. */
+    MAX_PARALLEL_TOOL_CALLS: positiveInteger.default(3),
     /** Respostas em andamento ao mesmo tempo por usuário, somando todas as conversas. */
     MAX_CONCURRENT_TURNS_PER_USER: positiveInteger.default(3),
     /** Rate limit por usuário, em requisições por minuto. */
@@ -136,6 +138,7 @@ export interface AgentConfig {
   thresholdRatio: number;
   keepRecentMessages: number;
   maxToolRounds: number;
+  maxParallelToolCalls: number;
   maxConcurrentTurnsPerUser: number;
 }
 
@@ -206,6 +209,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
       thresholdRatio: env.COMPACTION_THRESHOLD_RATIO,
       keepRecentMessages: env.COMPACTION_KEEP_RECENT_MESSAGES,
       maxToolRounds: env.MAX_TOOL_ROUNDS,
+      maxParallelToolCalls: env.MAX_PARALLEL_TOOL_CALLS,
       maxConcurrentTurnsPerUser: env.MAX_CONCURRENT_TURNS_PER_USER,
     },
     files: {

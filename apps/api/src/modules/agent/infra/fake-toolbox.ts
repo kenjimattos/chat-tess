@@ -4,7 +4,7 @@ import type { ToolExecutionContext, Toolbox } from '../domain/toolbox';
 
 type FakeTool = (input: Record<string, unknown>) => unknown;
 
-/** Caixa de tools para testes: cada tool é uma função síncrona simples. */
+/** Caixa de tools para testes: cada tool é uma função simples, síncrona ou não. */
 export class FakeToolbox implements Toolbox {
   readonly executions: Array<{ call: ToolCallPart; context: ToolExecutionContext }> = [];
 
@@ -27,7 +27,7 @@ export class FakeToolbox implements Toolbox {
     }
 
     try {
-      return { ...base, output: tool(call.input), isError: false };
+      return { ...base, output: await tool(call.input), isError: false };
     } catch (error) {
       return {
         ...base,
