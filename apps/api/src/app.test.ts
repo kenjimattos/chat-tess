@@ -100,6 +100,17 @@ describe('createApp', () => {
       expect(response.text).toContain('chat-tess');
     });
 
+    it('envia as páginas com a política que só deixa carregar conteúdo da própria origem', async () => {
+      const response = await request(buildApp(undefined, webDistDir))
+        .get('/conversations/abc')
+        .set('Accept', 'text/html');
+
+      const policy = response.headers['content-security-policy'];
+      expect(policy).toContain("default-src 'self'");
+      expect(policy).toContain("img-src 'self' data: blob:");
+      expect(policy).toContain("frame-ancestors 'none'");
+    });
+
     it('não devolve o index.html para rota de API desconhecida', async () => {
       const response = await request(buildApp(undefined, webDistDir))
         .get('/api/inexistente')
