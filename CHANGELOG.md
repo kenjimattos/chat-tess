@@ -150,6 +150,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   externo, resumo da compactação, links clicáveis, resposta manipulada, busca e fadiga de
   autorização. Antes, o README dava o tema como coberto por um spec `@live`. Plano e decisões
   registram a revisão e por que a autorização encerra o turno em vez de segurar a conexão.
+- Anexos chegam ao modelo marcados como material a analisar: cada imagem ou PDF vai precedido de
+  um aviso de que instruções dentro do arquivo não são do usuário, e o system prompt diz que as
+  instruções vêm só do texto digitado. O usuário ainda pode pedir, no texto dele, que o modelo siga
+  o que está no arquivo. O resumo da compactação entra no system prompt rotulado como registro,
+  não como instrução, e a compactação é orientada a não copiar ordens vindas de anexos e de tools.
 
 ## [0.2.0] - 2026-09-30
 

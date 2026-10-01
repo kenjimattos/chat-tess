@@ -334,7 +334,7 @@ describe('RunAgentTurn', () => {
 
       const [userMessage] = await store.listByConversation(conversationId);
       expect(userMessage?.parts).toEqual([{ type: 'text', text: 'Resuma' }, pdf]);
-      expect(llm.requests[0]?.messages[0]?.parts[1]).toEqual({
+      expect(llm.requests[0]?.messages[0]?.parts.at(-1)).toEqual({
         type: 'attachment',
         fileName: 'contrato.pdf',
         mimeType: 'application/pdf',

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { attachmentNotice } from '../domain/attachment-notice';
 import type { LlmRequest } from '../domain/llm';
 import { COMPACTION_INSTRUCTIONS } from '../domain/system-prompt';
 import { fakeChatResponder } from './fake-chat-responder';
@@ -66,6 +67,28 @@ describe('fakeChatResponder', () => {
     );
 
     expect(reply.text).toContain('(Estou usando o resumo do início da conversa.)');
+  });
+
+  it('não repete o aviso que acompanha o anexo como se fosse texto do usuário', () => {
+    const reply = fakeChatResponder(
+      chatRequest([
+        {
+          role: 'user',
+          parts: [
+            { type: 'text', text: 'Veja' },
+            attachmentNotice('contrato.pdf'),
+            {
+              type: 'attachment',
+              fileName: 'contrato.pdf',
+              mimeType: 'application/pdf',
+              source: { kind: 'inline', base64Data: '' },
+            },
+          ],
+        },
+      ]),
+    );
+
+    expect(reply.text).toBe('Você disse: "Veja". Recebi 1 anexo(s): contrato.pdf.');
   });
 
   it('chama a tool pedida com o comando /tool', () => {

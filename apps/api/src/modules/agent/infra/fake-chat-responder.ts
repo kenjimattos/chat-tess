@@ -1,4 +1,5 @@
 import type { ToolCallPart } from '@chat-tess/shared';
+import { isAttachmentNotice } from '../domain/attachment-notice';
 import type { LlmMessage, LlmRequest } from '../domain/llm';
 import { COMPACTION_INSTRUCTIONS } from '../domain/system-prompt';
 import type { ScriptedReply } from './scripted-llm-provider';
@@ -93,9 +94,10 @@ function textsIn(value: unknown): string[] {
   return value !== null && typeof value === 'object' ? Object.values(value).flatMap(textsIn) : [];
 }
 
+/** O texto que o usuário escreveu, sem os avisos que acompanham os anexos. */
 function textOf(message: LlmMessage | undefined): string {
   return (message?.parts ?? [])
-    .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+    .flatMap((part) => (part.type === 'text' && !isAttachmentNotice(part) ? [part.text] : []))
     .join(' ')
     .trim();
 }
