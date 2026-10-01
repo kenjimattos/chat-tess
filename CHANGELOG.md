@@ -73,6 +73,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   (`pending_attachments_quota_exceeded`); enviar ou remover anexos libera o espaço. Fecha o caminho
   de acumular arquivos sem gastar crédito, criando várias conversas com anexos nunca enviados.
   Anexos já enviados continuam sem teto de armazenamento, limitados só pelo cap de crédito.
+- Plano e decisões: limites de anexos pendentes, a escolha da janela fixa no rate limit, o aviso
+  ao fechar a aba e, em aberto para produto, o teto de armazenamento do histórico.
 
 ### Fixed
 

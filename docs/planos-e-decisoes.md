@@ -5,13 +5,13 @@ Critério principal: código legível (clean code, SOLID) e testes.
 
 ## Estado
 
-| Versão | Conteúdo                                                                                                                             | Situação                                                                            |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| 0.1.0  | Fases 1 e 2 + deploy contínuo                                                                                                        | Em produção                                                                         |
-| 0.2.0  | Guardrails, limites de uso, desempenho, leitura da resposta                                                                          | Em produção (tag `v0.2.0`)                                                          |
-| 0.3.0  | Compartilhamento de conversa (requisito obrigatório), correções de escala, rascunho de mensagem, reenviar e editar a última mensagem | Em aberto na `develop` (`[Unreleased]`): falta fechar a versão e publicar na `main` |
-| 0.4.0  | MCP (fase 3)                                                                                                                         | A fazer                                                                             |
-| —      | Drive e Gmail (fase 3)                                                                                                               | Se houver tempo                                                                     |
+| Versão | Conteúdo                                                                                                                                                                                                    | Situação                                                                            |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 0.1.0  | Fases 1 e 2 + deploy contínuo                                                                                                                                                                               | Em produção                                                                         |
+| 0.2.0  | Guardrails, limites de uso, desempenho, leitura da resposta                                                                                                                                                 | Em produção (tag `v0.2.0`)                                                          |
+| 0.3.0  | Compartilhamento de conversa (requisito obrigatório), correções de escala, rascunho de mensagem, reenviar e editar a última mensagem, limites de anexos pendentes, aviso ao fechar a aba durante a resposta | Em aberto na `develop` (`[Unreleased]`): falta fechar a versão e publicar na `main` |
+| 0.4.0  | MCP (fase 3)                                                                                                                                                                                                | A fazer                                                                             |
+| —      | Drive e Gmail (fase 3)                                                                                                                                                                                      | Se houver tempo                                                                     |
 
 **Fase 1, entregue:** várias conversas com histórico persistido; imagens (visão) e PDFs; persistência de usuários, conversas, mensagens, configurações, tools e estado; compactação automática ao chegar no limite de contexto, sem interromper o chat.
 
@@ -27,6 +27,10 @@ Critério principal: código legível (clean code, SOLID) e testes.
 - Sinalizado, sem correção: anexos passando pela memória da instância (upload e download), teto de ~160 respostas simultâneas, conexões do `db-f1-micro`, conversa bloqueada por até 15 min quando a instância cai, auditoria síncrona, tabelas sem retenção e cota do Gemini compartilhada.
 
 **Rascunho de mensagem (01/10), na 0.3.0:** texto e anexos ainda não enviados continuam na conversa ao trocar de conversa e ao recarregar a página; o botão "Remover" apaga o arquivo no storage. O adapter do Cloud Storage ganhou testes unitários com um dublê do cliente.
+
+**Limites de anexos pendentes (01/10), na 0.3.0:** revisão do rate limit de upload mostrou que anexos subidos e nunca enviados não gastam crédito e não tinham teto. Agora cada conversa guarda até 10 anexos por enviar (o mesmo limite de uma mensagem) e cada usuário tem um teto de bytes pendentes somando todas as conversas (`MAX_PENDING_ATTACHMENTS_MB`, padrão 500 MB). A tela não deixa escolher mais arquivos do que cabem e para o envio em lote ao bater num limite.
+
+**Aviso ao fechar a aba (01/10), na 0.3.0:** com alguma resposta em andamento, o navegador pede confirmação antes de fechar ou recarregar a aba.
 
 ## Pendências, em ordem
 
@@ -65,6 +69,9 @@ não de técnica.
 - Créditos com incremento atômico no banco; rate limit por janela fixa e reserva de turnos com trava, ambos no Postgres, para valerem entre instâncias. A reserva de turnos também fecha a brecha de turnos paralelos furando o crédito.
 - O system prompt informa o modelo (ele se dizia "3.7"), e o consumo registra o `modelVersion` que o Agent Platform devolve.
 - Conteúdo de tools vindo de terceiros chega ao modelo marcado como externo, e o system prompt manda tratá-lo como dado (defesa contra prompt injection).
+- O rate limit ficou em **janela fixa**, e não deslizante. A janela fixa deixa passar até 2× o limite em torno da virada do minuto, mas esse pico é contido pelas outras travas: só 3 turnos rodam ao mesmo tempo por usuário e o cap de crédito limita o custo total. A janela deslizante guardaria mais estado por uma garantia de que a POC não precisa.
+- As travas de uso formam uma cadeia, cada uma cobrindo o que a anterior não cobre: rate limit (velocidade das requisições), teto de anexos pendentes (arquivos que não gastam crédito), turnos simultâneos (trabalho em andamento) e cap de crédito (custo total de LLM).
+- O teto de anexos pendentes é conferido antes de gravar, sem trava: uploads simultâneos feitos direto na API podem passar um pouco do limite. A tela sobe um arquivo por vez. Um índice em `attachments (user_id, message_id)` sustenta a soma.
 - Bloqueios e falhas vão para a auditoria como `agent.turn_failed`.
 
 **Infra e deploy**
@@ -78,7 +85,7 @@ não de técnica.
 
 - Critério para corrigir agora ou sinalizar: o que cresce com o uso de cada usuário (histórico, tools, arquivos) foi corrigido; o que depende do número de usuários simultâneos é dimensionamento de POC e fica documentado no README, com a correção indicada.
 - Upload direto ao Cloud Storage por URL assinada foi avaliado e adiado: exige fluxo em duas etapas, validação de tipo depois do upload, IAM e CORS no bucket e outro caminho para o storage local. O passo intermediário, se precisar, é streaming pela instância.
-- O upload continua acontecendo ao anexar, e não ao enviar a mensagem: o envio começa na hora e os erros de arquivo aparecem cedo. O que sobra de um rascunho abandonado fica visível e removível pelo usuário.
+- O upload continua acontecendo ao anexar, e não ao enviar a mensagem: o envio começa na hora e os erros de arquivo aparecem cedo. O que sobra de um rascunho abandonado fica visível e removível pelo usuário, e é limitado pelo teto de anexos pendentes.
 - Retenção de auditoria, consumo e chamadas de tools não foi implementada: o prazo é decisão de política e exige job agendado.
 - Os arquivos de uma conversa ficam numa pasta própria no storage (`users/{usuário}/conversations/{conversa}`); o módulo de arquivos reage ao evento `conversation.deleted` e apaga a pasta.
 
@@ -105,6 +112,8 @@ Políticas e comportamentos que o usuário percebe. Todos configuráveis sem mud
 - Créditos: **500 mil tokens por usuário, vitalício, sem renovação** (`DEFAULT_TOKEN_LIMIT`). Administradores ajustam por usuário.
 - Rate limit: 20 mensagens e 30 uploads por minuto por usuário (`RATE_LIMIT_*`).
 - Respostas simultâneas: 1 por conversa e 3 por usuário (`MAX_CONCURRENT_TURNS_PER_USER`).
+- Anexos: até 20 MB por arquivo (`MAX_UPLOAD_MB`) e 10 por mensagem. Ainda não enviados: até 10 por conversa e 500 MB por usuário, somando as conversas (`MAX_PENDING_ATTACHMENTS_MB`); enviar ou remover libera o espaço.
+- **Em aberto:** anexos já enviados em mensagens não têm teto de armazenamento. Hoje só o cap de crédito os limita, e de forma frouxa para imagens, que custam poucos tokens em relação ao tamanho. Um teto sobre o histórico bloquearia o usuário legítimo até ele apagar conversas; o que fazer com o histórico (teto, retenção por prazo, plano pago) é decisão de produto (01/10).
 - Orçamento de contexto de **100 mil tokens** (`CONTEXT_TOKEN_LIMIT`): acima disso, o início da conversa é resumido. Troca um pouco de fidelidade ao histórico por turnos mais baratos e rápidos.
 
 **Compartilhamento**
@@ -128,7 +137,7 @@ Políticas e comportamentos que o usuário percebe. Todos configuráveis sem mud
 **Experiência**
 
 - Sem instância mínima no Cloud Run: custo zero parado, em troca de um primeiro acesso mais lento (cold start).
-- Trocar de conversa não interrompe a resposta; fechar a aba interrompe. Corrigir exige gerar a resposta fora da requisição (fila e worker) e reconectar a tela; fica para depois da POC.
+- Trocar de conversa não interrompe a resposta; fechar a aba interrompe, e por isso o navegador pede confirmação antes de fechar ou recarregar com resposta em andamento. Corrigir de vez exige gerar a resposta fora da requisição (fila e worker) e reconectar a tela; fica para depois da POC.
 - A conversa abre pelas 50 mensagens mais recentes; o botão "Carregar mensagens anteriores" traz as mais antigas, mantendo a posição de leitura.
 - A última mensagem do usuário tem os botões "Editar" e "Reenviar": os dois refazem o turno e **substituem** a resposta anterior, sem guardar versões (decisão de 01/10; versões exigiriam mudar o modelo de mensagens e a compactação). Só a última mensagem; editar muda o texto e mantém os anexos; consome créditos e rate limit como um envio normal.
 - O rascunho (texto e anexos não enviados) fica como o usuário deixou ao trocar de conversa e ao recarregar. O texto vale por aba (`sessionStorage`); os anexos vêm da API. Não há como apagar uma mensagem individual, só a conversa inteira.
