@@ -8,7 +8,11 @@ type FakeTool = (input: Record<string, unknown>) => unknown;
 export class FakeToolbox implements Toolbox {
   readonly executions: Array<{ call: ToolCallPart; context: ToolExecutionContext }> = [];
 
-  constructor(private readonly tools: Record<string, FakeTool> = {}) {}
+  /** `toolsRequiringApproval`: nomes das tools que só executam com a autorização do usuário. */
+  constructor(
+    private readonly tools: Record<string, FakeTool> = {},
+    private readonly toolsRequiringApproval: string[] = [],
+  ) {}
 
   async definitionsFor(): Promise<LlmToolDefinition[]> {
     return Object.keys(this.tools).map((name) => ({
@@ -16,6 +20,10 @@ export class FakeToolbox implements Toolbox {
       description: `Tool de teste ${name}`,
       inputSchema: { type: 'object' },
     }));
+  }
+
+  async requiresApproval(call: ToolCallPart): Promise<boolean> {
+    return this.toolsRequiringApproval.includes(call.toolName);
   }
 
   async execute(call: ToolCallPart, context: ToolExecutionContext): Promise<ToolResultPart> {

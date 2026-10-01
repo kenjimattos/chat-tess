@@ -12,6 +12,7 @@ const webSearch: Tool = {
   description: 'Busca',
   inputSchema: { type: 'object' },
   returnsExternalContent: false,
+  requiresApproval: async () => false,
   execute: async () => 'ok',
 };
 

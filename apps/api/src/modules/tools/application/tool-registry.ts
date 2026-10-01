@@ -13,6 +13,7 @@ import type { ToolExecuted } from '../domain/tool-events';
  * pode desligar tools; as não configuradas ficam ligadas. Uma falha na tool
  * vira um resultado de erro que o LLM lê, e não uma exceção que interrompe o turno.
  * Resultados com conteúdo de terceiros chegam ao LLM marcados como externos.
+ * Cada tool diz quais chamadas dependem da autorização do usuário.
  */
 export class ToolRegistry implements Toolbox {
   constructor(
@@ -44,11 +45,15 @@ export class ToolRegistry implements Toolbox {
     return tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
   }
 
+  /** Tool inexistente ou desligada não pede autorização: a execução devolve o erro ao LLM. */
+  async requiresApproval(call: ToolCallPart, context: ToolExecutionContext): Promise<boolean> {
+    const tool = await this.enabledTool(call.toolName, context.userId);
+    return tool ? tool.requiresApproval(call.input, context) : false;
+  }
+
   async execute(call: ToolCallPart, context: ToolExecutionContext): Promise<ToolResultPart> {
     const startedAt = this.clock.now().getTime();
-    const tool = (await this.enabledToolsFor(context.userId)).find(
-      ({ name }) => name === call.toolName,
-    );
+    const tool = await this.enabledTool(call.toolName, context.userId);
 
     const { output, isError } = tool
       ? await runSafely(tool, call.input, context)
@@ -70,6 +75,10 @@ export class ToolRegistry implements Toolbox {
     } satisfies ToolExecuted);
 
     return { type: 'tool_result', callId: call.callId, toolName: call.toolName, output, isError };
+  }
+
+  private async enabledTool(toolName: string, userId: string): Promise<Tool | undefined> {
+    return (await this.enabledToolsFor(userId)).find(({ name }) => name === toolName);
   }
 
   private async enabledToolsFor(userId: string): Promise<Tool[]> {

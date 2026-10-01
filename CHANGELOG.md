@@ -120,6 +120,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   requisições só da própria origem, sem `object` e sem a página dentro de frames. É a segunda
   barreira contra o vazamento por conteúdo externo na tela: mesmo que ele chegue a ser renderizado,
   o navegador não faz a requisição para fora.
+- Tools passam a dizer quais chamadas dependem da autorização do usuário (`requiresApproval`),
+  olhando os argumentos de cada chamada. O registro de tools repassa a pergunta ao agente. É a base
+  para que ações que mudam algo fora da conversa, ou que podem levar dados dela a terceiros, não
+  sejam disparadas só por uma instrução escondida em conteúdo externo.
 
 ## [0.2.0] - 2026-09-30
 

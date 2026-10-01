@@ -14,6 +14,7 @@ function tool(name: string, execute: Tool['execute'], returnsExternalContent = f
     description: `Tool ${name}`,
     inputSchema: { type: 'object' },
     returnsExternalContent,
+    requiresApproval: async () => false,
     execute,
   };
 }
@@ -164,6 +165,32 @@ describe('ToolRegistry', () => {
         },
       },
     ]);
+  });
+
+  describe('autorização do usuário', () => {
+    const sendEmail: Tool = {
+      ...tool('send_email', async () => 'enviado'),
+      requiresApproval: async (input) => input.to !== 'ana@empresa.com',
+    };
+
+    it('pergunta à tool se a chamada depende da autorização do usuário', async () => {
+      const registry = registryWith([provider(sendEmail)]);
+
+      const toStranger = callOf('send_email', { to: 'fora@atacante.example' });
+      const toSelf = callOf('send_email', { to: 'ana@empresa.com' });
+
+      expect(await registry.requiresApproval(toStranger, context)).toBe(true);
+      expect(await registry.requiresApproval(toSelf, context)).toBe(false);
+    });
+
+    it('não pede autorização para tool inexistente ou desligada', async () => {
+      const preferences = new InMemoryToolPreferences();
+      await preferences.set('user-ana', 'send_email', false);
+      const registry = registryWith([provider(sendEmail)], preferences);
+
+      expect(await registry.requiresApproval(callOf('send_email'), context)).toBe(false);
+      expect(await registry.requiresApproval(callOf('inexistente'), context)).toBe(false);
+    });
   });
 
   describe('preferências do usuário', () => {

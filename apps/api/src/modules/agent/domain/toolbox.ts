@@ -11,6 +11,8 @@ export interface ToolExecutionContext {
 export interface Toolbox {
   /** Tools disponíveis para o usuário neste momento. */
   definitionsFor(userId: string): Promise<LlmToolDefinition[]>;
+  /** A chamada só pode executar depois de o usuário autorizar. */
+  requiresApproval(call: ToolCallPart, context: ToolExecutionContext): Promise<boolean>;
   /** Executa a chamada. Falhas voltam como resultado com `isError`, nunca como exceção. */
   execute(call: ToolCallPart, context: ToolExecutionContext): Promise<ToolResultPart>;
 }

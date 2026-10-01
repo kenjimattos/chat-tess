@@ -16,6 +16,12 @@ export interface Tool {
    * e-mails). O registro marca esse conteúdo como externo antes de devolvê-lo ao LLM.
    */
   readonly returnsExternalContent: boolean;
+  /**
+   * Diz se esta chamada só pode executar depois de o usuário autorizar. Vale para
+   * ações que mudam algo fora da conversa ou que podem levar dados dela a terceiros:
+   * uma instrução escondida em conteúdo externo não consegue dispará-las sozinha.
+   */
+  requiresApproval(input: Record<string, unknown>, context: ToolExecutionContext): Promise<boolean>;
   /** Devolve o resultado para o LLM. Erros lançados viram resultado com `isError`. */
   execute(input: Record<string, unknown>, context: ToolExecutionContext): Promise<unknown>;
 }

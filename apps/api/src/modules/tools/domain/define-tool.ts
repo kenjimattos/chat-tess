@@ -8,6 +8,8 @@ export interface ToolDefinition<TSchema extends z.ZodObject> {
   input: TSchema;
   /** Ver `Tool.returnsExternalContent`. */
   returnsExternalContent: boolean;
+  /** Ver `Tool.requiresApproval`. Sem ele, a tool nunca pede autorização. */
+  requiresApproval?(input: z.infer<TSchema>, context: ToolExecutionContext): Promise<boolean>;
   run(input: z.infer<TSchema>, context: ToolExecutionContext): Promise<unknown>;
 }
 
@@ -23,6 +25,11 @@ export function defineTool<TSchema extends z.ZodObject>(definition: ToolDefiniti
     description: definition.description,
     inputSchema,
     returnsExternalContent: definition.returnsExternalContent,
+    async requiresApproval(rawInput, context) {
+      // Argumentos inválidos não chegam a executar: não há o que autorizar.
+      const parsed = definition.input.safeParse(rawInput);
+      return parsed.success && (await definition.requiresApproval?.(parsed.data, context)) === true;
+    },
     async execute(rawInput, context) {
       const parsed = definition.input.safeParse(rawInput);
       if (!parsed.success) {
