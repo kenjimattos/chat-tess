@@ -2,6 +2,7 @@ import type { ConversationMessage } from '@chat-tess/shared';
 import { describe, expect, it } from 'vitest';
 import {
   EMPTY_HISTORY,
+  rewoundTo,
   withEarlierPage,
   withLatestPage,
   withMessage,
@@ -70,6 +71,20 @@ describe('histórico de mensagens em páginas', () => {
     });
 
     expect(idsOf(history)).toEqual(['m1', 'm2', 'm3', 'm4']);
+  });
+
+  it('volta ao ponto de uma mensagem, descartando as posteriores e usando a versão nova dela', () => {
+    const loaded = {
+      messages: [message(1), message(2), message(3), message(4)],
+      hasEarlierMessages: true,
+    };
+    const edited = { ...message(3), parts: [{ type: 'text' as const, text: 'editada' }] };
+
+    const history = rewoundTo(loaded, edited);
+
+    expect(idsOf(history)).toEqual(['m1', 'm2', 'm3']);
+    expect(history.messages.at(-1)).toBe(edited);
+    expect(history.hasEarlierMessages).toBe(true);
   });
 
   it('fica vazio quando a conversa não tem mensagens', () => {

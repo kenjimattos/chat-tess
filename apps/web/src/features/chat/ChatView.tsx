@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Markdown } from '../../components/Markdown';
 import { Composer } from './Composer';
 import { EarlierMessagesButton } from './EarlierMessagesButton';
+import { LastUserMessage } from './LastUserMessage';
 import { MessageBubble } from './MessageBubble';
 import { useGradualText } from './gradual-text';
 import type { StreamingReply, ToolActivity } from './streaming-reply';
@@ -24,6 +25,7 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
     reply,
     isStreaming,
     send,
+    resend,
     stop,
   } = useChat(conversationId, { onTurnFinished });
   const scrollArea = useRef<HTMLDivElement>(null);
@@ -44,6 +46,18 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
     await sending;
   }
 
+  // Só a última mensagem do usuário pode ser refeita, e só com a conversa parada
+  // e a mensagem já gravada (a provisória ainda não existe na API).
+  const lastUserMessage = messages.findLast((message) => message.role === 'user');
+  const canRedoLastTurn =
+    !isStreaming && lastUserMessage !== undefined && !lastUserMessage.id.startsWith('pending-');
+
+  async function resendAndShowQuestion(...args: Parameters<typeof resend>) {
+    const resending = resend(...args);
+    requestAnimationFrame(() => scrollToBottom(scrollArea.current));
+    await resending;
+  }
+
   function loadEarlierKeepingPosition() {
     rememberPosition();
     void loadEarlier();
@@ -62,9 +76,18 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
         {hasEarlierMessages && (
           <EarlierMessagesButton isLoading={isLoadingEarlier} onLoad={loadEarlierKeepingPosition} />
         )}
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
+        {messages.map((message) =>
+          canRedoLastTurn && message === lastUserMessage ? (
+            <LastUserMessage
+              key={message.id}
+              message={message}
+              onResend={() => void resendAndShowQuestion(message)}
+              onEdit={(text) => void resendAndShowQuestion(message, text)}
+            />
+          ) : (
+            <MessageBubble key={message.id} message={message} />
+          ),
+        )}
 
         {reply && <ReplyStatus reply={reply} isStreaming={isStreaming} />}
         {loadError && (

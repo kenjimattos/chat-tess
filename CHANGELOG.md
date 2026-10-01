@@ -41,6 +41,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   última mensagem do usuário e gera outra, em stream. Com `text`, edita a mensagem antes, mantendo
   os anexos dela. A resposta anterior é substituída, não guardada; valem o rate limit, o crédito e
   a reserva de turno do envio normal, e a auditoria registra `message.resent`.
+- Botões "Editar" e "Reenviar" na última mensagem do usuário. Reenviar gera outra resposta para
+  a mesma pergunta; editar troca o texto (os anexos continuam) e gera a resposta de novo. A
+  resposta anterior é substituída. Coberto pelo spec e2e `resend.spec.ts`.
 - Anexos pendentes na API: `GET /api/conversations/:id/attachments/pending` lista o que já subiu
   e ainda não foi enviado em uma mensagem, e `DELETE /api/attachments/:id` remove um deles,
   apagando o registro e o arquivo no armazenamento (`attachment.removed` na auditoria). Anexo já

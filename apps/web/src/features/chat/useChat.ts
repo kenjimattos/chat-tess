@@ -32,7 +32,7 @@ export function useChat(conversationId: string, { onTurnFinished }: UseChatOptio
     [conversationId],
   );
   const history = useMessageHistory(loadPage, finishedTurns);
-  const { messages, showImmediately } = history;
+  const { messages, showImmediately, rewindTo } = history;
 
   // Ao sair da conversa, uma resposta já terminada não precisa mais ser guardada.
   useEffect(() => () => activeTurns.dismiss(conversationId), [conversationId]);
@@ -47,6 +47,19 @@ export function useChat(conversationId: string, { onTurnFinished }: UseChatOptio
       );
     },
     [conversationId, messages, onTurnFinished, showImmediately],
+  );
+
+  /**
+   * Refaz o último turno a partir de `message`, a última mensagem do usuário.
+   * Com `newText`, a mensagem é editada antes. A resposta antiga sai da tela
+   * na hora; se a API recusar, ela volta quando o histórico é relido.
+   */
+  const resend = useCallback(
+    async (message: ConversationMessage, newText?: string) => {
+      rewindTo(newText === undefined ? message : withText(message, newText));
+      await activeTurns.resend(conversationId, { text: newText }, onTurnFinished);
+    },
+    [conversationId, onTurnFinished, rewindTo],
   );
 
   const stop = useCallback(() => activeTurns.stop(conversationId), [conversationId]);
@@ -67,7 +80,17 @@ export function useChat(conversationId: string, { onTurnFinished }: UseChatOptio
     reply,
     isStreaming,
     send,
+    resend,
     stop,
+  };
+}
+
+/** A mensagem com o texto trocado, mantendo os anexos. */
+function withText(message: ConversationMessage, text: string): ConversationMessage {
+  const attachments = message.parts.filter((part) => part.type === 'attachment');
+  return {
+    ...message,
+    parts: [...(text ? [{ type: 'text' as const, text }] : []), ...attachments],
   };
 }
 

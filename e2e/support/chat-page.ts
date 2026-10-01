@@ -15,7 +15,8 @@ export class ChatPage {
 
   constructor(private readonly page: Page) {
     this.messageInput = page.getByRole('textbox', { name: 'Mensagem' });
-    this.sendButton = page.getByRole('button', { name: 'Enviar' });
+    // Nome exato: "Reenviar" também contém "Enviar".
+    this.sendButton = page.getByRole('button', { name: 'Enviar', exact: true });
     this.conversationList = page.getByRole('navigation', { name: 'Conversas' });
   }
 

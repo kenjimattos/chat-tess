@@ -2,6 +2,7 @@ import type { ConversationMessage } from '@chat-tess/shared';
 import { useCallback, useEffect, useState } from 'react';
 import {
   EMPTY_HISTORY,
+  rewoundTo,
   withEarlierPage,
   withLatestPage,
   withMessage,
@@ -74,6 +75,12 @@ export function useMessageHistory<Page extends MessagePage>(
     [],
   );
 
+  /** Deixa `message` como a última da tela, descartando o que veio depois dela. */
+  const rewindTo = useCallback(
+    (message: ConversationMessage) => setHistory((current) => rewoundTo(current, message)),
+    [],
+  );
+
   return {
     messages: history.messages,
     hasEarlierMessages: history.hasEarlierMessages,
@@ -83,5 +90,6 @@ export function useMessageHistory<Page extends MessagePage>(
     loadError,
     loadEarlier,
     showImmediately,
+    rewindTo,
   };
 }

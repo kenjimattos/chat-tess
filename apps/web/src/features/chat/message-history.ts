@@ -37,6 +37,15 @@ export function withEarlierPage(history: MessageHistory, earlier: MessagePage): 
   };
 }
 
+/**
+ * Volta o histórico ao ponto em que `message` é a última: usado ao refazer o
+ * último turno, quando a resposta antiga sai da tela e a mensagem pode ter sido editada.
+ */
+export function rewoundTo(history: MessageHistory, message: ConversationMessage): MessageHistory {
+  const before = history.messages.filter((item) => item.sequence < message.sequence);
+  return { ...history, messages: [...before, message] };
+}
+
 export function withMessage(history: MessageHistory, message: ConversationMessage): MessageHistory {
   return { ...history, messages: [...history.messages, message] };
 }

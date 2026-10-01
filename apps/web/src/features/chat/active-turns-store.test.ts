@@ -96,6 +96,21 @@ describe('ActiveTurnsStore', () => {
     expect(onFinished).toHaveBeenCalledOnce();
   });
 
+  it('acompanha a resposta de um turno refeito', async () => {
+    const { stream, push, end } = controllableStream();
+    const resendLast = vi.fn(async () => stream);
+    const store = new ActiveTurnsStore(async () => stream, resendLast);
+
+    const turn = store.resend('a', { text: 'Pergunta editada' }, () => {});
+    push({ type: 'text_delta', text: 'Nova resposta' });
+    end();
+    await turn;
+
+    expect(resendLast).toHaveBeenCalledWith('a', { text: 'Pergunta editada' }, expect.anything());
+    expect(store.replyOf('a')).toMatchObject({ text: 'Nova resposta', isFinished: true });
+    expect(store.finishedTurnsOf('a')).toBe(1);
+  });
+
   it('interrompe só a conversa pedida, sem mostrar erro', async () => {
     const store = new ActiveTurnsStore(
       (_id, _message, signal) =>

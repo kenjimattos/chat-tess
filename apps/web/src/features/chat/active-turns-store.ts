@@ -1,11 +1,17 @@
-import type { SendMessageRequest, StreamEvent } from '@chat-tess/shared';
+import type { ResendLastMessageRequest, SendMessageRequest, StreamEvent } from '@chat-tess/shared';
 import { ApiError } from '../../api/http-client';
-import { sendMessage } from '../../api/messages-api';
+import { resendLastMessage, sendMessage } from '../../api/messages-api';
 import { applyStreamEvent, emptyReply, type StreamingReply } from './streaming-reply';
 
 type SendMessage = (
   conversationId: string,
   message: SendMessageRequest,
+  signal: AbortSignal,
+) => Promise<AsyncIterable<StreamEvent>>;
+
+type ResendLastMessage = (
+  conversationId: string,
+  request: ResendLastMessageRequest,
   signal: AbortSignal,
 ) => Promise<AsyncIterable<StreamEvent>>;
 
@@ -29,7 +35,10 @@ export class ActiveTurnsStore {
   private readonly listeners = new Set<() => void>();
   private respondingIds: ReadonlySet<string> = new Set();
 
-  constructor(private readonly send: SendMessage = sendMessage) {}
+  constructor(
+    private readonly send: SendMessage = sendMessage,
+    private readonly resendLast: ResendLastMessage = resendLastMessage,
+  ) {}
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -51,16 +60,41 @@ export class ActiveTurnsStore {
    * Envia a mensagem e acompanha a resposta até o fim, mesmo que a tela da
    * conversa seja fechada. `onFinished` roda quando o turno termina, com ou sem erro.
    */
-  async start(
+  start(
     conversationId: string,
     message: SendMessageRequest,
+    onFinished: () => void,
+  ): Promise<void> {
+    return this.follow(
+      conversationId,
+      (signal) => this.send(conversationId, message, signal),
+      onFinished,
+    );
+  }
+
+  /** Refaz o último turno da conversa e acompanha a nova resposta, como em `start`. */
+  resend(
+    conversationId: string,
+    request: ResendLastMessageRequest,
+    onFinished: () => void,
+  ): Promise<void> {
+    return this.follow(
+      conversationId,
+      (signal) => this.resendLast(conversationId, request, signal),
+      onFinished,
+    );
+  }
+
+  private async follow(
+    conversationId: string,
+    openReply: (signal: AbortSignal) => Promise<AsyncIterable<StreamEvent>>,
     onFinished: () => void,
   ): Promise<void> {
     const controller = new AbortController();
     this.update(conversationId, { reply: emptyReply, controller });
 
     try {
-      const events = await this.send(conversationId, message, controller.signal);
+      const events = await openReply(controller.signal);
       for await (const event of events) {
         this.updateReply(conversationId, (reply) => applyStreamEvent(reply, event));
       }
