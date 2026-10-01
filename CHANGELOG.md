@@ -155,6 +155,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   instruções vêm só do texto digitado. O usuário ainda pode pedir, no texto dele, que o modelo siga
   o que está no arquivo. O resumo da compactação entra no system prompt rotulado como registro,
   não como instrução, e a compactação é orientada a não copiar ordens vindas de anexos e de tools.
+- Spec `@live` da página lida pela tool usa outro nome público que resolve para 127.0.0.1
+  (`receitas.fbi.com`). O Gemini passou a reconhecer `localtest.me` como endereço local e, em
+  parte das execuções, recusava a leitura antes de chamar a tool.
+- Spec `@live` com um PDF que traz uma instrução para o assistente abaixo do conteúdo
+  (`receita-com-instrucao.pdf`): o modelo responde sobre o conteúdo e não obedece.
 
 ## [0.2.0] - 2026-09-30
 
