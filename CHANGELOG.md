@@ -75,6 +75,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   Anexos já enviados continuam sem teto de armazenamento, limitados só pelo cap de crédito.
 - Plano e decisões: limites de anexos pendentes, a escolha da janela fixa no rate limit, o aviso
   ao fechar a aba e, em aberto para produto, o teto de armazenamento do histórico.
+- Os tetos de anexos pendentes passam a valer também para uploads simultâneos: conferir e criar o
+  anexo acontecem numa só transação, com a linha do usuário travada. Antes, uploads disparados em
+  paralelo direto na API liam a mesma soma e passavam juntos do limite. O arquivo recusado é
+  apagado do armazenamento.
 
 ### Fixed
 

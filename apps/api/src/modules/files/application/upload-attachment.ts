@@ -62,25 +62,31 @@ export class UploadAttachment {
       throw new UnsupportedFileTypeError();
     }
     await findOwnedConversation(this.conversations, conversationId, userId);
-    const pending = await this.attachments.listPending(conversationId);
-    if (pending.length >= MAX_ATTACHMENTS_PER_MESSAGE) {
-      throw new TooManyPendingAttachmentsError(MAX_ATTACHMENTS_PER_MESSAGE);
-    }
-    const pendingBytes = await this.attachments.pendingBytesOf(userId);
-    if (pendingBytes + content.length > this.limits.maxPendingBytesPerUser) {
-      throw new PendingAttachmentsQuotaExceededError(this.limits.maxPendingBytesPerUser);
-    }
 
+    // Grava antes de reservar a vaga: o anexo só existe com o endereço do arquivo.
     const key = `${conversationFolderKey(userId, conversationId)}/${randomUUID()}`;
     const storageUri = await this.storage.save(key, content, mimeType);
-    const attachment = await this.attachments.create({
-      userId,
-      conversationId,
-      fileName: sanitizeFileName(fileName),
-      mimeType,
-      sizeBytes: content.length,
-      storageUri,
-    });
+    const result = await this.attachments.createPending(
+      {
+        userId,
+        conversationId,
+        fileName: sanitizeFileName(fileName),
+        mimeType,
+        sizeBytes: content.length,
+        storageUri,
+      },
+      {
+        maxPerConversation: MAX_ATTACHMENTS_PER_MESSAGE,
+        maxBytesPerUser: this.limits.maxPendingBytesPerUser,
+      },
+    );
+    if (result.status !== 'created') {
+      await this.storage.delete(storageUri);
+      throw result.status === 'conversation_full'
+        ? new TooManyPendingAttachmentsError(MAX_ATTACHMENTS_PER_MESSAGE)
+        : new PendingAttachmentsQuotaExceededError(this.limits.maxPendingBytesPerUser);
+    }
+    const { attachment } = result;
 
     await this.events.publish({
       type: 'attachment.uploaded',

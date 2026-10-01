@@ -1,14 +1,36 @@
 import { randomUUID } from 'node:crypto';
 import type { Attachment } from '../domain/attachment';
-import type { AttachmentRepository, NewAttachment } from '../domain/ports';
+import type {
+  AttachmentRepository,
+  NewAttachment,
+  PendingAttachmentLimits,
+  PendingAttachmentResult,
+} from '../domain/ports';
 
 export class InMemoryAttachmentRepository implements AttachmentRepository {
   private readonly attachments = new Map<string, Attachment>();
 
-  async create(attachment: NewAttachment): Promise<Attachment> {
+  async createPending(
+    attachment: NewAttachment,
+    limits: PendingAttachmentLimits,
+  ): Promise<PendingAttachmentResult> {
+    const pending = [...this.attachments.values()].filter(({ messageId }) => messageId === null);
+    const inConversation = pending.filter(
+      ({ conversationId }) => conversationId === attachment.conversationId,
+    );
+    if (inConversation.length >= limits.maxPerConversation) {
+      return { status: 'conversation_full' };
+    }
+    const pendingBytes = pending
+      .filter(({ userId }) => userId === attachment.userId)
+      .reduce((total, { sizeBytes }) => total + sizeBytes, 0);
+    if (pendingBytes + attachment.sizeBytes > limits.maxBytesPerUser) {
+      return { status: 'user_quota_exceeded' };
+    }
+
     const created = { ...attachment, id: randomUUID(), messageId: null };
     this.attachments.set(created.id, created);
-    return created;
+    return { status: 'created', attachment: created };
   }
 
   async findById(id: string): Promise<Attachment | null> {
@@ -23,12 +45,6 @@ export class InMemoryAttachmentRepository implements AttachmentRepository {
     return [...this.attachments.values()].filter(
       (attachment) => attachment.conversationId === conversationId && attachment.messageId === null,
     );
-  }
-
-  async pendingBytesOf(userId: string): Promise<number> {
-    return [...this.attachments.values()]
-      .filter((attachment) => attachment.userId === userId && attachment.messageId === null)
-      .reduce((total, attachment) => total + attachment.sizeBytes, 0);
   }
 
   async delete(id: string): Promise<void> {

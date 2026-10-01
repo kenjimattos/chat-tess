@@ -17,14 +17,31 @@ export interface FileStorage {
 
 export type NewAttachment = Omit<Attachment, 'id' | 'messageId'>;
 
+/** Tetos dos anexos ainda não enviados em uma mensagem. */
+export interface PendingAttachmentLimits {
+  maxPerConversation: number;
+  /** Soma dos tamanhos, em todas as conversas do usuário. */
+  maxBytesPerUser: number;
+}
+
+export type PendingAttachmentResult =
+  | { status: 'created'; attachment: Attachment }
+  | { status: 'conversation_full' }
+  | { status: 'user_quota_exceeded' };
+
 export interface AttachmentRepository {
-  create(attachment: NewAttachment): Promise<Attachment>;
+  /**
+   * Cria o anexo pendente se ele couber nos tetos. Conferir e criar é uma
+   * operação só: uploads simultâneos do mesmo usuário não passam juntos do limite.
+   */
+  createPending(
+    attachment: NewAttachment,
+    limits: PendingAttachmentLimits,
+  ): Promise<PendingAttachmentResult>;
   findById(id: string): Promise<Attachment | null>;
   findByIds(ids: string[]): Promise<Attachment[]>;
   /** Anexos da conversa ainda não enviados em uma mensagem, do mais antigo para o mais novo. */
   listPending(conversationId: string): Promise<Attachment[]>;
-  /** Soma dos tamanhos dos anexos pendentes do usuário, em todas as conversas. */
-  pendingBytesOf(userId: string): Promise<number>;
   linkToMessage(ids: string[], messageId: string): Promise<void>;
   delete(id: string): Promise<void>;
 }

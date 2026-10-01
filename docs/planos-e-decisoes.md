@@ -71,7 +71,7 @@ não de técnica.
 - Conteúdo de tools vindo de terceiros chega ao modelo marcado como externo, e o system prompt manda tratá-lo como dado (defesa contra prompt injection).
 - O rate limit ficou em **janela fixa**, e não deslizante. A janela fixa deixa passar até 2× o limite em torno da virada do minuto, mas esse pico é contido pelas outras travas: só 3 turnos rodam ao mesmo tempo por usuário e o cap de crédito limita o custo total. A janela deslizante guardaria mais estado por uma garantia de que a POC não precisa.
 - As travas de uso formam uma cadeia, cada uma cobrindo o que a anterior não cobre: rate limit (velocidade das requisições), teto de anexos pendentes (arquivos que não gastam crédito), turnos simultâneos (trabalho em andamento) e cap de crédito (custo total de LLM).
-- O teto de anexos pendentes é conferido antes de gravar, sem trava: uploads simultâneos feitos direto na API podem passar um pouco do limite. A tela sobe um arquivo por vez. Um índice em `attachments (user_id, message_id)` sustenta a soma.
+- O teto de anexos pendentes é conferido e o anexo é criado numa só transação, com a linha do usuário travada (o mesmo padrão da reserva de turnos): uploads simultâneos feitos direto na API não passam juntos do limite. O arquivo é gravado no storage antes de pedir a vaga e apagado se ela for recusada, para não segurar a transação durante o upload ao Cloud Storage. Um índice em `attachments (user_id, message_id)` sustenta a soma. A memória da instância durante o recebimento continua sem proteção além do rate limit.
 - Bloqueios e falhas vão para a auditoria como `agent.turn_failed`.
 
 **Infra e deploy**

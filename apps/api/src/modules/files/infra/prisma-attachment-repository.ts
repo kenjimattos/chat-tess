@@ -2,13 +2,46 @@ import type { Database } from '../../../shared/database/database';
 import type { Attachment as AttachmentRecord } from '../../../generated/prisma/client';
 import type { Attachment } from '../domain/attachment';
 import { detectableMimeTypes } from '../domain/file-type';
-import type { AttachmentRepository, NewAttachment } from '../domain/ports';
+import type {
+  AttachmentRepository,
+  NewAttachment,
+  PendingAttachmentLimits,
+  PendingAttachmentResult,
+} from '../domain/ports';
 
 export class PrismaAttachmentRepository implements AttachmentRepository {
   constructor(private readonly database: Database) {}
 
-  async create(attachment: NewAttachment): Promise<Attachment> {
-    return toAttachment(await this.database.attachment.create({ data: attachment }));
+  /**
+   * A linha do usuário é travada enquanto os pendentes são contados e o anexo
+   * é criado, para que uploads simultâneos não contem os mesmos anexos e
+   * passem todos.
+   */
+  async createPending(
+    attachment: NewAttachment,
+    limits: PendingAttachmentLimits,
+  ): Promise<PendingAttachmentResult> {
+    const { userId, conversationId } = attachment;
+    return this.database.$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT 1 FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
+
+      const pendingInConversation = await transaction.attachment.count({
+        where: { conversationId, messageId: null },
+      });
+      if (pendingInConversation >= limits.maxPerConversation) {
+        return { status: 'conversation_full' };
+      }
+      const { _sum } = await transaction.attachment.aggregate({
+        where: { userId, messageId: null },
+        _sum: { sizeBytes: true },
+      });
+      if ((_sum.sizeBytes ?? 0) + attachment.sizeBytes > limits.maxBytesPerUser) {
+        return { status: 'user_quota_exceeded' };
+      }
+
+      const created = await transaction.attachment.create({ data: attachment });
+      return { status: 'created', attachment: toAttachment(created) };
+    });
   }
 
   async findById(id: string): Promise<Attachment | null> {
@@ -27,14 +60,6 @@ export class PrismaAttachmentRepository implements AttachmentRepository {
       orderBy: { createdAt: 'asc' },
     });
     return records.map(toAttachment);
-  }
-
-  async pendingBytesOf(userId: string): Promise<number> {
-    const { _sum } = await this.database.attachment.aggregate({
-      where: { userId, messageId: null },
-      _sum: { sizeBytes: true },
-    });
-    return _sum.sizeBytes ?? 0;
   }
 
   async linkToMessage(ids: string[], messageId: string): Promise<void> {
