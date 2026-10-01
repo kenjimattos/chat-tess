@@ -145,6 +145,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   modelo enganado. O spec e2e `prompt-injection.spec.ts` usa isso para provar que a defesa vale
   mesmo quando a injeção funciona: o pedido aparece, negar não envia nada, permitir executa, o
   pedido sobrevive a recarregar a página e tudo vai para a auditoria.
+- README: seção "Prompt injection", com as duas camadas de defesa (diminuir a chance de o modelo
+  obedecer e limitar o dano quando ele obedece) e os limites conhecidos: anexos sem marca de
+  externo, resumo da compactação, links clicáveis, resposta manipulada, busca e fadiga de
+  autorização. Antes, o README dava o tema como coberto por um spec `@live`. Plano e decisões
+  registram a revisão e por que a autorização encerra o turno em vez de segurar a conexão.
 
 ## [0.2.0] - 2026-09-30
 
