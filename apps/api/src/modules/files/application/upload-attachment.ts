@@ -4,7 +4,7 @@ import type { EventPublisher } from '../../../shared/events/domain-event';
 import type { Clock } from '../../../shared/time/clock';
 import { findOwnedConversation } from '../../conversations/application/find-owned-conversation';
 import type { ConversationRepository } from '../../conversations/domain/ports';
-import { sanitizeFileName } from '../domain/attachment';
+import { conversationFolderKey, sanitizeFileName } from '../domain/attachment';
 import { EmptyFileError, FileTooLargeError, UnsupportedFileTypeError } from '../domain/file-errors';
 import type { AttachmentUploaded } from '../domain/file-events';
 import { detectMimeType } from '../domain/file-type';
@@ -49,7 +49,7 @@ export class UploadAttachment {
     }
     await findOwnedConversation(this.conversations, conversationId, userId);
 
-    const key = `users/${userId}/conversations/${conversationId}/${randomUUID()}`;
+    const key = `${conversationFolderKey(userId, conversationId)}/${randomUUID()}`;
     const storageUri = await this.storage.save(key, content, mimeType);
     const attachment = await this.attachments.create({
       userId,

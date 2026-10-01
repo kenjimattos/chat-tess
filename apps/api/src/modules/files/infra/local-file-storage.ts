@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { FileStorage } from '../domain/ports';
@@ -22,6 +22,10 @@ export class LocalFileStorage implements FileStorage {
     const filePath = fileURLToPath(storageUri);
     this.assertInsideRoot(filePath);
     return readFile(filePath);
+  }
+
+  async deleteFolder(folderKey: string): Promise<void> {
+    await rm(this.resolveInsideRoot(folderKey), { recursive: true, force: true });
   }
 
   /** O LLM não enxerga o disco local: o conteúdo vai embutido. */

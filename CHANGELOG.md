@@ -37,6 +37,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
   processada; as que passam do limite esperam a vez, sem falhar.
 
+### Fixed
+
+- Apagar uma conversa agora apaga também os arquivos dela no armazenamento (Cloud Storage ou
+  disco). Antes só os registros dos anexos saíam do banco, e os arquivos ficavam guardados para
+  sempre sem nada que apontasse para eles. O módulo de arquivos reage ao evento
+  `conversation.deleted` e remove a pasta da conversa.
+
 ### Changed
 
 - Documentação, comentários e testes passam a chamar a plataforma do Google Cloud pelo nome atual,

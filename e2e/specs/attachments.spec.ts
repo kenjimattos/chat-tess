@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test';
+import { globSync } from 'node:fs';
+import path from 'node:path';
 import { loginAs } from '../support/auth';
 import { ChatPage } from '../support/chat-page';
+
+/** Pasta do armazenamento local da API nos testes (LOCAL_STORAGE_DIR). */
+const STORAGE_DIR = path.resolve(import.meta.dirname, '../.storage');
+
+/** Arquivos que a API guardou para uma conversa, de qualquer usuário. */
+function storedFilesOf(conversationId: string): string[] {
+  return globSync(`users/*/conversations/${conversationId}/*`, { cwd: STORAGE_DIR });
+}
 
 test.describe('Anexos', () => {
   let chat: ChatPage;
@@ -55,5 +65,18 @@ test.describe('Anexos', () => {
     await expect(page.getByRole('alert')).toHaveText(
       'Tipo de arquivo não suportado. Envie PDF, PNG, JPEG ou WEBP.',
     );
+  });
+
+  test('apagar a conversa apaga os arquivos dela do armazenamento', async ({ page }) => {
+    await chat.attach('codigo-secreto.pdf', 'faixa-azul.png');
+    await chat.send('Arquivos temporários');
+    const conversationId = new URL(page.url()).pathname.split('/').pop() ?? '';
+    expect(storedFilesOf(conversationId)).toHaveLength(2);
+    page.once('dialog', (dialog) => void dialog.accept());
+
+    await page.getByRole('button', { name: 'Apagar Arquivos temporários' }).click();
+
+    await expect(chat.conversationNamed('Arquivos temporários')).toBeHidden();
+    expect(storedFilesOf(conversationId)).toEqual([]);
   });
 });

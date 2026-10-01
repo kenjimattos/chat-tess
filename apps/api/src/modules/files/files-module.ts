@@ -1,13 +1,15 @@
 import type { RequestHandler, Router } from 'express';
 import type { FileStorageConfig } from '../../shared/config/env';
 import type { Database } from '../../shared/database/database';
-import type { EventPublisher } from '../../shared/events/domain-event';
+import type { InProcessEventBus } from '../../shared/events/in-process-event-bus';
 import type { Clock } from '../../shared/time/clock';
 import type { AttachmentCatalog } from '../agent/domain/attachment-catalog';
 import type {
   ConversationRepository,
   ConversationShareRepository,
 } from '../conversations/domain/ports';
+import type { ConversationDeleted } from '../conversations/domain/conversation-events';
+import { DeleteConversationFiles } from './application/delete-conversation-files';
 import { ReadAttachment } from './application/read-attachment';
 import { ReadSharedAttachment } from './application/read-shared-attachment';
 import { StoredAttachmentCatalog } from './application/stored-attachment-catalog';
@@ -20,7 +22,7 @@ import { PrismaAttachmentRepository } from './infra/prisma-attachment-repository
 
 export interface FilesModuleDependencies {
   database: Database;
-  events: EventPublisher;
+  eventBus: InProcessEventBus;
   clock: Clock;
   requireAuthentication: RequestHandler;
   limitUploads: RequestHandler;
@@ -41,6 +43,11 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
   const attachments = new PrismaAttachmentRepository(deps.database);
   const storage = createFileStorage(deps.storage);
 
+  const deleteConversationFiles = new DeleteConversationFiles(storage);
+  deps.eventBus.subscribe('conversation.deleted', (event) =>
+    deleteConversationFiles.execute(event as ConversationDeleted),
+  );
+
   return {
     router: createFilesRouter({
       requireAuthentication: deps.requireAuthentication,
@@ -49,7 +56,7 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
         deps.conversations,
         attachments,
         storage,
-        deps.events,
+        deps.eventBus,
         deps.clock,
         deps.maxSizeBytes,
       ),

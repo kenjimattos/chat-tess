@@ -23,6 +23,10 @@ export class GcsFileStorage implements FileStorage {
     return content;
   }
 
+  async deleteFolder(folderKey: string): Promise<void> {
+    await this.storage.bucket(this.bucketName).deleteFiles({ prefix: `${folderKey}/` });
+  }
+
   uriReadableByModel(storageUri: string): string {
     return storageUri;
   }

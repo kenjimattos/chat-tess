@@ -12,6 +12,14 @@ export interface Attachment {
   storageUri: string;
 }
 
+/**
+ * Pasta dos arquivos de uma conversa no armazenamento. Reunir os arquivos por
+ * conversa permite apagá-los de uma vez quando ela é apagada.
+ */
+export function conversationFolderKey(userId: string, conversationId: string): string {
+  return `users/${userId}/conversations/${conversationId}`;
+}
+
 /** Nome seguro para exibição: sem pastas e sem caracteres de controle. */
 export function sanitizeFileName(fileName: string): string {
   const baseName = fileName.split(/[\\/]/).pop() ?? '';

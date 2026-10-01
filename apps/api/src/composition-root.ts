@@ -42,7 +42,9 @@ export function composeApplication(config: AppConfig): Application {
   const rateLimiting = createRateLimitingModule({ ...shared, config: config.rateLimits });
   const conversations = createConversationsModule({ ...shared, requireAuthentication });
   const files = createFilesModule({
-    ...shared,
+    database,
+    eventBus: events,
+    clock,
     requireAuthentication,
     limitUploads: rateLimiting.limitUploads,
     conversations: conversations.conversations,
