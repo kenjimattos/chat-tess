@@ -21,9 +21,21 @@ export const conversationMessageSchema = z.object({
 });
 export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 
+/**
+ * O histórico vem em páginas, das mensagens mais recentes para as mais antigas:
+ * sem `before`, as últimas `limit` mensagens; com `before`, as anteriores a essa sequência.
+ */
+export const messagePageQuerySchema = z.object({
+  before: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+});
+
 export const conversationDetailSchema = z.object({
   conversation: conversationSummarySchema,
+  /** Uma página do histórico, em ordem de sequência. */
   messages: z.array(conversationMessageSchema),
+  /** Há mensagens mais antigas que as desta página. */
+  hasEarlierMessages: z.boolean(),
 });
 export type ConversationDetail = z.infer<typeof conversationDetailSchema>;
 
@@ -52,5 +64,6 @@ export type ConversationShareState = z.infer<typeof conversationShareStateSchema
 export const sharedConversationSchema = z.object({
   title: z.string(),
   messages: z.array(conversationMessageSchema),
+  hasEarlierMessages: z.boolean(),
 });
 export type SharedConversation = z.infer<typeof sharedConversationSchema>;

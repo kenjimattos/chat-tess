@@ -5,6 +5,8 @@ import type { ConversationShare } from '../domain/conversation-share';
 import type {
   ConversationRepository,
   ConversationShareRepository,
+  MessagePage,
+  MessagePageRequest,
   MessageRepository,
   NewMessage,
 } from '../domain/ports';
@@ -73,6 +75,19 @@ export class InMemoryConversationStore
   async listByConversation(conversationId: string, afterSequence = 0): Promise<Message[]> {
     const messages = this.messagesByConversation.get(conversationId) ?? [];
     return messages.filter((message) => message.sequence > afterSequence);
+  }
+
+  async listPage(
+    conversationId: string,
+    { beforeSequence = Infinity, limit, roles }: MessagePageRequest,
+  ): Promise<MessagePage> {
+    const candidates = (await this.listByConversation(conversationId)).filter(
+      (message) => message.sequence < beforeSequence && (!roles || roles.includes(message.role)),
+    );
+    return {
+      messages: candidates.slice(-limit),
+      hasEarlier: candidates.length > limit,
+    };
   }
 
   async findByConversation(conversationId: string): Promise<ConversationShare | null> {

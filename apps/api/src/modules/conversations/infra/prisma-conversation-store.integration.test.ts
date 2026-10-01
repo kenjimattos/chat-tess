@@ -80,6 +80,28 @@ describe('repositórios Prisma de conversas e mensagens', () => {
     expect(listed.map(({ sequence }) => sequence)).toEqual([2, 3]);
   });
 
+  it('pagina das mensagens mais recentes para as mais antigas, filtrando por papel', async () => {
+    const conversation = await conversations.create(anaId, 'Longa');
+    for (const role of ['user', 'assistant', 'tool', 'assistant', 'user'] as const) {
+      await messages.append(conversation.id, { role, parts: [{ type: 'text', text: role }] });
+    }
+
+    const latest = await messages.listPage(conversation.id, { limit: 2 });
+    const earlier = await messages.listPage(conversation.id, { beforeSequence: 4, limit: 5 });
+    const withoutTools = await messages.listPage(conversation.id, {
+      beforeSequence: 5,
+      limit: 2,
+      roles: ['user', 'assistant'],
+    });
+
+    expect(latest.messages.map(({ sequence }) => sequence)).toEqual([4, 5]);
+    expect(latest.hasEarlier).toBe(true);
+    expect(earlier.messages.map(({ sequence }) => sequence)).toEqual([1, 2, 3]);
+    expect(earlier.hasEarlier).toBe(false);
+    expect(withoutTools.messages.map(({ sequence }) => sequence)).toEqual([2, 4]);
+    expect(withoutTools.hasEarlier).toBe(true);
+  });
+
   it('não repete a sequência em gravações simultâneas', async () => {
     const conversation = await conversations.create(anaId, 'Concorrência');
 

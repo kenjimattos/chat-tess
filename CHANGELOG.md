@@ -26,6 +26,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   por que a colaboração ficou para depois.
 - README: seção de testes, com o número de arquivos de teste e de specs e2e e o que os specs
   cobrem.
+- Histórico em páginas na API: `GET /api/conversations/:id` e `GET /api/shared/:token` devolvem
+  as 50 mensagens mais recentes e `hasEarlierMessages`; `?before=<sequência>` traz as anteriores
+  (`?limit=` até 100). Antes, abrir uma conversa trazia todas as mensagens, sem limite. No link
+  compartilhado, a auditoria registra a abertura, não cada página.
 - Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
   modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
   processada; as que passam do limite esperam a vez, sem falhar.

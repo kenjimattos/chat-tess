@@ -1,5 +1,6 @@
 import {
   createConversationRequestSchema,
+  messagePageQuerySchema,
   renameConversationRequestSchema,
   type ConversationDetail,
   type ConversationMessage,
@@ -13,7 +14,7 @@ import { z } from 'zod';
 import { authenticatedUser } from '../../auth/http/require-authentication';
 import type { CreateConversation } from '../application/create-conversation';
 import type { DeleteConversation } from '../application/delete-conversation';
-import type { GetConversation } from '../application/get-conversation';
+import type { GetConversation, HistoryPage } from '../application/get-conversation';
 import type { GetConversationShare } from '../application/get-conversation-share';
 import type { ListConversations } from '../application/list-conversations';
 import type { RenameConversation } from '../application/rename-conversation';
@@ -41,13 +42,13 @@ export interface ConversationsRouterOptions {
  * Rotas de conversa, todas autenticadas:
  * - GET    /conversations       lista as conversas do usuário
  * - POST   /conversations       cria uma conversa
- * - GET    /conversations/:id   abre a conversa com o histórico
+ * - GET    /conversations/:id   abre a conversa com uma página do histórico (?before=&limit=)
  * - PATCH  /conversations/:id   renomeia
  * - DELETE /conversations/:id   apaga
  * - GET    /conversations/:id/share   link atual da conversa, para o dono
  * - PUT    /conversations/:id/share   gera o link (ou devolve o existente)
  * - DELETE /conversations/:id/share   revoga o link
- * - GET    /shared/:token      conversa compartilhada, para qualquer usuário logado
+ * - GET    /shared/:token      conversa compartilhada, para qualquer usuário logado (?before=&limit=)
  */
 export function createConversationsRouter(options: ConversationsRouterOptions): Router {
   const router = Router();
@@ -68,13 +69,15 @@ export function createConversationsRouter(options: ConversationsRouterOptions): 
   });
 
   router.get('/conversations/:conversationId', async (request, response) => {
-    const { conversation, messages } = await options.getConversation.execute(
+    const { conversation, messages, hasEarlierMessages } = await options.getConversation.execute(
       conversationIdOf(request),
       authenticatedUser(response).id,
+      historyPageOf(request),
     );
     const detail: ConversationDetail = {
       conversation: toSummary(conversation),
       messages: messages.map(toMessageResponse),
+      hasEarlierMessages,
     };
     response.json(detail);
   });
@@ -123,13 +126,16 @@ export function createConversationsRouter(options: ConversationsRouterOptions): 
   });
 
   router.get('/shared/:token', async (request, response) => {
-    const { conversation, messages } = await options.viewSharedConversation.execute(
-      String(request.params.token),
-      authenticatedUser(response).id,
-    );
+    const { conversation, messages, hasEarlierMessages } =
+      await options.viewSharedConversation.execute(
+        String(request.params.token),
+        authenticatedUser(response).id,
+        historyPageOf(request),
+      );
     const shared: SharedConversation = {
       title: conversation.title,
       messages: messages.map(toMessageResponse),
+      hasEarlierMessages,
     };
     response.json(shared);
   });
@@ -144,6 +150,11 @@ export function conversationIdOf(request: Request): string {
     throw new ConversationNotFoundError(conversationId);
   }
   return conversationId;
+}
+
+function historyPageOf(request: Request): HistoryPage {
+  const { before, limit } = messagePageQuerySchema.parse(request.query);
+  return { beforeSequence: before, limit };
 }
 
 function toSummary(conversation: Conversation): ConversationSummary {

@@ -99,6 +99,7 @@ describe('App', () => {
                 createdAt: '2026-09-30T10:00:00.000Z',
               },
             ],
+            hasEarlierMessages: false,
           },
         },
       });

@@ -17,6 +17,21 @@ export interface NewMessage {
   parts: MessagePart[];
 }
 
+export interface MessagePageRequest {
+  /** Só mensagens anteriores a esta sequência; sem ela, as mais recentes. */
+  beforeSequence?: number;
+  limit: number;
+  /** Papéis que entram na página; sem ele, todos. */
+  roles?: MessageRole[];
+}
+
+export interface MessagePage {
+  /** Em ordem de sequência. */
+  messages: Message[];
+  /** Há mensagens mais antigas que as desta página. */
+  hasEarlier: boolean;
+}
+
 export interface MessageRepository {
   /** Grava a mensagem no fim da conversa e atualiza a data da conversa. */
   append(conversationId: string, message: NewMessage): Promise<Message>;
@@ -25,6 +40,8 @@ export interface MessageRepository {
    * o agente usa para não carregar o que o resumo da conversa já cobre.
    */
   listByConversation(conversationId: string, afterSequence?: number): Promise<Message[]>;
+  /** Uma página do histórico para exibição, das mensagens mais recentes para as mais antigas. */
+  listPage(conversationId: string, request: MessagePageRequest): Promise<MessagePage>;
 }
 
 export interface ConversationShareRepository {

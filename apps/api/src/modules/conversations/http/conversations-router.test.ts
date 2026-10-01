@@ -24,6 +24,10 @@ import { createConversationsRouter } from './conversations-router';
 const ANA = 'user-ana';
 const BIA = 'user-bia';
 
+function sequenceOf(message: { sequence: number }): number {
+  return message.sequence;
+}
+
 describe('rotas de conversa', () => {
   let store: InMemoryConversationStore;
   let app: ReturnType<typeof createApp>;
@@ -88,6 +92,34 @@ describe('rotas de conversa', () => {
         createdAt: '2026-09-30T10:00:00.000Z',
       },
     ]);
+    expect(response.body.hasEarlierMessages).toBe(false);
+  });
+
+  it('pagina o histórico, das mensagens mais recentes para as mais antigas', async () => {
+    const conversation = await store.create(ANA, 'Longa');
+    for (const text of ['um', 'dois', 'três']) {
+      await store.append(conversation.id, { role: 'user', parts: [{ type: 'text', text }] });
+    }
+    const url = `/api/conversations/${conversation.id}`;
+
+    const latest = await request(app).get(url).query({ limit: 2 }).set(as(ANA));
+    const earlier = await request(app).get(url).query({ limit: 2, before: 2 }).set(as(ANA));
+
+    expect(latest.body.messages.map(sequenceOf)).toEqual([2, 3]);
+    expect(latest.body.hasEarlierMessages).toBe(true);
+    expect(earlier.body.messages.map(sequenceOf)).toEqual([1]);
+    expect(earlier.body.hasEarlierMessages).toBe(false);
+  });
+
+  it('recusa uma página maior que o permitido', async () => {
+    const conversation = await store.create(ANA, 'Dúvidas');
+
+    const response = await request(app)
+      .get(`/api/conversations/${conversation.id}`)
+      .query({ limit: 101 })
+      .set(as(ANA));
+
+    expect(response.status).toBe(400);
   });
 
   it('responde 404 para a conversa de outro usuário', async () => {
@@ -183,6 +215,7 @@ describe('rotas de conversa', () => {
         messages: [
           expect.objectContaining({ role: 'user', parts: [{ type: 'text', text: 'Oi' }] }),
         ],
+        hasEarlierMessages: false,
       });
     });
 

@@ -6,7 +6,12 @@ import type {
   Prisma,
 } from '../../../generated/prisma/client';
 import type { Message, MessageRole } from '../domain/conversation';
-import type { MessageRepository, NewMessage } from '../domain/ports';
+import type {
+  MessagePage,
+  MessagePageRequest,
+  MessageRepository,
+  NewMessage,
+} from '../domain/ports';
 
 const ROLE_TO_RECORD: Record<MessageRole, MessageRoleRecord> = {
   user: 'USER',
@@ -60,6 +65,27 @@ export class PrismaMessageRepository implements MessageRepository {
       orderBy: { sequence: 'asc' },
     });
     return records.map(toMessage);
+  }
+
+  async listPage(
+    conversationId: string,
+    { beforeSequence, limit, roles }: MessagePageRequest,
+  ): Promise<MessagePage> {
+    // Busca uma mensagem além da página só para saber se há mais antigas.
+    const records = await this.database.message.findMany({
+      where: {
+        conversationId,
+        ...(beforeSequence !== undefined && { sequence: { lt: beforeSequence } }),
+        ...(roles && { role: { in: roles.map((role) => ROLE_TO_RECORD[role]) } }),
+      },
+      orderBy: { sequence: 'desc' },
+      take: limit + 1,
+    });
+
+    return {
+      messages: records.slice(0, limit).reverse().map(toMessage),
+      hasEarlier: records.length > limit,
+    };
   }
 }
 
