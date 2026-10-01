@@ -28,6 +28,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   cobrem.
 - `docs/testes.md`: como rodar a suíte Vitest, os quatro projetos, o que cada camada testa, os
   dublês, os testes de integração, a cobertura mínima e as convenções. O README aponta para ele.
+- `docs/planos-e-decisoes.md`: estado das versões, pendências em ordem e as decisões de engenharia
+  e de produto com seus motivos. Antes ficava fora do repositório. O README aponta para ele.
 - Histórico em páginas na API: `GET /api/conversations/:id` e `GET /api/shared/:token` devolvem
   as 50 mensagens mais recentes e `hasEarlierMessages`; `?before=<sequência>` traz as anteriores
   (`?limit=` até 100). Antes, abrir uma conversa trazia todas as mensagens, sem limite. No link

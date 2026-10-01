@@ -3,7 +3,9 @@
 Aplicação de chat com agente de IA: múltiplas conversas, imagens e PDFs, compactação automática do
 histórico, tools, controle de consumo e auditoria.
 
-> Em desenvolvimento. O [CHANGELOG](CHANGELOG.md) registra o que já foi entregue.
+> Em desenvolvimento. O [CHANGELOG](CHANGELOG.md) registra o que já foi entregue, e
+> [docs/planos-e-decisoes.md](docs/planos-e-decisoes.md), o que falta e por que cada decisão foi
+> tomada.
 
 ## Como rodar
 
