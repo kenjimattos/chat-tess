@@ -20,6 +20,10 @@ export class InMemoryFileStorage implements FileStorage {
     return content;
   }
 
+  async delete(storageUri: string): Promise<void> {
+    this.files.delete(storageUri);
+  }
+
   async deleteFolder(folderKey: string): Promise<void> {
     for (const uri of this.files.keys()) {
       if (uri.startsWith(`memory://${folderKey}/`)) {

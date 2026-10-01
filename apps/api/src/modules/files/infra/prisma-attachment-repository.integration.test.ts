@@ -57,4 +57,26 @@ describe('PrismaAttachmentRepository', () => {
 
     expect((await attachments.findById(attachment.id))?.messageId).toBe(message.id);
   });
+
+  it('lista só os anexos pendentes da conversa, do mais antigo para o mais novo', async () => {
+    const sent = await attachments.create(newAttachment('enviado.pdf'));
+    const first = await attachments.create(newAttachment('primeiro.pdf'));
+    const second = await attachments.create(newAttachment('segundo.pdf'));
+    const message = await database.message.create({
+      data: { conversationId: owner.conversationId, sequence: 1, role: 'USER', parts: [] },
+    });
+    await attachments.linkToMessage([sent.id], message.id);
+
+    const pending = await attachments.listPending(owner.conversationId);
+
+    expect(pending.map(({ id }) => id)).toEqual([first.id, second.id]);
+  });
+
+  it('apaga o anexo', async () => {
+    const attachment = await attachments.create(newAttachment('a.pdf'));
+
+    await attachments.delete(attachment.id);
+
+    expect(await attachments.findById(attachment.id)).toBeNull();
+  });
 });

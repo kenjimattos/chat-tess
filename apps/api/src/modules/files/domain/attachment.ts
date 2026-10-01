@@ -1,3 +1,4 @@
+import type { AttachmentPart } from '@chat-tess/shared';
 import type { SupportedMimeType } from './file-type';
 
 export interface Attachment {
@@ -18,6 +19,17 @@ export interface Attachment {
  */
 export function conversationFolderKey(userId: string, conversationId: string): string {
   return `users/${userId}/conversations/${conversationId}`;
+}
+
+/** O anexo como parte de uma mensagem: o que a tela e o histórico guardam dele. */
+export function toAttachmentPart(attachment: Attachment): AttachmentPart {
+  return {
+    type: 'attachment',
+    attachmentId: attachment.id,
+    fileName: attachment.fileName,
+    mimeType: attachment.mimeType,
+    sizeBytes: attachment.sizeBytes,
+  };
 }
 
 /** Nome seguro para exibição: sem pastas e sem caracteres de controle. */

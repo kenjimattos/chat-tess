@@ -6,8 +6,10 @@ import {
   TEST_USER_HEADER,
   fakeRequireAuthentication,
 } from '../../auth/http/fake-authentication.test-support';
+import { ListPendingAttachments } from '../application/list-pending-attachments';
 import { ReadAttachment } from '../application/read-attachment';
 import { ReadSharedAttachment } from '../application/read-shared-attachment';
+import { RemovePendingAttachment } from '../application/remove-pending-attachment';
 import {
   ANA,
   BIA,
@@ -30,6 +32,13 @@ describe('rotas de arquivos', () => {
       requireAuthentication: fakeRequireAuthentication,
       uploadRateLimit: noRateLimit,
       uploadAttachment: bed.upload,
+      listPendingAttachments: new ListPendingAttachments(bed.conversations, bed.attachments),
+      removePendingAttachment: new RemovePendingAttachment(
+        bed.attachments,
+        bed.storage,
+        bed.events,
+        bed.clock,
+      ),
       readAttachment: new ReadAttachment(bed.attachments, bed.storage),
       readSharedAttachment: new ReadSharedAttachment(
         bed.conversations,
@@ -105,6 +114,52 @@ describe('rotas de arquivos', () => {
     const { body } = await uploadPdf();
 
     const response = await request(app).get(`/api/attachments/${body.attachmentId}`).set(as(BIA));
+
+    expect(response.status).toBe(404);
+  });
+
+  it('lista os anexos pendentes da conversa para o dono', async () => {
+    const { body: pending } = await uploadPdf('pendente.pdf');
+    const url = `/api/conversations/${anaConversationId}/attachments/pending`;
+
+    const ofOwner = await request(app).get(url).set(as(ANA));
+    const ofOther = await request(app).get(url).set(as(BIA));
+
+    expect(ofOwner.status).toBe(200);
+    expect(ofOwner.body).toEqual([pending]);
+    expect(ofOther.status).toBe(404);
+  });
+
+  it('remove o anexo pendente, que deixa de existir', async () => {
+    const { body } = await uploadPdf();
+    const url = `/api/attachments/${body.attachmentId}`;
+
+    const removal = await request(app).delete(url).set(as(ANA));
+    const reading = await request(app).get(url).set(as(ANA));
+
+    expect(removal.status).toBe(204);
+    expect(reading.status).toBe(404);
+    expect(bed.storage.files.size).toBe(0);
+  });
+
+  it('recusa remover o anexo já enviado em uma mensagem', async () => {
+    const { body } = await uploadPdf();
+    await bed.attachments.linkToMessage([body.attachmentId], 'message-1');
+
+    const response = await request(app)
+      .delete(`/api/attachments/${body.attachmentId}`)
+      .set(as(ANA));
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('attachment_already_sent');
+  });
+
+  it('não remove o anexo de outro usuário', async () => {
+    const { body } = await uploadPdf();
+
+    const response = await request(app)
+      .delete(`/api/attachments/${body.attachmentId}`)
+      .set(as(BIA));
 
     expect(response.status).toBe(404);
   });

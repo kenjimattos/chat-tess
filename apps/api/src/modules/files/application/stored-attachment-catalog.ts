@@ -1,7 +1,7 @@
 import type { AttachmentPart } from '@chat-tess/shared';
 import type { AttachmentCatalog, AttachmentOwner } from '../../agent/domain/attachment-catalog';
 import type { AttachmentSource } from '../../agent/domain/llm';
-import type { Attachment } from '../domain/attachment';
+import { toAttachmentPart, type Attachment } from '../domain/attachment';
 import { InvalidAttachmentError } from '../domain/file-errors';
 import type { AttachmentRepository, FileStorage } from '../domain/ports';
 
@@ -48,14 +48,4 @@ export class StoredAttachmentCatalog implements AttachmentCatalog {
     const content = await this.storage.read(attachment.storageUri);
     return { kind: 'inline', base64Data: content.toString('base64') };
   }
-}
-
-function toAttachmentPart(attachment: Attachment): AttachmentPart {
-  return {
-    type: 'attachment',
-    attachmentId: attachment.id,
-    fileName: attachment.fileName,
-    mimeType: attachment.mimeType,
-    sizeBytes: attachment.sizeBytes,
-  };
 }

@@ -10,8 +10,10 @@ import type {
 } from '../conversations/domain/ports';
 import type { ConversationDeleted } from '../conversations/domain/conversation-events';
 import { DeleteConversationFiles } from './application/delete-conversation-files';
+import { ListPendingAttachments } from './application/list-pending-attachments';
 import { ReadAttachment } from './application/read-attachment';
 import { ReadSharedAttachment } from './application/read-shared-attachment';
+import { RemovePendingAttachment } from './application/remove-pending-attachment';
 import { StoredAttachmentCatalog } from './application/stored-attachment-catalog';
 import { UploadAttachment } from './application/upload-attachment';
 import type { FileStorage } from './domain/ports';
@@ -59,6 +61,13 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
         deps.eventBus,
         deps.clock,
         deps.maxSizeBytes,
+      ),
+      listPendingAttachments: new ListPendingAttachments(deps.conversations, attachments),
+      removePendingAttachment: new RemovePendingAttachment(
+        attachments,
+        storage,
+        deps.eventBus,
+        deps.clock,
       ),
       readAttachment: new ReadAttachment(attachments, storage),
       readSharedAttachment: new ReadSharedAttachment(deps.shares, attachments, storage),

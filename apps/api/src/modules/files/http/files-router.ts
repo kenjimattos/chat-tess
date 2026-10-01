@@ -3,8 +3,10 @@ import multer, { MulterError } from 'multer';
 import { AppError } from '../../../shared/errors/app-error';
 import { authenticatedUser } from '../../auth/http/require-authentication';
 import { conversationIdOf } from '../../conversations/http/conversations-router';
+import type { ListPendingAttachments } from '../application/list-pending-attachments';
 import type { AttachmentContent, ReadAttachment } from '../application/read-attachment';
 import type { ReadSharedAttachment } from '../application/read-shared-attachment';
+import type { RemovePendingAttachment } from '../application/remove-pending-attachment';
 import type { UploadAttachment } from '../application/upload-attachment';
 import { FileTooLargeError } from '../domain/file-errors';
 
@@ -13,15 +15,19 @@ export interface FilesRouterOptions {
   /** Rate limit de uploads, aplicado antes de receber o arquivo. */
   uploadRateLimit: RequestHandler;
   uploadAttachment: UploadAttachment;
+  listPendingAttachments: ListPendingAttachments;
+  removePendingAttachment: RemovePendingAttachment;
   readAttachment: ReadAttachment;
   readSharedAttachment: ReadSharedAttachment;
   maxSizeBytes: number;
 }
 
 /**
- * - POST /conversations/:id/attachments   envia um arquivo (multipart, campo "file")
- * - GET  /attachments/:id                  devolve o arquivo ao dono
- * - GET  /shared/:token/attachments/:id    devolve o anexo de uma conversa compartilhada
+ * - POST   /conversations/:id/attachments          envia um arquivo (multipart, campo "file")
+ * - GET    /conversations/:id/attachments/pending  anexos ainda não enviados em uma mensagem
+ * - GET    /attachments/:id                        devolve o arquivo ao dono
+ * - DELETE /attachments/:id                        remove um anexo ainda não enviado
+ * - GET    /shared/:token/attachments/:id          devolve o anexo de uma conversa compartilhada
  */
 export function createFilesRouter(options: FilesRouterOptions): Router {
   const router = Router();
@@ -44,6 +50,30 @@ export function createFilesRouter(options: FilesRouterOptions): Router {
         content: request.file.buffer,
       });
       response.status(201).json(attachment);
+    },
+  );
+
+  router.get(
+    '/conversations/:conversationId/attachments/pending',
+    options.requireAuthentication,
+    async (request, response) => {
+      const pending = await options.listPendingAttachments.execute(
+        conversationIdOf(request),
+        authenticatedUser(response).id,
+      );
+      response.json(pending);
+    },
+  );
+
+  router.delete(
+    '/attachments/:attachmentId',
+    options.requireAuthentication,
+    async (request, response) => {
+      await options.removePendingAttachment.execute(
+        String(request.params.attachmentId),
+        authenticatedUser(response).id,
+      );
+      response.status(204).end();
     },
   );
 

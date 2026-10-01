@@ -22,6 +22,19 @@ describe('LocalFileStorage', () => {
     await expect(storage.read('file:///etc/passwd')).rejects.toThrow(/fora da pasta/);
   });
 
+  it('apaga um arquivo, sem falhar se ele já não existir', async () => {
+    const uri = await storage.save('users/u3/a', Buffer.from('a'));
+
+    await storage.delete(uri);
+    await storage.delete(uri);
+
+    await expect(storage.read(uri)).rejects.toThrow(/ENOENT/);
+  });
+
+  it('não permite apagar um arquivo fora da pasta de armazenamento', async () => {
+    await expect(storage.delete('file:///etc/passwd')).rejects.toThrow(/fora da pasta/);
+  });
+
   it('apaga a pasta com tudo o que foi gravado nela', async () => {
     const inFolder = await storage.save('users/u2/conversations/c1/a', Buffer.from('a'));
     const outside = await storage.save('users/u2/conversations/c2/b', Buffer.from('b'));

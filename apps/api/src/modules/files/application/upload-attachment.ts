@@ -4,7 +4,7 @@ import type { EventPublisher } from '../../../shared/events/domain-event';
 import type { Clock } from '../../../shared/time/clock';
 import { findOwnedConversation } from '../../conversations/application/find-owned-conversation';
 import type { ConversationRepository } from '../../conversations/domain/ports';
-import { conversationFolderKey, sanitizeFileName } from '../domain/attachment';
+import { conversationFolderKey, sanitizeFileName, toAttachmentPart } from '../domain/attachment';
 import { EmptyFileError, FileTooLargeError, UnsupportedFileTypeError } from '../domain/file-errors';
 import type { AttachmentUploaded } from '../domain/file-events';
 import { detectMimeType } from '../domain/file-type';
@@ -73,12 +73,6 @@ export class UploadAttachment {
       },
     } satisfies AttachmentUploaded);
 
-    return {
-      type: 'attachment',
-      attachmentId: attachment.id,
-      fileName: attachment.fileName,
-      mimeType,
-      sizeBytes: attachment.sizeBytes,
-    };
+    return toAttachmentPart(attachment);
   }
 }

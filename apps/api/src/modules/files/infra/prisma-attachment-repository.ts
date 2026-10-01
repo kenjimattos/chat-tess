@@ -21,8 +21,20 @@ export class PrismaAttachmentRepository implements AttachmentRepository {
     return records.map(toAttachment);
   }
 
+  async listPending(conversationId: string): Promise<Attachment[]> {
+    const records = await this.database.attachment.findMany({
+      where: { conversationId, messageId: null },
+      orderBy: { createdAt: 'asc' },
+    });
+    return records.map(toAttachment);
+  }
+
   async linkToMessage(ids: string[], messageId: string): Promise<void> {
     await this.database.attachment.updateMany({ where: { id: { in: ids } }, data: { messageId } });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.database.attachment.deleteMany({ where: { id } });
   }
 }
 

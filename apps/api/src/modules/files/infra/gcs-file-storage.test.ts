@@ -26,6 +26,11 @@ function fakeStorageClient() {
           }
           return [object.content];
         },
+        async delete({ ignoreNotFound }: { ignoreNotFound: boolean }) {
+          if (!objects.delete(`${bucketName}/${key}`) && !ignoreNotFound) {
+            throw new Error(`No such object: ${bucketName}/${key}`);
+          }
+        },
       }),
       async deleteFiles({ prefix }: { prefix: string }) {
         for (const path of objects.keys()) {
@@ -68,6 +73,16 @@ describe('GcsFileStorage', () => {
     const { storage } = gcsStorage();
 
     await expect(storage.read('file:///etc/passwd')).rejects.toThrow(/Cloud Storage inválido/);
+  });
+
+  it('apaga um arquivo, sem falhar se ele já não existir', async () => {
+    const { storage, objects } = gcsStorage();
+    const uri = await storage.save('users/u1/a', Buffer.from('a'), 'image/png');
+
+    await storage.delete(uri);
+    await storage.delete(uri);
+
+    expect(objects.size).toBe(0);
   });
 
   it('apaga só os arquivos da pasta pedida', async () => {

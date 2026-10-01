@@ -33,6 +33,16 @@ export class AttachmentNotFoundError extends AppError {
   }
 }
 
+export class AttachmentAlreadySentError extends AppError {
+  constructor() {
+    super(
+      'conflict',
+      'attachment_already_sent',
+      'Este anexo já foi enviado em uma mensagem e não pode ser removido.',
+    );
+  }
+}
+
 export class InvalidAttachmentError extends AppError {
   constructor() {
     super(

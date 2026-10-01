@@ -25,6 +25,11 @@ export class GcsFileStorage implements FileStorage {
     return content;
   }
 
+  async delete(storageUri: string): Promise<void> {
+    const { bucket, key } = parseGcsUri(storageUri);
+    await this.storage.bucket(bucket).file(key).delete({ ignoreNotFound: true });
+  }
+
   async deleteFolder(folderKey: string): Promise<void> {
     await this.storage.bucket(this.bucketName).deleteFiles({ prefix: `${folderKey}/` });
   }

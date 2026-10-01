@@ -24,6 +24,12 @@ export class LocalFileStorage implements FileStorage {
     return readFile(filePath);
   }
 
+  async delete(storageUri: string): Promise<void> {
+    const filePath = fileURLToPath(storageUri);
+    this.assertInsideRoot(filePath);
+    await rm(filePath, { force: true });
+  }
+
   async deleteFolder(folderKey: string): Promise<void> {
     await rm(this.resolveInsideRoot(folderKey), { recursive: true, force: true });
   }

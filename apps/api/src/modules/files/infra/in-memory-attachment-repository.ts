@@ -19,6 +19,16 @@ export class InMemoryAttachmentRepository implements AttachmentRepository {
     return ids.flatMap((id) => this.attachments.get(id) ?? []);
   }
 
+  async listPending(conversationId: string): Promise<Attachment[]> {
+    return [...this.attachments.values()].filter(
+      (attachment) => attachment.conversationId === conversationId && attachment.messageId === null,
+    );
+  }
+
+  async delete(id: string): Promise<void> {
+    this.attachments.delete(id);
+  }
+
   async linkToMessage(ids: string[], messageId: string): Promise<void> {
     for (const id of ids) {
       const attachment = this.attachments.get(id);

@@ -29,5 +29,14 @@ export async function filesTestBed({ readableByModel = false } = {}) {
   const anaConversation = await conversations.create(ANA, 'Da Ana');
   const biaConversation = await conversations.create(BIA, 'Da Bia');
 
-  return { conversations, attachments, storage, events, upload, anaConversation, biaConversation };
+  return {
+    clock,
+    conversations,
+    attachments,
+    storage,
+    events,
+    upload,
+    anaConversation,
+    biaConversation,
+  };
 }
