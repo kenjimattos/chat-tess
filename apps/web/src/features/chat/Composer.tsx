@@ -1,6 +1,18 @@
 import type { AttachmentPart } from '@chat-tess/shared';
-import { useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from 'react';
-import { ACCEPTED_FILE_TYPES, uploadAttachment } from '../../api/attachments-api';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
+import {
+  ACCEPTED_FILE_TYPES,
+  listPendingAttachments,
+  removePendingAttachment,
+  uploadAttachment,
+} from '../../api/attachments-api';
 import { ApiError } from '../../api/http-client';
 import { composerDrafts } from './composer-drafts-store';
 
@@ -21,6 +33,15 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
   );
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Ao abrir a conversa, recupera os anexos que ficaram por enviar (por exemplo,
+  // depois de recarregar a página). Se a consulta falhar, o rascunho só fica sem eles.
+  useEffect(() => {
+    listPendingAttachments(conversationId).then(
+      (pending) => composerDrafts.restoreAttachments(conversationId, pending),
+      () => undefined,
+    );
+  }, [conversationId]);
 
   const canSend =
     !isStreaming && uploadingCount === 0 && (text.trim() !== '' || attachments.length > 0);
@@ -57,6 +78,19 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
     }
   }
 
+  /** Apaga o arquivo na API; o anexo só sai da lista se a remoção der certo. */
+  async function removeAttachment(attachment: AttachmentPart) {
+    setUploadError(null);
+    try {
+      await removePendingAttachment(attachment.attachmentId);
+      composerDrafts.removeAttachment(conversationId, attachment.attachmentId);
+    } catch (error) {
+      setUploadError(
+        error instanceof ApiError ? error.message : `Falha ao remover ${attachment.fileName}.`,
+      );
+    }
+  }
+
   return (
     <form onSubmit={submit} className="space-y-2 border-t border-slate-200 bg-white p-3">
       {(attachments.length > 0 || uploadingCount > 0) && (
@@ -70,9 +104,7 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
               <button
                 type="button"
                 aria-label={`Remover ${attachment.fileName}`}
-                onClick={() =>
-                  composerDrafts.removeAttachment(conversationId, attachment.attachmentId)
-                }
+                onClick={() => void removeAttachment(attachment)}
                 className="rounded-full px-1.5 hover:bg-slate-200"
               >
                 ✕

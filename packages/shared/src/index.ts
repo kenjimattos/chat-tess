@@ -1,3 +1,4 @@
+export * from './api/attachments';
 export * from './api/audit';
 export * from './api/auth';
 export * from './api/billing';

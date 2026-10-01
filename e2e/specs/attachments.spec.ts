@@ -81,6 +81,47 @@ test.describe('Anexos', () => {
     await expect(pendingAttachments).toBeHidden();
   });
 
+  test('o rascunho continua como o usuário deixou depois de recarregar a página', async ({
+    page,
+  }) => {
+    await chat.send('Assunto A');
+    await chat.attach('codigo-secreto.pdf');
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveCount(1);
+    await chat.messageInput.fill('Texto por terminar');
+
+    await page.reload();
+
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText(/codigo-secreto\.pdf/);
+    await expect(chat.messageInput).toHaveValue('Texto por terminar');
+
+    await chat.sendButton.click();
+
+    await expect(chat.assistantReplies().last()).toContainText(
+      'Recebi 1 anexo(s): codigo-secreto.pdf.',
+    );
+    await page.reload();
+    await expect(chat.assistantReplies()).toHaveCount(2);
+    await expect(pendingAttachments).toBeHidden();
+    await expect(chat.messageInput).toHaveValue('');
+  });
+
+  test('remover um anexo ainda não enviado apaga o arquivo do armazenamento', async ({ page }) => {
+    await chat.send('Assunto A');
+    const conversationId = new URL(page.url()).pathname.split('/').pop() ?? '';
+    await chat.attach('codigo-secreto.pdf', 'faixa-azul.png');
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveCount(2);
+    expect(storedFilesOf(conversationId)).toHaveLength(2);
+
+    await page.getByRole('button', { name: 'Remover codigo-secreto.pdf' }).click();
+
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText([/faixa-azul\.png/]);
+    expect(storedFilesOf(conversationId)).toHaveLength(1);
+    await page.reload();
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText([/faixa-azul\.png/]);
+  });
+
   test('recusa um tipo de arquivo não suportado', async ({ page }) => {
     await chat.attach('notas.txt');
 

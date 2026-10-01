@@ -92,4 +92,58 @@ describe('ComposerDraftsStore', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(drafts.draftOf('a')).toBe(snapshot);
   });
+
+  describe('depois de recarregar a página', () => {
+    /** Dublê do sessionStorage: sobrevive à troca de store, como a aba sobrevive ao reload. */
+    function fakeTextStorage() {
+      const items = new Map<string, string>();
+      return {
+        items,
+        getItem: (key: string) => items.get(key) ?? null,
+        setItem: (key: string, value: string) => void items.set(key, value),
+        removeItem: (key: string) => void items.delete(key),
+      };
+    }
+
+    it('recupera o texto digitado', () => {
+      const textStorage = fakeTextStorage();
+      new ComposerDraftsStore(textStorage).setText('a', 'Texto por terminar');
+
+      const afterReload = new ComposerDraftsStore(textStorage);
+
+      expect(afterReload.draftOf('a').text).toBe('Texto por terminar');
+      expect(afterReload.draftOf('b').text).toBe('');
+    });
+
+    it('esquece o texto depois do envio', () => {
+      const textStorage = fakeTextStorage();
+      const drafts = new ComposerDraftsStore(textStorage);
+      drafts.setText('a', 'Enviado');
+
+      drafts.clearSent('a');
+
+      expect(textStorage.items.size).toBe(0);
+      expect(new ComposerDraftsStore(textStorage).draftOf('a').text).toBe('');
+    });
+
+    it('junta os anexos pendentes da API aos que a tela já conhece, sem repetir', () => {
+      const drafts = new ComposerDraftsStore();
+      drafts.uploadStarted('a');
+      drafts.uploadFinished('a', attachment('novo'));
+
+      drafts.restoreAttachments('a', [attachment('antigo'), attachment('novo')]);
+
+      expect(drafts.draftOf('a').attachments).toEqual([attachment('novo'), attachment('antigo')]);
+    });
+
+    it('não avisa os inscritos quando a API não traz nada de novo', () => {
+      const drafts = new ComposerDraftsStore();
+      const listener = vi.fn();
+      drafts.subscribe(listener);
+
+      drafts.restoreAttachments('a', []);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
 });

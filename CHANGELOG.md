@@ -50,9 +50,12 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Fixed
 
-- O rascunho da mensagem (texto e anexos ainda não enviados) continua na conversa quando o usuário
-  abre outra e volta. Antes ele sumia da tela, e o arquivo já anexado ficava de fora da mensagem
-  enviada depois. O rascunho vale enquanto a página está aberta; recarregar a página o descarta.
+- O rascunho da mensagem (texto e anexos ainda não enviados) continua como o usuário deixou quando
+  ele abre outra conversa e volta, e também depois de recarregar a página. Antes ele sumia da
+  tela, e o arquivo já anexado ficava de fora da mensagem enviada depois. O texto fica no
+  `sessionStorage` da aba e os anexos são relidos da API.
+- O botão "Remover" de um anexo ainda não enviado apaga o arquivo no armazenamento. Antes só o
+  tirava da lista da tela, e o arquivo ficava guardado.
 - Apagar uma conversa agora apaga também os arquivos dela no armazenamento (Cloud Storage ou
   disco). Antes só os registros dos anexos saíam do banco, e os arquivos ficavam guardados para
   sempre sem nada que apontasse para eles. O módulo de arquivos reage ao evento
