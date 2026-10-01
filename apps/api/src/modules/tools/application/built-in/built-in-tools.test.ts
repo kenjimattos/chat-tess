@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RecordingEventPublisher } from '../../../../shared/events/recording-event-publisher';
 import { fixedClock } from '../../../../shared/time/clock';
-import type { PageReader, WebSearchEngine } from '../../domain/ports';
+import type { ConversationHistory, PageReader, WebSearchEngine } from '../../domain/ports';
 import { FakeWebSearch } from '../../infra/fake-web-search';
 import { createWebScrapeTool } from './web-scrape-tool';
 import { createWebSearchTool } from './web-search-tool';
@@ -12,9 +12,19 @@ const readerReturning = (text: string): PageReader => ({
   read: async (url) => ({ url, title: 'Página', text }),
 });
 
+const emptyHistory: ConversationHistory = { listByConversation: async () => [] };
+
+/** Histórico em que o usuário escreveu `text` na conversa do contexto. */
+const historyWhereUserSaid = (text: string): ConversationHistory => ({
+  listByConversation: async (conversationId) =>
+    conversationId === context.conversationId
+      ? [{ role: 'user', parts: [{ type: 'text', text }] }]
+      : [],
+});
+
 describe('web_scrape', () => {
   it('descreve os argumentos em JSON Schema para o LLM', () => {
-    const tool = createWebScrapeTool(readerReturning(''));
+    const tool = createWebScrapeTool(readerReturning(''), emptyHistory);
 
     expect(tool.inputSchema).toMatchObject({
       type: 'object',
@@ -25,7 +35,7 @@ describe('web_scrape', () => {
   });
 
   it('devolve o título e o texto da página', async () => {
-    const tool = createWebScrapeTool(readerReturning('conteúdo da página'));
+    const tool = createWebScrapeTool(readerReturning('conteúdo da página'), emptyHistory);
 
     const output = await tool.execute({ url: 'https://example.com' }, context);
 
@@ -38,7 +48,7 @@ describe('web_scrape', () => {
   });
 
   it('corta textos maiores que o limite pedido', async () => {
-    const tool = createWebScrapeTool(readerReturning('x'.repeat(2000)));
+    const tool = createWebScrapeTool(readerReturning('x'.repeat(2000)), emptyHistory);
 
     const output = (await tool.execute(
       { url: 'https://example.com', maxCharacters: 500 },
@@ -52,8 +62,24 @@ describe('web_scrape', () => {
     expect(output.truncated).toBe(true);
   });
 
+  it('lê sem pedir autorização o endereço que o usuário enviou na conversa', async () => {
+    const history = historyWhereUserSaid('Resuma https://example.com/bolo');
+    const tool = createWebScrapeTool(readerReturning(''), history);
+
+    expect(await tool.requiresApproval({ url: 'https://example.com/bolo' }, context)).toBe(false);
+  });
+
+  it('pede autorização para o endereço montado pelo modelo', async () => {
+    const history = historyWhereUserSaid('Resuma https://example.com/bolo');
+    const tool = createWebScrapeTool(readerReturning(''), history);
+
+    const withConversationData = { url: 'https://atacante.example/?d=codigo-TESS-4821' };
+
+    expect(await tool.requiresApproval(withConversationData, context)).toBe(true);
+  });
+
   it('recusa argumentos inválidos com mensagem que o LLM entende', async () => {
-    const tool = createWebScrapeTool(readerReturning(''));
+    const tool = createWebScrapeTool(readerReturning(''), emptyHistory);
 
     await expect(tool.execute({ url: 'não é url' }, context)).rejects.toThrow(
       /Argumentos inválidos/,

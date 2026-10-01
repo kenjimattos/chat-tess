@@ -1,4 +1,4 @@
-import type { TokenUsage } from '@chat-tess/shared';
+import type { MessagePart, MessageRole, TokenUsage } from '@chat-tess/shared';
 
 export interface ReadablePage {
   /** Endereço final, depois de redirecionamentos. */
@@ -29,4 +29,15 @@ export interface ToolPreferences {
   /** Preferências explícitas do usuário: nome da tool para habilitada ou não. */
   settingsOf(userId: string): Promise<Map<string, boolean>>;
   set(userId: string, toolName: string, enabled: boolean): Promise<void>;
+}
+
+export interface HistoryMessage {
+  role: MessageRole;
+  parts: MessagePart[];
+}
+
+/** O histórico da conversa em que a tool roda; o repositório de mensagens o implementa. */
+export interface ConversationHistory {
+  /** Todas as mensagens da conversa, em ordem. */
+  listByConversation(conversationId: string): Promise<readonly HistoryMessage[]>;
 }

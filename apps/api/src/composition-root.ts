@@ -69,6 +69,7 @@ export function composeApplication(config: AppConfig): Application {
     requireAuthentication,
     llmConfig: config.llm,
     toolsConfig: config.tools,
+    conversationHistory: conversations.messages,
   });
   const agent = createAgentModule({
     ...shared,

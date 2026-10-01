@@ -6,13 +6,15 @@ import { defineTool } from '../../domain/define-tool';
 import type { WebSearchEngine } from '../../domain/ports';
 import type { Tool } from '../../domain/tool';
 
+export const WEB_SEARCH_TOOL_NAME = 'web_search';
+
 export function createWebSearchTool(
   engine: WebSearchEngine,
   events: EventPublisher,
   clock: Clock,
 ): Tool {
   return defineTool({
-    name: 'web_search',
+    name: WEB_SEARCH_TOOL_NAME,
     description:
       'Pesquisa na internet informações atuais ou que você não conhece. ' +
       'Devolve uma resposta resumida e as fontes consultadas; cite as fontes para o usuário.',

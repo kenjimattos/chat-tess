@@ -11,7 +11,7 @@ import { ListTools } from './application/list-tools';
 import { RecordToolCall } from './application/record-tool-call';
 import { SetToolEnabled } from './application/set-tool-enabled';
 import { ToolRegistry } from './application/tool-registry';
-import type { WebSearchEngine } from './domain/ports';
+import type { ConversationHistory, WebSearchEngine } from './domain/ports';
 import type { ToolProvider } from './domain/tool';
 import type { ToolExecuted } from './domain/tool-events';
 import { createToolsRouter } from './http/tools-router';
@@ -29,6 +29,7 @@ export interface ToolsModuleDependencies {
   requireAuthentication: RequestHandler;
   llmConfig: LlmConfig;
   toolsConfig: ToolsConfig;
+  conversationHistory: ConversationHistory;
   /** Fontes adicionais: conectores e servidores MCP. */
   extraProviders?: ToolProvider[];
 }
@@ -47,7 +48,7 @@ export function createToolsModule(deps: ToolsModuleDependencies): ToolsModule {
 
   const builtInTools = new BuiltInToolProvider([
     createWebSearchTool(createSearchEngine(deps.llmConfig), deps.eventBus, deps.clock),
-    createWebScrapeTool(pageReader),
+    createWebScrapeTool(pageReader, deps.conversationHistory),
   ]);
   const registry = new ToolRegistry(
     [builtInTools, ...(deps.extraProviders ?? [])],

