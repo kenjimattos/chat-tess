@@ -9,6 +9,7 @@ import { useConversations } from '../conversations/useConversations';
 import { UsageMeter } from '../usage/UsageMeter';
 import { useUsage } from '../usage/useUsage';
 import { useConversationRoute } from './useConversationRoute';
+import { useUnloadWarning } from './useUnloadWarning';
 
 export interface AppShellProps {
   user: CurrentUser;
@@ -23,6 +24,8 @@ export function AppShell({ user, onSignOut }: AppShellProps) {
   const [isToolSettingsOpen, setIsToolSettingsOpen] = useState(false);
   const [sharing, setSharing] = useState<{ conversationId: string; title: string } | null>(null);
   const respondingIds = useSyncExternalStore(activeTurns.subscribe, activeTurns.responding);
+  // Fechar a aba corta as respostas em andamento.
+  useUnloadWarning(respondingIds.size > 0);
 
   function handleTurnFinished() {
     void refresh();

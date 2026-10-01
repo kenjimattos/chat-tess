@@ -54,6 +54,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
   modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
   processada; as que passam do limite esperam a vez, sem falhar.
+- Aviso do navegador ao fechar ou recarregar a aba enquanto alguma resposta ainda está chegando,
+  já que sair corta o stream. Sem resposta em andamento, a aba fecha sem aviso.
 
 ### Fixed
 

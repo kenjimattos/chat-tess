@@ -66,6 +66,24 @@ test.describe('Conversas', () => {
     await expect(page.getByRole('status', { name: /^Respondendo em/ })).toHaveCount(0);
   });
 
+  test('pede confirmação para fechar a aba só enquanto a resposta chega', async ({ page }) => {
+    await chat.startNewConversation();
+    await chat.messageInput.fill('/slow');
+    await chat.sendButton.click();
+    await expect(page.getByRole('status', { name: /^Respondendo em/ })).toBeVisible();
+
+    const warning = page.waitForEvent('dialog');
+    void page.close({ runBeforeUnload: true });
+    const dialog = await warning;
+    expect(dialog.type()).toBe('beforeunload');
+    await dialog.dismiss();
+
+    // Com a resposta terminada, a aba fecha sem aviso.
+    await expect(chat.assistantReplies().last()).toContainText('Fim da resposta lenta.');
+    await page.close({ runBeforeUnload: true });
+    await expect.poll(() => page.isClosed()).toBe(true);
+  });
+
   test('renomeia uma conversa', async ({ page }) => {
     await chat.startNewConversation();
     await chat.send('Título provisório');
