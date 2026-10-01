@@ -131,6 +131,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   espera é o próprio histórico, então vale entre instâncias e depois de recarregar a página. Se o
   usuário enviar outra mensagem sem decidir, as chamadas são fechadas como não executadas. Pedido
   e decisão vão para a auditoria (`tool.approval_requested`, `tool.approval_decided`).
+- Pedido de autorização na tela do chat: quando o turno para à espera do usuário, a conversa
+  mostra a ferramenta e os argumentos inteiros da chamada, com "Permitir" e "Negar". O pedido vem
+  do histórico, então continua na tela depois de recarregar a página; enviar outra mensagem o
+  dispensa.
 
 ## [0.2.0] - 2026-09-30
 

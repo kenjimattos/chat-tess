@@ -111,6 +111,29 @@ describe('ActiveTurnsStore', () => {
     expect(store.finishedTurnsOf('a')).toBe(1);
   });
 
+  it('acompanha o turno retomado depois da decisão sobre as tools', async () => {
+    const { stream, push, end } = controllableStream();
+    const decideApprovals = vi.fn(async () => stream);
+    const store = new ActiveTurnsStore(
+      async () => stream,
+      async () => stream,
+      decideApprovals,
+    );
+
+    const turn = store.decide('a', { approvedCallIds: ['c1'] }, () => {});
+    push({ type: 'text_delta', text: 'Li a página.' });
+    end();
+    await turn;
+
+    expect(decideApprovals).toHaveBeenCalledWith(
+      'a',
+      { approvedCallIds: ['c1'] },
+      expect.anything(),
+    );
+    expect(store.replyOf('a')).toMatchObject({ text: 'Li a página.', isFinished: true });
+    expect(store.finishedTurnsOf('a')).toBe(1);
+  });
+
   it('interrompe só a conversa pedida, sem mostrar erro', async () => {
     const store = new ActiveTurnsStore(
       (_id, _message, signal) =>

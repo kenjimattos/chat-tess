@@ -1,6 +1,11 @@
-import type { ResendLastMessageRequest, SendMessageRequest, StreamEvent } from '@chat-tess/shared';
+import type {
+  DecideToolApprovalsRequest,
+  ResendLastMessageRequest,
+  SendMessageRequest,
+  StreamEvent,
+} from '@chat-tess/shared';
 import { ApiError } from '../../api/http-client';
-import { resendLastMessage, sendMessage } from '../../api/messages-api';
+import { decideToolApprovals, resendLastMessage, sendMessage } from '../../api/messages-api';
 import { applyStreamEvent, emptyReply, type StreamingReply } from './streaming-reply';
 
 type SendMessage = (
@@ -12,6 +17,12 @@ type SendMessage = (
 type ResendLastMessage = (
   conversationId: string,
   request: ResendLastMessageRequest,
+  signal: AbortSignal,
+) => Promise<AsyncIterable<StreamEvent>>;
+
+type DecideToolApprovals = (
+  conversationId: string,
+  request: DecideToolApprovalsRequest,
   signal: AbortSignal,
 ) => Promise<AsyncIterable<StreamEvent>>;
 
@@ -38,6 +49,7 @@ export class ActiveTurnsStore {
   constructor(
     private readonly send: SendMessage = sendMessage,
     private readonly resendLast: ResendLastMessage = resendLastMessage,
+    private readonly decideApprovals: DecideToolApprovals = decideToolApprovals,
   ) {}
 
   subscribe = (listener: () => void): (() => void) => {
@@ -81,6 +93,19 @@ export class ActiveTurnsStore {
     return this.follow(
       conversationId,
       (signal) => this.resendLast(conversationId, request, signal),
+      onFinished,
+    );
+  }
+
+  /** Envia a decisão sobre as tools à espera de autorização e acompanha o resto do turno. */
+  decide(
+    conversationId: string,
+    request: DecideToolApprovalsRequest,
+    onFinished: () => void,
+  ): Promise<void> {
+    return this.follow(
+      conversationId,
+      (signal) => this.decideApprovals(conversationId, request, signal),
       onFinished,
     );
   }

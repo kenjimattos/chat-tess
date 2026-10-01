@@ -2,6 +2,7 @@ import type { AttachmentPart, ConversationMessage } from '@chat-tess/shared';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { getConversation } from '../../api/conversations-api';
 import { activeTurns } from './active-turns-store';
+import { callsAwaitingApproval } from './tool-approval';
 import { useMessageHistory } from './useMessageHistory';
 
 export interface UseChatOptions {
@@ -62,6 +63,20 @@ export function useChat(conversationId: string, { onTurnFinished }: UseChatOptio
     [conversationId, onTurnFinished, rewindTo],
   );
 
+  // O pedido de autorização vem do histórico: continua lá depois de recarregar a página.
+  const awaitingApproval = isStreaming ? [] : callsAwaitingApproval(messages);
+
+  /** Responde ao pedido de autorização, para todas as chamadas dele, e retoma o turno. */
+  const decideApprovals = useCallback(
+    async (isApproved: boolean) => {
+      const approvedCallIds = isApproved
+        ? callsAwaitingApproval(messages).map((call) => call.callId)
+        : [];
+      await activeTurns.decide(conversationId, { approvedCallIds }, onTurnFinished);
+    },
+    [conversationId, messages, onTurnFinished],
+  );
+
   const stop = useCallback(() => activeTurns.stop(conversationId), [conversationId]);
 
   // Depois do fim, só vale mostrar o que o histórico não mostra: erro e aviso de compactação.
@@ -79,8 +94,10 @@ export function useChat(conversationId: string, { onTurnFinished }: UseChatOptio
     loadEarlier: history.loadEarlier,
     reply,
     isStreaming,
+    awaitingApproval,
     send,
     resend,
+    decideApprovals,
     stop,
   };
 }

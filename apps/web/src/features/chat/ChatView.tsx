@@ -4,6 +4,7 @@ import { Composer } from './Composer';
 import { EarlierMessagesButton } from './EarlierMessagesButton';
 import { LastUserMessage } from './LastUserMessage';
 import { MessageBubble } from './MessageBubble';
+import { ToolApprovalRequest } from './ToolApprovalRequest';
 import { useGradualText } from './gradual-text';
 import type { StreamingReply, ToolActivity } from './streaming-reply';
 import { useChat } from './useChat';
@@ -24,8 +25,10 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
     loadEarlier,
     reply,
     isStreaming,
+    awaitingApproval,
     send,
     resend,
+    decideApprovals,
     stop,
   } = useChat(conversationId, { onTurnFinished });
   const scrollArea = useRef<HTMLDivElement>(null);
@@ -89,6 +92,12 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
           ),
         )}
 
+        {awaitingApproval.length > 0 && (
+          <ToolApprovalRequest
+            calls={awaitingApproval}
+            onDecide={(isApproved) => void decideApprovals(isApproved)}
+          />
+        )}
         {reply && <ReplyStatus reply={reply} isStreaming={isStreaming} />}
         {loadError && (
           <p role="alert" className="text-center text-sm text-red-700">

@@ -1,4 +1,9 @@
-import type { ResendLastMessageRequest, SendMessageRequest, StreamEvent } from '@chat-tess/shared';
+import type {
+  DecideToolApprovalsRequest,
+  ResendLastMessageRequest,
+  SendMessageRequest,
+  StreamEvent,
+} from '@chat-tess/shared';
 import { readEventStream } from './event-stream-reader';
 import { toApiError } from './http-client';
 
@@ -24,6 +29,18 @@ export function resendLastMessage(
   signal?: AbortSignal,
 ): Promise<AsyncGenerator<StreamEvent>> {
   return openReplyStream(`/conversations/${conversationId}/messages/last/resend`, request, signal);
+}
+
+/**
+ * Autoriza ou nega as tools que esperam a decisão do usuário e retoma o turno.
+ * Devolve os eventos como `sendMessage`.
+ */
+export function decideToolApprovals(
+  conversationId: string,
+  request: DecideToolApprovalsRequest,
+  signal?: AbortSignal,
+): Promise<AsyncGenerator<StreamEvent>> {
+  return openReplyStream(`/conversations/${conversationId}/tool-approvals`, request, signal);
 }
 
 async function openReplyStream(

@@ -57,7 +57,8 @@ function MessagePartView({ part, isUser, attachmentUrlOf }: MessagePartViewProps
     case 'tool_call':
       return (
         <p className="text-xs text-slate-500">
-          Usou a ferramenta <code>{part.toolName}</code>
+          {part.requiresApproval ? 'Pediu autorização para usar' : 'Usou'} a ferramenta{' '}
+          <code>{part.toolName}</code>
         </p>
       );
     case 'tool_result':
