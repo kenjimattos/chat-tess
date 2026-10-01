@@ -14,7 +14,7 @@ import { renderTranscript } from '../domain/transcript';
 export interface CompactConversationInput {
   userId: string;
   conversationId: string;
-  /** Histórico completo da conversa, em ordem. */
+  /** Mensagens da conversa, em ordem; as que o resumo atual já cobre são ignoradas. */
   messages: readonly Message[];
   currentSummary: ConversationSummary | null;
 }

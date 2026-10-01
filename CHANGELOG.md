@@ -7,6 +7,12 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Changed
+
+- O agente carrega do banco só as mensagens que o resumo da conversa ainda não cobre. Antes,
+  cada chamada ao LLM (até nove por turno, com tools) trazia e validava o histórico inteiro, que
+  cresce sem limite, para depois descartar em memória a parte já resumida.
+  
 ### Added
 
 - Compartilhamento de conversa por link somente leitura. O dono gera o link (token aleatório de

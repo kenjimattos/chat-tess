@@ -54,9 +54,9 @@ export class PrismaMessageRepository implements MessageRepository {
     return toMessage(record);
   }
 
-  async listByConversation(conversationId: string): Promise<Message[]> {
+  async listByConversation(conversationId: string, afterSequence = 0): Promise<Message[]> {
     const records = await this.database.message.findMany({
-      where: { conversationId },
+      where: { conversationId, sequence: { gt: afterSequence } },
       orderBy: { sequence: 'asc' },
     });
     return records.map(toMessage);

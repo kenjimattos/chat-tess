@@ -69,6 +69,17 @@ describe('repositórios Prisma de conversas e mensagens', () => {
     expect(listed[0]?.parts).toEqual(parts);
   });
 
+  it('lista só as mensagens posteriores a uma sequência', async () => {
+    const conversation = await conversations.create(anaId, 'Longa');
+    for (const text of ['primeira', 'segunda', 'terceira']) {
+      await messages.append(conversation.id, { role: 'user', parts: [{ type: 'text', text }] });
+    }
+
+    const listed = await messages.listByConversation(conversation.id, 1);
+
+    expect(listed.map(({ sequence }) => sequence)).toEqual([2, 3]);
+  });
+
   it('não repete a sequência em gravações simultâneas', async () => {
     const conversation = await conversations.create(anaId, 'Concorrência');
 

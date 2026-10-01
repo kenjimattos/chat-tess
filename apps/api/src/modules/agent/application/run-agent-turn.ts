@@ -13,6 +13,7 @@ import {
   DEFAULT_CONVERSATION_TITLE,
   titleFromFirstMessage,
   type Conversation,
+  type Message,
 } from '../../conversations/domain/conversation';
 import type { ConversationRepository, MessageRepository } from '../../conversations/domain/ports';
 import {
@@ -245,7 +246,7 @@ export class RunAgentTurn {
   }
 
   private async *compact(turn: Turn): AsyncGenerator<StreamEvent, boolean> {
-    const messages = await this.deps.messages.listByConversation(turn.conversation.id);
+    const messages = await this.unsummarizedMessages(turn);
     const summary = await this.deps.compactConversation.execute({
       userId: turn.userId,
       conversationId: turn.conversation.id,
@@ -340,9 +341,7 @@ export class RunAgentTurn {
   }
 
   private async buildRequest(turn: Turn): Promise<LlmRequest> {
-    const history = await this.deps.messages.listByConversation(turn.conversation.id);
-    const coveredUntil = turn.summary?.coversUntilSequence ?? 0;
-    const recentMessages = history.filter((message) => message.sequence > coveredUntil);
+    const recentMessages = await this.unsummarizedMessages(turn);
 
     return {
       systemPrompt: buildSystemPrompt({
@@ -353,6 +352,14 @@ export class RunAgentTurn {
       messages: await buildLlmMessages(recentMessages, this.deps.attachments),
       tools: await this.deps.toolbox.definitionsFor(turn.userId),
     };
+  }
+
+  /** Só o que o resumo ainda não cobre: o histórico já resumido fica no banco. */
+  private unsummarizedMessages(turn: Turn): Promise<Message[]> {
+    return this.deps.messages.listByConversation(
+      turn.conversation.id,
+      turn.summary?.coversUntilSequence ?? 0,
+    );
   }
 
   private async recordUsage(turn: Turn, { usage, modelVersion }: LlmCallResult): Promise<void> {

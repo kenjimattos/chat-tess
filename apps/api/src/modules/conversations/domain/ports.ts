@@ -20,8 +20,11 @@ export interface NewMessage {
 export interface MessageRepository {
   /** Grava a mensagem no fim da conversa e atualiza a data da conversa. */
   append(conversationId: string, message: NewMessage): Promise<Message>;
-  /** Em ordem de sequência. */
-  listByConversation(conversationId: string): Promise<Message[]>;
+  /**
+   * Em ordem de sequência. Com `afterSequence`, só as mensagens posteriores a ela:
+   * o agente usa para não carregar o que o resumo da conversa já cobre.
+   */
+  listByConversation(conversationId: string, afterSequence?: number): Promise<Message[]>;
 }
 
 export interface ConversationShareRepository {

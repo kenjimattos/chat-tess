@@ -70,8 +70,9 @@ export class InMemoryConversationStore
     return message;
   }
 
-  async listByConversation(conversationId: string): Promise<Message[]> {
-    return [...(this.messagesByConversation.get(conversationId) ?? [])];
+  async listByConversation(conversationId: string, afterSequence = 0): Promise<Message[]> {
+    const messages = this.messagesByConversation.get(conversationId) ?? [];
+    return messages.filter((message) => message.sequence > afterSequence);
   }
 
   async findByConversation(conversationId: string): Promise<ConversationShare | null> {
