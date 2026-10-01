@@ -1,8 +1,9 @@
+import { MAX_ATTACHMENTS_PER_MESSAGE } from '@chat-tess/shared';
 import { expect, test } from '@playwright/test';
-import { globSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { loginAs } from '../support/auth';
-import { ChatPage } from '../support/chat-page';
+import { ChatPage, fixture } from '../support/chat-page';
 
 /** Pasta do armazenamento local da API nos testes (LOCAL_STORAGE_DIR). */
 const STORAGE_DIR = path.resolve(import.meta.dirname, '../.storage');
@@ -128,6 +129,39 @@ test.describe('Anexos', () => {
     await expect(page.getByRole('alert')).toHaveText(
       'Tipo de arquivo não suportado. Envie PDF, PNG, JPEG ou WEBP.',
     );
+  });
+
+  test('aceita só os anexos que cabem em uma mensagem', async ({ page }) => {
+    const pdf = (name: string) => ({
+      name,
+      mimeType: 'application/pdf',
+      buffer: readFileSync(fixture('codigo-secreto.pdf')),
+    });
+    const oneTooMany = Array.from({ length: MAX_ATTACHMENTS_PER_MESSAGE + 1 }, (_, index) =>
+      pdf(`arquivo-${index + 1}.pdf`),
+    );
+
+    await page.getByLabel('Anexar arquivos').setInputFiles(oneTooMany);
+
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveCount(MAX_ATTACHMENTS_PER_MESSAGE);
+    await expect(page.getByRole('alert')).toHaveText(
+      'Cada mensagem leva até 10 anexos. Ficaram de fora 1 dos arquivos escolhidos.',
+    );
+    await expect(page.getByRole('button', { name: 'Anexar' })).toBeDisabled();
+
+    // A API também recusa, para quem não passa pela tela.
+    const conversationId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    const refused = await page.request.post(`/api/conversations/${conversationId}/attachments`, {
+      multipart: { file: pdf('excedente.pdf') },
+    });
+    expect(refused.status()).toBe(429);
+    expect(storedFilesOf(conversationId)).toHaveLength(MAX_ATTACHMENTS_PER_MESSAGE);
+
+    // Enviada a mensagem, a conversa volta a aceitar anexos.
+    await chat.send('Seguem os arquivos');
+    await expect(chat.assistantReplies().last()).toContainText('Recebi 10 anexo(s)');
+    await expect(page.getByRole('button', { name: 'Anexar' })).toBeEnabled();
   });
 
   test('apagar a conversa apaga os arquivos dela do armazenamento', async ({ page }) => {

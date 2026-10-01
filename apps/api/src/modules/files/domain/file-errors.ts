@@ -27,6 +27,17 @@ export class EmptyFileError extends AppError {
   }
 }
 
+export class TooManyPendingAttachmentsError extends AppError {
+  constructor(maxPending: number) {
+    super(
+      'limit_exceeded',
+      'too_many_pending_attachments',
+      `Cada mensagem leva até ${maxPending} anexos. Envie ou remova os que já estão na conversa.`,
+      { maxPending },
+    );
+  }
+}
+
 export class AttachmentNotFoundError extends AppError {
   constructor(attachmentId: string) {
     super('not_found', 'attachment_not_found', 'Anexo não encontrado.', { attachmentId });

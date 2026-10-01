@@ -1,11 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import type { AttachmentPart } from '@chat-tess/shared';
+import { MAX_ATTACHMENTS_PER_MESSAGE, type AttachmentPart } from '@chat-tess/shared';
 import type { EventPublisher } from '../../../shared/events/domain-event';
 import type { Clock } from '../../../shared/time/clock';
 import { findOwnedConversation } from '../../conversations/application/find-owned-conversation';
 import type { ConversationRepository } from '../../conversations/domain/ports';
 import { conversationFolderKey, sanitizeFileName, toAttachmentPart } from '../domain/attachment';
-import { EmptyFileError, FileTooLargeError, UnsupportedFileTypeError } from '../domain/file-errors';
+import {
+  EmptyFileError,
+  FileTooLargeError,
+  TooManyPendingAttachmentsError,
+  UnsupportedFileTypeError,
+} from '../domain/file-errors';
 import type { AttachmentUploaded } from '../domain/file-events';
 import { detectMimeType } from '../domain/file-type';
 import type { AttachmentRepository, FileStorage } from '../domain/ports';
@@ -19,7 +24,8 @@ export interface UploadAttachmentInput {
 
 /**
  * Recebe um arquivo para uma conversa. Ele fica pendente até ser enviado
- * junto com uma mensagem.
+ * junto com uma mensagem. A conversa guarda no máximo os pendentes que cabem
+ * em uma mensagem, para que arquivos nunca enviados não se acumulem.
  */
 export class UploadAttachment {
   constructor(
@@ -48,6 +54,10 @@ export class UploadAttachment {
       throw new UnsupportedFileTypeError();
     }
     await findOwnedConversation(this.conversations, conversationId, userId);
+    const pending = await this.attachments.listPending(conversationId);
+    if (pending.length >= MAX_ATTACHMENTS_PER_MESSAGE) {
+      throw new TooManyPendingAttachmentsError(MAX_ATTACHMENTS_PER_MESSAGE);
+    }
 
     const key = `${conversationFolderKey(userId, conversationId)}/${randomUUID()}`;
     const storageUri = await this.storage.save(key, content, mimeType);

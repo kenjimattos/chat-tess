@@ -1,8 +1,11 @@
 import { z } from 'zod';
 
+/** Também é o teto de anexos que uma conversa guarda à espera de envio. */
+export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
+
 export const sendMessageRequestSchema = z.object({
   text: z.string().max(100_000).default(''),
-  attachmentIds: z.array(z.string()).max(10).default([]),
+  attachmentIds: z.array(z.string()).max(MAX_ATTACHMENTS_PER_MESSAGE).default([]),
 });
 export type SendMessageRequest = z.input<typeof sendMessageRequestSchema>;
 

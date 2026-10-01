@@ -1,3 +1,4 @@
+import { MAX_ATTACHMENTS_PER_MESSAGE } from '@chat-tess/shared';
 import { describe, expect, it } from 'vitest';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
 import {
@@ -107,5 +108,66 @@ describe('UploadAttachment', () => {
 
     await expect(uploading).rejects.toThrow(ConversationNotFoundError);
     expect(storage.files.size).toBe(0);
+  });
+
+  describe('com a conversa cheia de anexos por enviar', () => {
+    async function conversationFullOfPendingAttachments() {
+      const bed = await filesTestBed();
+      for (let index = 1; index <= MAX_ATTACHMENTS_PER_MESSAGE; index++) {
+        await bed.upload.execute({
+          userId: ANA,
+          conversationId: bed.anaConversation.id,
+          fileName: `anexo-${index}.pdf`,
+          content: PDF_CONTENT,
+        });
+      }
+      return bed;
+    }
+
+    it('recusa mais um arquivo', async () => {
+      const { upload, storage, anaConversation } = await conversationFullOfPendingAttachments();
+
+      const uploading = upload.execute({
+        userId: ANA,
+        conversationId: anaConversation.id,
+        fileName: 'excedente.pdf',
+        content: PDF_CONTENT,
+      });
+
+      await expect(uploading).rejects.toMatchObject({ code: 'too_many_pending_attachments' });
+      expect(storage.files.size).toBe(MAX_ATTACHMENTS_PER_MESSAGE);
+    });
+
+    it('volta a aceitar depois que os anexos são enviados em uma mensagem', async () => {
+      const { upload, attachments, anaConversation } = await conversationFullOfPendingAttachments();
+      const pending = await attachments.listPending(anaConversation.id);
+      await attachments.linkToMessage(
+        pending.map(({ id }) => id),
+        'mensagem-1',
+      );
+
+      const part = await upload.execute({
+        userId: ANA,
+        conversationId: anaConversation.id,
+        fileName: 'seguinte.pdf',
+        content: PDF_CONTENT,
+      });
+
+      expect(part.fileName).toBe('seguinte.pdf');
+    });
+
+    it('não conta os anexos de outras conversas', async () => {
+      const { upload, conversations } = await conversationFullOfPendingAttachments();
+      const otherConversation = await conversations.create(ANA, 'Outra da Ana');
+
+      const part = await upload.execute({
+        userId: ANA,
+        conversationId: otherConversation.id,
+        fileName: 'outra.pdf',
+        content: PDF_CONTENT,
+      });
+
+      expect(part.fileName).toBe('outra.pdf');
+    });
   });
 });

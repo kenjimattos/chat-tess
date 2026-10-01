@@ -1,4 +1,4 @@
-import type { AttachmentPart } from '@chat-tess/shared';
+import { MAX_ATTACHMENTS_PER_MESSAGE, type AttachmentPart } from '@chat-tess/shared';
 import {
   useEffect,
   useRef,
@@ -43,6 +43,7 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
     );
   }, [conversationId]);
 
+  const freeAttachmentSlots = MAX_ATTACHMENTS_PER_MESSAGE - attachments.length - uploadingCount;
   const canSend =
     !isStreaming && uploadingCount === 0 && (text.trim() !== '' || attachments.length > 0);
 
@@ -62,15 +63,28 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
     }
   }
 
+  /** Sobe só os arquivos que ainda cabem na mensagem e avisa dos que ficaram de fora. */
   async function uploadFiles(files: FileList | null) {
-    setUploadError(null);
-    for (const file of Array.from(files ?? [])) {
+    const selected = Array.from(files ?? []);
+    const fitting = selected.slice(0, freeAttachmentSlots);
+    setUploadError(
+      fitting.length < selected.length
+        ? `Cada mensagem leva até ${MAX_ATTACHMENTS_PER_MESSAGE} anexos. ` +
+            `Ficaram de fora ${selected.length - fitting.length} dos arquivos escolhidos.`
+        : null,
+    );
+
+    for (const file of fitting) {
       composerDrafts.uploadStarted(conversationId);
       try {
         composerDrafts.uploadFinished(conversationId, await uploadAttachment(conversationId, file));
       } catch (error) {
         composerDrafts.uploadFinished(conversationId);
         setUploadError(error instanceof ApiError ? error.message : `Falha ao enviar ${file.name}.`);
+        // Limite atingido: os arquivos seguintes seriam recusados do mesmo jeito.
+        if (error instanceof ApiError && error.status === 429) {
+          break;
+        }
       }
     }
     if (fileInput.current) {
@@ -134,9 +148,13 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
         <button
           type="button"
           onClick={() => fileInput.current?.click()}
-          disabled={isStreaming}
+          disabled={isStreaming || freeAttachmentSlots <= 0}
           className="rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
-          title="Anexar PDF ou imagem"
+          title={
+            freeAttachmentSlots > 0
+              ? 'Anexar PDF ou imagem'
+              : `Limite de ${MAX_ATTACHMENTS_PER_MESSAGE} anexos por mensagem`
+          }
         >
           📎<span className="sr-only">Anexar</span>
         </button>

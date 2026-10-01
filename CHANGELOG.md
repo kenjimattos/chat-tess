@@ -60,6 +60,14 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   processada; as que passam do limite esperam a vez, sem falhar.
 - Aviso do navegador ao fechar ou recarregar a aba enquanto alguma resposta ainda está chegando,
   já que sair corta o stream. Sem resposta em andamento, a aba fecha sem aviso.
+- Limite de 10 anexos por enviar em cada conversa, o mesmo de uma mensagem
+  (`MAX_ATTACHMENTS_PER_MESSAGE`). A API recusa o upload seguinte com 429
+  (`too_many_pending_attachments`), para que arquivos nunca enviados não se acumulem no
+  armazenamento. Na tela, o botão de anexar fica desabilitado ao chegar no limite, os arquivos
+  escolhidos além dele não sobem e o usuário é avisado de quantos ficaram de fora. Antes, o
+  rascunho aceitava mais anexos do que a mensagem podia levar.
+- O envio de vários arquivos para ao bater num limite (rate limit ou anexos por enviar), em vez de
+  tentar os arquivos seguintes, que seriam recusados do mesmo jeito.
 
 ### Fixed
 
