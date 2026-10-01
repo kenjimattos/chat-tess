@@ -38,7 +38,7 @@ Abra http://localhost:5173.
 
 ## Testes
 
-São 91 arquivos de teste unitário e de integração (Vitest) e 16 specs ponta a ponta (Playwright),
+São 93 arquivos de teste unitário e de integração (Vitest) e 16 specs ponta a ponta (Playwright),
 que rodam no CI antes de todo deploy.
 
 A organização da suíte Vitest, os dublês, a cobertura mínima e as convenções estão em
@@ -63,7 +63,7 @@ Gemini. Cobrem:
 - auditoria e estado do sistema.
 
 Os specs `@live` (`npm run e2e:live`) repetem anexos, identidade do modelo e prompt injection
-contra o Gemini real.
+(por página lida e por PDF anexado) contra o Gemini real.
 
 ## Organização
 
@@ -168,6 +168,11 @@ o modelo enganado.
 - Resultados de tools com conteúdo de terceiros chegam ao modelo marcados como externos, e o
   system prompt manda tratá-los como dado, nunca como instrução. Um spec `@live` confere isso
   contra o Gemini real, com um ataque simples. É uma defesa probabilística: reduz, não impede.
+- Anexos recebem o mesmo tratamento: cada imagem ou PDF vai precedido de um aviso de que o conteúdo
+  é material a analisar, e o system prompt só aceita instruções do texto que o usuário digita. O
+  usuário pode pedir, no texto dele, que o modelo siga o que está no arquivo.
+- O resumo da compactação entra no system prompt rotulado como registro do que foi dito, e a
+  compactação é orientada a não copiar ordens vindas de anexos e de tools.
 
 **Limitar o dano quando ele obedece**
 
@@ -192,10 +197,10 @@ permitir.
 
 **Limites conhecidos**
 
-- **Anexos.** PDFs e imagens entram como conteúdo do usuário, sem a marca de externo. Um arquivo de
-  terceiros com instruções escondidas tem mais autoridade que uma página.
-- **Resumo da compactação.** Uma instrução que entre no resumo passa a fazer parte do system prompt
-  dos turnos seguintes.
+- **Anexos e resumo.** A marcação é probabilística, como a das tools. O spec `@live` do PDF usa um
+  ataque simples, que o Gemini já recusava sem a marcação: ele não mede o ganho dela nem a
+  resistência a ataques elaborados. O arquivo vai direto para o modelo, sem inspeção no servidor,
+  então texto invisível no PDF não é detectado.
 - **Links.** Um link na resposta pode levar dados no endereço. Só sai algo se o usuário clicar.
 - **Resposta manipulada.** Uma página pode fazer o modelo responder com informação errada. Não há
   verificação do conteúdo da resposta.

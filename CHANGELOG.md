@@ -160,6 +160,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   parte das execuções, recusava a leitura antes de chamar a tool.
 - Spec `@live` com um PDF que traz uma instrução para o assistente abaixo do conteúdo
   (`receita-com-instrucao.pdf`): o modelo responde sobre o conteúdo e não obedece.
+- README e decisões: anexos e resumo saem dos limites conhecidos como "sem marcação" e entram como
+  defesa probabilística, com o que o spec `@live` mede e o que não mede.
 
 ## [0.2.0] - 2026-09-30
 
