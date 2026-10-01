@@ -68,6 +68,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   rascunho aceitava mais anexos do que a mensagem podia levar.
 - O envio de vários arquivos para ao bater num limite (rate limit ou anexos por enviar), em vez de
   tentar os arquivos seguintes, que seriam recusados do mesmo jeito.
+- Teto por usuário para os anexos ainda não enviados em mensagem, somando todas as conversas
+  (`MAX_PENDING_ATTACHMENTS_MB`, padrão 500 MB). O upload que passaria do teto é recusado com 429
+  (`pending_attachments_quota_exceeded`); enviar ou remover anexos libera o espaço. Fecha o caminho
+  de acumular arquivos sem gastar crédito, criando várias conversas com anexos nunca enviados.
+  Anexos já enviados continuam sem teto de armazenamento, limitados só pelo cap de crédito.
 
 ### Fixed
 

@@ -38,6 +38,18 @@ export class TooManyPendingAttachmentsError extends AppError {
   }
 }
 
+export class PendingAttachmentsQuotaExceededError extends AppError {
+  constructor(maxPendingBytes: number) {
+    super(
+      'limit_exceeded',
+      'pending_attachments_quota_exceeded',
+      `Seus anexos ainda não enviados passariam de ${Math.floor(maxPendingBytes / 1024 / 1024)} MB, ` +
+        'somando todas as conversas. Envie ou remova alguns antes de anexar outro.',
+      { maxPendingBytes },
+    );
+  }
+}
+
 export class AttachmentNotFoundError extends AppError {
   constructor(attachmentId: string) {
     super('not_found', 'attachment_not_found', 'Anexo não encontrado.', { attachmentId });

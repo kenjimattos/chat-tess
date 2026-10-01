@@ -42,7 +42,11 @@ describe('loadConfig', () => {
         maxParallelToolCalls: 3,
         maxConcurrentTurnsPerUser: 3,
       },
-      files: { storage: { kind: 'local', rootDir: '.storage' }, maxSizeBytes: 20 * 1024 * 1024 },
+      files: {
+        storage: { kind: 'local', rootDir: '.storage' },
+        maxSizeBytes: 20 * 1024 * 1024,
+        maxPendingBytesPerUser: 500 * 1024 * 1024,
+      },
       billing: { defaultTokenLimit: 500_000 },
       rateLimits: { messagesPerMinute: 20, uploadsPerMinute: 30 },
       tools: {
@@ -195,6 +199,7 @@ describe('loadConfig', () => {
       expect(config.files).toEqual({
         storage: { kind: 'gcs', bucket: 'meu-bucket' },
         maxSizeBytes: 5 * 1024 * 1024,
+        maxPendingBytesPerUser: 500 * 1024 * 1024,
       });
     });
 

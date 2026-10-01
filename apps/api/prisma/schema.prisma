@@ -153,6 +153,8 @@ model Attachment {
   message      Message?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
 
   @@index([conversationId])
+  /// Soma dos anexos pendentes do usuário, conferida a cada upload.
+  @@index([userId, messageId])
   @@map("attachments")
 }
 

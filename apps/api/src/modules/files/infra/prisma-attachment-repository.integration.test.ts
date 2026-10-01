@@ -72,6 +72,40 @@ describe('PrismaAttachmentRepository', () => {
     expect(pending.map(({ id }) => id)).toEqual([first.id, second.id]);
   });
 
+  it('soma só os anexos pendentes do usuário, em todas as conversas', async () => {
+    const otherConversation = await database.conversation.create({
+      data: { userId: owner.userId, title: 'y' },
+    });
+    const otherUser = await database.user.create({
+      data: { email: 'bia@empresa.com', name: 'Bia' },
+    });
+    const otherUserConversation = await database.conversation.create({
+      data: { userId: otherUser.id, title: 'z' },
+    });
+    const sent = await attachments.create(newAttachment('enviado.pdf'));
+    await attachments.create(newAttachment('pendente.pdf'));
+    await attachments.create({
+      ...newAttachment('em-outra-conversa.pdf'),
+      conversationId: otherConversation.id,
+    });
+    await attachments.create({
+      ...newAttachment('de-outro-usuario.pdf'),
+      userId: otherUser.id,
+      conversationId: otherUserConversation.id,
+    });
+    const message = await database.message.create({
+      data: { conversationId: owner.conversationId, sequence: 1, role: 'USER', parts: [] },
+    });
+    await attachments.linkToMessage([sent.id], message.id);
+
+    expect(await attachments.pendingBytesOf(owner.userId)).toBe(20);
+    expect(await attachments.pendingBytesOf(otherUser.id)).toBe(10);
+  });
+
+  it('não tem bytes pendentes quem nunca anexou nada', async () => {
+    expect(await attachments.pendingBytesOf(owner.userId)).toBe(0);
+  });
+
   it('apaga o anexo', async () => {
     const attachment = await attachments.create(newAttachment('a.pdf'));
 

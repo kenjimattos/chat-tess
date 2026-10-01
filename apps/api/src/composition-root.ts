@@ -51,6 +51,7 @@ export function composeApplication(config: AppConfig): Application {
     shares: conversations.shares,
     storage: config.files.storage,
     maxSizeBytes: config.files.maxSizeBytes,
+    maxPendingBytesPerUser: config.files.maxPendingBytesPerUser,
   });
   const audit = createAuditModule({ database, eventBus: events, requireAuthentication });
   const billing = createBillingModule({

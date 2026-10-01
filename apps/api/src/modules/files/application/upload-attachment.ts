@@ -8,6 +8,7 @@ import { conversationFolderKey, sanitizeFileName, toAttachmentPart } from '../do
 import {
   EmptyFileError,
   FileTooLargeError,
+  PendingAttachmentsQuotaExceededError,
   TooManyPendingAttachmentsError,
   UnsupportedFileTypeError,
 } from '../domain/file-errors';
@@ -22,10 +23,17 @@ export interface UploadAttachmentInput {
   content: Buffer;
 }
 
+export interface UploadLimits {
+  maxSizeBytes: number;
+  /** Teto dos anexos pendentes de um usuário, somando todas as conversas. */
+  maxPendingBytesPerUser: number;
+}
+
 /**
  * Recebe um arquivo para uma conversa. Ele fica pendente até ser enviado
  * junto com uma mensagem. A conversa guarda no máximo os pendentes que cabem
- * em uma mensagem, para que arquivos nunca enviados não se acumulem.
+ * em uma mensagem, e o usuário tem um teto de bytes pendentes: assim os
+ * arquivos nunca enviados, que não gastam crédito, não se acumulam.
  */
 export class UploadAttachment {
   constructor(
@@ -34,7 +42,7 @@ export class UploadAttachment {
     private readonly storage: FileStorage,
     private readonly events: EventPublisher,
     private readonly clock: Clock,
-    private readonly maxSizeBytes: number,
+    private readonly limits: UploadLimits,
   ) {}
 
   async execute({
@@ -46,8 +54,8 @@ export class UploadAttachment {
     if (content.length === 0) {
       throw new EmptyFileError();
     }
-    if (content.length > this.maxSizeBytes) {
-      throw new FileTooLargeError(this.maxSizeBytes);
+    if (content.length > this.limits.maxSizeBytes) {
+      throw new FileTooLargeError(this.limits.maxSizeBytes);
     }
     const mimeType = detectMimeType(content);
     if (!mimeType) {
@@ -57,6 +65,10 @@ export class UploadAttachment {
     const pending = await this.attachments.listPending(conversationId);
     if (pending.length >= MAX_ATTACHMENTS_PER_MESSAGE) {
       throw new TooManyPendingAttachmentsError(MAX_ATTACHMENTS_PER_MESSAGE);
+    }
+    const pendingBytes = await this.attachments.pendingBytesOf(userId);
+    if (pendingBytes + content.length > this.limits.maxPendingBytesPerUser) {
+      throw new PendingAttachmentsQuotaExceededError(this.limits.maxPendingBytesPerUser);
     }
 
     const key = `${conversationFolderKey(userId, conversationId)}/${randomUUID()}`;

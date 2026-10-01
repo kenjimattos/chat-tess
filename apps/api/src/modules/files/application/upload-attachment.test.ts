@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
 import {
   ANA,
+  BIA,
+  MAX_PENDING_BYTES_PER_USER,
   MAX_SIZE_BYTES,
   PDF_CONTENT,
   PNG_CONTENT,
@@ -168,6 +170,81 @@ describe('UploadAttachment', () => {
       });
 
       expect(part.fileName).toBe('outra.pdf');
+    });
+  });
+
+  describe('com os anexos por enviar do usuário no teto de bytes', () => {
+    /** PDF do maior tamanho aceito. */
+    const LARGEST_PDF = Buffer.concat([PDF_CONTENT, Buffer.alloc(MAX_SIZE_BYTES)]).subarray(
+      0,
+      MAX_SIZE_BYTES,
+    );
+
+    /** A Ana enche o teto com anexos pendentes espalhados por várias conversas. */
+    async function anaAtPendingBytesLimit() {
+      const bed = await filesTestBed();
+      for (let sent = 0; sent < MAX_PENDING_BYTES_PER_USER; sent += MAX_SIZE_BYTES) {
+        const conversation = await bed.conversations.create(ANA, 'Rascunho');
+        await bed.upload.execute({
+          userId: ANA,
+          conversationId: conversation.id,
+          fileName: 'grande.pdf',
+          content: LARGEST_PDF,
+        });
+      }
+      return bed;
+    }
+
+    it('recusa mais um arquivo, mesmo em outra conversa', async () => {
+      const { upload, storage, anaConversation } = await anaAtPendingBytesLimit();
+      const storedBefore = storage.files.size;
+
+      const uploading = upload.execute({
+        userId: ANA,
+        conversationId: anaConversation.id,
+        fileName: 'excedente.pdf',
+        content: PDF_CONTENT,
+      });
+
+      await expect(uploading).rejects.toMatchObject({
+        code: 'pending_attachments_quota_exceeded',
+      });
+      expect(storage.files.size).toBe(storedBefore);
+    });
+
+    it('volta a aceitar depois que anexos são enviados em uma mensagem', async () => {
+      const { upload, attachments, conversations, anaConversation } =
+        await anaAtPendingBytesLimit();
+      const [draft] = (await conversations.listOwned(ANA)).filter(
+        ({ id }) => id !== anaConversation.id,
+      );
+      const pending = await attachments.listPending(draft?.id ?? '');
+      await attachments.linkToMessage(
+        pending.map(({ id }) => id),
+        'mensagem-1',
+      );
+
+      const part = await upload.execute({
+        userId: ANA,
+        conversationId: anaConversation.id,
+        fileName: 'seguinte.pdf',
+        content: PDF_CONTENT,
+      });
+
+      expect(part.fileName).toBe('seguinte.pdf');
+    });
+
+    it('não conta os anexos de outros usuários', async () => {
+      const { upload, biaConversation } = await anaAtPendingBytesLimit();
+
+      const part = await upload.execute({
+        userId: BIA,
+        conversationId: biaConversation.id,
+        fileName: 'da-bia.pdf',
+        content: PDF_CONTENT,
+      });
+
+      expect(part.fileName).toBe('da-bia.pdf');
     });
   });
 });

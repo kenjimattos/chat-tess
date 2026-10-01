@@ -29,6 +29,14 @@ export class PrismaAttachmentRepository implements AttachmentRepository {
     return records.map(toAttachment);
   }
 
+  async pendingBytesOf(userId: string): Promise<number> {
+    const { _sum } = await this.database.attachment.aggregate({
+      where: { userId, messageId: null },
+      _sum: { sizeBytes: true },
+    });
+    return _sum.sizeBytes ?? 0;
+  }
+
   async linkToMessage(ids: string[], messageId: string): Promise<void> {
     await this.database.attachment.updateMany({ where: { id: { in: ids } }, data: { messageId } });
   }

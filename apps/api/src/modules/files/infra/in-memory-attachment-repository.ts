@@ -25,6 +25,12 @@ export class InMemoryAttachmentRepository implements AttachmentRepository {
     );
   }
 
+  async pendingBytesOf(userId: string): Promise<number> {
+    return [...this.attachments.values()]
+      .filter((attachment) => attachment.userId === userId && attachment.messageId === null)
+      .reduce((total, attachment) => total + attachment.sizeBytes, 0);
+  }
+
   async delete(id: string): Promise<void> {
     this.attachments.delete(id);
   }

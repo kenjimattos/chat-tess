@@ -19,6 +19,9 @@ export const ALLOWED_TEST_DOMAIN = '@e2e.test';
 /** Rate limit de mensagens nos testes: acima do que qualquer outro spec envia por usuário. */
 export const E2E_MESSAGES_PER_MINUTE = 5;
 
+/** Teto de anexos pendentes por usuário nos testes: o menor que a configuração aceita. */
+export const E2E_MAX_PENDING_ATTACHMENTS_MB = 1;
+
 /** Recebe o papel de administrador no login (ADMIN_EMAILS). */
 export const ADMIN_TEST_EMAIL = 'admin@e2e.test';
 
@@ -63,5 +66,6 @@ export const apiEnvironment: Record<string, string> = {
   // O spec de tools faz scraping de uma página servida localmente pelo próprio teste.
   WEB_FETCH_ALLOW_PRIVATE_NETWORKS: 'true',
   RATE_LIMIT_MESSAGES_PER_MINUTE: String(E2E_MESSAGES_PER_MINUTE),
+  MAX_PENDING_ATTACHMENTS_MB: String(E2E_MAX_PENDING_ATTACHMENTS_MB),
   ...(IS_LIVE && liveLlmEnvironment()),
 };

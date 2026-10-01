@@ -77,6 +77,8 @@ const envSchema = z
     GCS_BUCKET: z.string().optional(),
     LOCAL_STORAGE_DIR: z.string().default('.storage'),
     MAX_UPLOAD_MB: positiveInteger.default(20),
+    /** Teto, por usuário, dos anexos ainda não enviados em mensagem, somando todas as conversas. */
+    MAX_PENDING_ATTACHMENTS_MB: positiveInteger.default(500),
   })
   .superRefine((env, context) => {
     const fail = (key: keyof typeof env, message: string) =>
@@ -162,7 +164,7 @@ export interface AppConfig {
   adminEmails: string[];
   llm: LlmConfig;
   agent: AgentConfig;
-  files: { storage: FileStorageConfig; maxSizeBytes: number };
+  files: { storage: FileStorageConfig; maxSizeBytes: number; maxPendingBytesPerUser: number };
   billing: { defaultTokenLimit: number };
   rateLimits: RateLimitConfig;
   tools: ToolsConfig;
@@ -218,6 +220,7 @@ export function loadConfig(source: EnvSource = process.env): AppConfig {
           ? { kind: 'gcs', bucket: env.GCS_BUCKET ?? '' }
           : { kind: 'local', rootDir: env.LOCAL_STORAGE_DIR },
       maxSizeBytes: env.MAX_UPLOAD_MB * 1024 * 1024,
+      maxPendingBytesPerUser: env.MAX_PENDING_ATTACHMENTS_MB * 1024 * 1024,
     },
     billing: { defaultTokenLimit: env.DEFAULT_TOKEN_LIMIT },
     rateLimits: {

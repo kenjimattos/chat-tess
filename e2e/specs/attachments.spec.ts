@@ -4,6 +4,7 @@ import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { loginAs } from '../support/auth';
 import { ChatPage, fixture } from '../support/chat-page';
+import { E2E_MAX_PENDING_ATTACHMENTS_MB } from '../test-environment';
 
 /** Pasta do armazenamento local da API nos testes (LOCAL_STORAGE_DIR). */
 const STORAGE_DIR = path.resolve(import.meta.dirname, '../.storage');
@@ -162,6 +163,38 @@ test.describe('Anexos', () => {
     await chat.send('Seguem os arquivos');
     await expect(chat.assistantReplies().last()).toContainText('Recebi 10 anexo(s)');
     await expect(page.getByRole('button', { name: 'Anexar' })).toBeEnabled();
+  });
+
+  test('recusa anexos por enviar além do teto do usuário, somando as conversas', async ({
+    page,
+  }) => {
+    const maxPendingBytes = E2E_MAX_PENDING_ATTACHMENTS_MB * 1024 * 1024;
+    /** PDF que ocupa pouco mais da metade do teto: cabe um, não cabem dois. */
+    const largePdf = (name: string) => ({
+      name,
+      mimeType: 'application/pdf',
+      buffer: Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.alloc(maxPendingBytes * 0.6)]),
+    });
+    const fileInput = page.getByLabel('Anexar arquivos');
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await fileInput.setInputFiles(largePdf('primeiro.pdf'));
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText([/primeiro\.pdf/]);
+
+    await chat.startNewConversation();
+    await fileInput.setInputFiles(largePdf('segundo.pdf'));
+
+    await expect(page.getByRole('alert')).toContainText(
+      'Seus anexos ainda não enviados passariam de 1 MB',
+    );
+    await expect(pendingAttachments).toHaveCount(0);
+
+    // Removido o anexo que ocupava o teto, o segundo passa.
+    await page.goBack();
+    await page.getByRole('button', { name: 'Remover primeiro.pdf' }).click();
+    await expect(pendingAttachments).toHaveCount(0);
+    await page.goForward();
+    await fileInput.setInputFiles(largePdf('segundo.pdf'));
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText([/segundo\.pdf/]);
   });
 
   test('apagar a conversa apaga os arquivos dela do armazenamento', async ({ page }) => {

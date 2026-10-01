@@ -33,6 +33,7 @@ export interface FilesModuleDependencies {
   shares: ConversationShareRepository;
   storage: FileStorageConfig;
   maxSizeBytes: number;
+  maxPendingBytesPerUser: number;
 }
 
 export interface FilesModule {
@@ -60,7 +61,7 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
         storage,
         deps.eventBus,
         deps.clock,
-        deps.maxSizeBytes,
+        { maxSizeBytes: deps.maxSizeBytes, maxPendingBytesPerUser: deps.maxPendingBytesPerUser },
       ),
       listPendingAttachments: new ListPendingAttachments(deps.conversations, attachments),
       removePendingAttachment: new RemovePendingAttachment(
