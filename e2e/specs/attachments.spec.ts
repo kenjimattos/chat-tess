@@ -1,10 +1,11 @@
 import { MAX_ATTACHMENTS_PER_MESSAGE } from '@chat-tess/shared';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { globSync, readFileSync } from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { loginAs } from '../support/auth';
 import { ChatPage, fixture } from '../support/chat-page';
-import { E2E_MAX_PENDING_ATTACHMENTS_MB } from '../test-environment';
+import { API_URL, E2E_MAX_PENDING_ATTACHMENTS_MB } from '../test-environment';
 
 /** Pasta do armazenamento local da API nos testes (LOCAL_STORAGE_DIR). */
 const STORAGE_DIR = path.resolve(import.meta.dirname, '../.storage');
@@ -12,6 +13,39 @@ const STORAGE_DIR = path.resolve(import.meta.dirname, '../.storage');
 /** Arquivos que a API guardou para uma conversa, de qualquer usuário. */
 function storedFilesOf(conversationId: string): string[] {
   return globSync(`users/*/conversations/${conversationId}/*`, { cwd: STORAGE_DIR });
+}
+
+/**
+ * Começa um upload do usuário da página direto na API e o deixa pela metade,
+ * como um arquivo grande ainda subindo. `finish()` conclui o envio.
+ */
+async function startUnfinishedUpload(page: Page, conversationId: string) {
+  const cookies = await page.context().cookies();
+  const boundary = 'limite-do-teste';
+  const upload = http.request(`${API_URL}/api/conversations/${conversationId}/attachments`, {
+    method: 'POST',
+    headers: {
+      Cookie: cookies.map(({ name, value }) => `${name}=${value}`).join('; '),
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Transfer-Encoding': 'chunked',
+    },
+  });
+  const finished = new Promise<number>((resolve, reject) => {
+    upload.on('response', (response) => resolve(response.statusCode ?? 0)).on('error', reject);
+  });
+  const firstHalf =
+    `--${boundary}\r\n` +
+    'Content-Disposition: form-data; name="file"; filename="demorado.pdf"\r\n' +
+    'Content-Type: application/pdf\r\n\r\n%PDF-1.7\n';
+  await new Promise<void>((resolve) => upload.write(firstHalf, () => resolve()));
+
+  return {
+    /** Conclui o envio e devolve o status da resposta. */
+    finish(): Promise<number> {
+      upload.end(`conteúdo\r\n--${boundary}--\r\n`);
+      return finished;
+    },
+  };
 }
 
 test.describe('Anexos', () => {
@@ -195,6 +229,51 @@ test.describe('Anexos', () => {
     await page.goForward();
     await fileInput.setInputFiles(largePdf('segundo.pdf'));
     await expect(pendingAttachments.getByRole('listitem')).toHaveText([/segundo\.pdf/]);
+  });
+
+  test('anexar outro arquivo enquanto o primeiro sobe espera a vez, sem erro', async ({ page }) => {
+    const steps: string[] = [];
+    const uploadUrl = /\/api\/conversations\/[^/]+\/attachments$/;
+    // Atrasa cada upload, como um arquivo grande ainda subindo.
+    await page.route(uploadUrl, async (route) => {
+      steps.push('upload começa');
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await route.continue();
+    });
+    page.on('response', (response) => {
+      if (uploadUrl.test(response.url())) {
+        steps.push('upload termina');
+      }
+    });
+
+    await chat.attach('codigo-secreto.pdf');
+    await chat.attach('faixa-azul.png');
+
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText([
+      /codigo-secreto\.pdf/,
+      /faixa-azul\.png/,
+    ]);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(steps).toEqual(['upload começa', 'upload termina', 'upload começa', 'upload termina']);
+  });
+
+  test('avisa quando o usuário já tem um upload em andamento fora desta aba', async ({ page }) => {
+    const conversationId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    const otherUpload = await startUnfinishedUpload(page, conversationId);
+
+    await chat.attach('codigo-secreto.pdf');
+
+    await expect(page.getByRole('alert')).toHaveText(
+      'Você já tem um envio de arquivo em andamento. Aguarde ele terminar e tente de novo.',
+    );
+    expect(storedFilesOf(conversationId)).toHaveLength(0);
+
+    // Terminado o outro upload, o usuário volta a poder anexar.
+    expect(await otherUpload.finish()).toBe(201);
+    await chat.attach('codigo-secreto.pdf');
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText([/codigo-secreto\.pdf/]);
   });
 
   test('apagar a conversa apaga os arquivos dela do armazenamento', async ({ page }) => {

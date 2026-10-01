@@ -50,6 +50,16 @@ export class PendingAttachmentsQuotaExceededError extends AppError {
   }
 }
 
+export class UploadInProgressError extends AppError {
+  constructor() {
+    super(
+      'limit_exceeded',
+      'upload_in_progress',
+      'Você já tem um envio de arquivo em andamento. Aguarde ele terminar e tente de novo.',
+    );
+  }
+}
+
 export class AttachmentNotFoundError extends AppError {
   constructor(attachmentId: string) {
     super('not_found', 'attachment_not_found', 'Anexo não encontrado.', { attachmentId });

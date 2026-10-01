@@ -15,6 +15,7 @@ import {
 } from '../../api/attachments-api';
 import { ApiError } from '../../api/http-client';
 import { composerDrafts } from './composer-drafts-store';
+import { uploadQueue } from './upload-queue';
 
 export interface ComposerProps {
   conversationId: string;
@@ -63,9 +64,16 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
     }
   }
 
-  /** Sobe só os arquivos que ainda cabem na mensagem e avisa dos que ficaram de fora. */
+  /**
+   * Põe na fila de uploads os arquivos que ainda cabem na mensagem e avisa dos
+   * que ficaram de fora. Sobem um por vez, depois dos que já estão na fila.
+   */
   async function uploadFiles(files: FileList | null) {
     const selected = Array.from(files ?? []);
+    // Libera o campo já, para o usuário poder escolher mais arquivos enquanto estes sobem.
+    if (fileInput.current) {
+      fileInput.current.value = '';
+    }
     const fitting = selected.slice(0, freeAttachmentSlots);
     setUploadError(
       fitting.length < selected.length
@@ -74,22 +82,28 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
         : null,
     );
 
-    for (const file of fitting) {
+    // Limite atingido: os arquivos seguintes seriam recusados do mesmo jeito.
+    let hasReachedLimit = false;
+    const uploads = fitting.map((file) => {
       composerDrafts.uploadStarted(conversationId);
-      try {
-        composerDrafts.uploadFinished(conversationId, await uploadAttachment(conversationId, file));
-      } catch (error) {
-        composerDrafts.uploadFinished(conversationId);
-        setUploadError(error instanceof ApiError ? error.message : `Falha ao enviar ${file.name}.`);
-        // Limite atingido: os arquivos seguintes seriam recusados do mesmo jeito.
-        if (error instanceof ApiError && error.status === 429) {
-          break;
+      return uploadQueue.enqueue(async () => {
+        if (hasReachedLimit) {
+          composerDrafts.uploadFinished(conversationId);
+          return;
         }
-      }
-    }
-    if (fileInput.current) {
-      fileInput.current.value = '';
-    }
+        try {
+          const attachment = await uploadAttachment(conversationId, file);
+          composerDrafts.uploadFinished(conversationId, attachment);
+        } catch (error) {
+          composerDrafts.uploadFinished(conversationId);
+          setUploadError(
+            error instanceof ApiError ? error.message : `Falha ao enviar ${file.name}.`,
+          );
+          hasReachedLimit = error instanceof ApiError && error.status === 429;
+        }
+      });
+    });
+    await Promise.all(uploads);
   }
 
   /** Apaga o arquivo na API; o anexo só sai da lista se a remoção der certo. */

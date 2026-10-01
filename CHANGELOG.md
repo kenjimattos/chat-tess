@@ -79,6 +79,12 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   anexo acontecem numa só transação, com a linha do usuário travada. Antes, uploads disparados em
   paralelo direto na API liam a mesma soma e passavam juntos do limite. O arquivo recusado é
   apagado do armazenamento.
+- Um upload por vez por usuário em cada instância da API. O segundo upload simultâneo é recusado
+  com 429 (`upload_in_progress`) antes de o arquivo ser lido, e o usuário vê que já há um envio em
+  andamento. Protege a memória da instância contra uploads paralelos de uma mesma conta. Na tela,
+  os uploads entram numa fila única do app: anexar outro arquivo enquanto o anterior sobe, na
+  mesma conversa ou em outra, só espera a vez. O aviso fica para uploads feitos em outra aba ou
+  direto na API.
 
 ### Fixed
 

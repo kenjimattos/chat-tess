@@ -9,6 +9,7 @@ import type { ReadSharedAttachment } from '../application/read-shared-attachment
 import type { RemovePendingAttachment } from '../application/remove-pending-attachment';
 import type { UploadAttachment } from '../application/upload-attachment';
 import { FileTooLargeError } from '../domain/file-errors';
+import { createOneUploadAtATime } from './one-upload-at-a-time';
 
 export interface FilesRouterOptions {
   requireAuthentication: RequestHandler;
@@ -37,6 +38,7 @@ export function createFilesRouter(options: FilesRouterOptions): Router {
     '/conversations/:conversationId/attachments',
     options.requireAuthentication,
     options.uploadRateLimit,
+    createOneUploadAtATime(),
     receiveSingleFile,
     async (request, response) => {
       if (!request.file) {
