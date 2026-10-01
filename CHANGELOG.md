@@ -26,6 +26,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   por que a colaboração ficou para depois.
 - README: seção de testes, com o número de arquivos de teste e de specs e2e e o que os specs
   cobrem.
+- `docs/testes.md`: como rodar a suíte Vitest, os quatro projetos, o que cada camada testa, os
+  dublês, os testes de integração, a cobertura mínima e as convenções. O README aponta para ele.
 - Histórico em páginas na API: `GET /api/conversations/:id` e `GET /api/shared/:token` devolvem
   as 50 mensagens mais recentes e `hasEarlierMessages`; `?before=<sequência>` traz as anteriores
   (`?limit=` até 100). Antes, abrir uma conversa trazia todas as mensagens, sem limite. No link
