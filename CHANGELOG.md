@@ -33,6 +33,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Tela do chat e do link compartilhado abrem pelas mensagens mais recentes e mostram o botão
   "Carregar mensagens anteriores" enquanto houver mais; a posição de leitura é mantida ao carregar.
   Coberto pelo spec e2e `history.spec.ts`.
+- README: seção "Do POC à produção", com os limites de dimensionamento atuais (anexos em memória,
+  vagas do Cloud Run, conexões do banco, reserva de turno, auditoria síncrona, retenção e cota do
+  Gemini), quando cada um aparece e a correção. Substitui a nota sobre uploads, que atribuía ao
+  rate limit um teto que ele não impõe.
 - Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
   modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
   processada; as que passam do limite esperam a vez, sem falhar.

@@ -157,11 +157,39 @@ simultâneas cada. Outros pontos:
   espera crescente, antes de qualquer texto chegar.
 - **Conexões.** Pool de 5 conexões por instância (`DATABASE_POOL_MAX`), dentro do limite do Cloud
   SQL `db-f1-micro`.
-- **Uploads** ficam na memória da instância (1 GB) até irem para o Cloud Storage; o tamanho
-  máximo por arquivo e o rate limit de uploads limitam o pico.
 - **Resposta ligada à conexão.** Trocar de conversa não interrompe a resposta, mas fechar a aba
   sim: no Cloud Run com CPU alocada só durante requisições, um turno sem conexão aberta ficaria sem
   CPU.
+
+## Do POC à produção
+
+A infraestrutura está dimensionada para poucos usuários conhecidos (lista de e-mails permitidos).
+Esta seção separa o que já não cresce com o uso do que precisa mudar antes de abrir para mais
+gente, com o sinal de que chegou a hora e a correção.
+
+**Já não cresce com o uso:**
+
+- **Histórico.** A tela abre pelas 50 mensagens mais recentes e busca as anteriores a pedido; o
+  agente lê do banco só o que o resumo da conversa ainda não cobre.
+- **Tools.** Até 3 executam ao mesmo tempo por rodada, com limite de tamanho por página lida.
+- **Arquivos.** Apagar a conversa apaga os arquivos dela no Cloud Storage.
+- **Limites entre instâncias.** Rate limit e turnos simultâneos ficam no Postgres, então valem
+  para qualquer número de instâncias.
+
+**Precisa mudar para escalar:**
+
+| Limite de hoje                                                                                                                                        | Quando aparece                                                                              | Correção                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Upload e download de anexo passam inteiros pela memória da instância (até 20 MB cada, em 1 GB). O rate limit é por usuário e não impõe um teto global | Dezenas de arquivos grandes ao mesmo tempo; o download acontece a cada abertura da conversa | Streaming entre o navegador e o Cloud Storage, ou upload direto por URL assinada        |
+| Cada resposta ocupa uma vaga do Cloud Run até terminar: 2 instâncias × 80 requisições                                                                 | Cerca de 160 respostas simultâneas; acima disso, 429                                        | Subir `--max-instances`, junto com o banco (linha abaixo)                               |
+| Pool de 5 conexões por instância num Cloud SQL `db-f1-micro` (cerca de 25 conexões)                                                                   | Mais de 4 instâncias, ou fila no pool com muitos turnos                                     | Tier maior e pooler de conexões                                                         |
+| Uma instância que cai deixa as conversas com resposta em andamento bloqueadas por até 15 minutos, até a reserva do turno expirar                      | Deploy, redução de instâncias ou falta de memória durante uma resposta                      | Renovar a reserva enquanto o turno roda, ou tirar o turno da requisição (fila e worker) |
+| A auditoria é gravada dentro da requisição, um `INSERT` por evento; se falhar, só fica no log                                                         | Latência cresce com a carga; trilha incompleta em falhas do banco                           | Outbox no Postgres ou Pub/Sub                                                           |
+| Auditoria, consumo e chamadas de tools não têm política de retenção; anexos enviados e nunca usados numa mensagem só saem ao apagar a conversa        | Meses de uso num disco de 10 GB                                                             | Retenção por prazo (job agendado) e regra de ciclo de vida no bucket                    |
+| A cota do Gemini é do projeto, dividida por todos os usuários; a repetição cobre três tentativas                                                      | Picos: 429 para todos ao mesmo tempo                                                        | Throughput provisionado e fila com espera                                               |
+
+O cold start e a resposta ligada à conexão, descritos em [Desempenho](#desempenho), entram na mesma
+lista: instância mínima e turno fora da requisição resolvem os dois.
 
 ## Deploy
 
