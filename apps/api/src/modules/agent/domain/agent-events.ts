@@ -29,3 +29,17 @@ export type AgentTurnFailed = DomainEvent<
   'agent.turn_failed',
   { conversationId: string; errorCode: string; errorMessage: string }
 >;
+
+/** O turno parou à espera da autorização do usuário para estas chamadas de tool. */
+export type ToolApprovalRequested = DomainEvent<
+  'tool.approval_requested',
+  {
+    conversationId: string;
+    calls: { callId: string; toolName: string; input: Record<string, unknown> }[];
+  }
+>;
+
+export type ToolApprovalDecided = DomainEvent<
+  'tool.approval_decided',
+  { conversationId: string; approvedCallIds: string[]; deniedCallIds: string[] }
+>;

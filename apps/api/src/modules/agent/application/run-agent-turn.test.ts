@@ -5,8 +5,13 @@ import { RecordingEventPublisher } from '../../../shared/events/recording-event-
 import { ManualClock } from '../../../shared/time/clock';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
-import { ContextWindowExceededError, EmptyMessageError } from '../domain/agent-errors';
+import {
+  ContextWindowExceededError,
+  EmptyMessageError,
+  NoPendingApprovalError,
+} from '../domain/agent-errors';
 import { TooManyActiveTurnsError, TurnInProgressError } from '../domain/active-turns';
+import { DENIED_BY_USER, LEFT_UNANSWERED } from '../domain/tool-approval';
 import { unlimitedUsage, type UsageLimiter } from '../domain/usage-limiter';
 import { FakeToolbox } from '../infra/fake-toolbox';
 import { InMemoryActiveTurns } from '../infra/in-memory-active-turns';
@@ -602,6 +607,240 @@ describe('RunAgentTurn', () => {
         code: 'tool_rounds_exceeded',
         message: 'O agente usou tools demais neste turno e foi interrompido.',
       });
+    });
+  });
+
+  describe('autorização do usuário para tools', () => {
+    const emailCall = {
+      type: 'tool_call' as const,
+      callId: 'call-email',
+      toolName: 'send_email',
+      input: { to: 'fora@atacante.example' },
+    };
+    const weatherCall = {
+      type: 'tool_call' as const,
+      callId: 'call-weather',
+      toolName: 'weather',
+      input: { city: 'Recife' },
+    };
+
+    function toolboxWithEmailRequiringApproval() {
+      return new FakeToolbox({ send_email: () => 'enviado', weather: () => 'Recife: 29°C' }, [
+        'send_email',
+      ]);
+    }
+
+    async function decide(agent: RunAgentTurn, approvedCallIds: string[]) {
+      return collect(
+        await agent.decideToolApprovals({ userId: ANA, conversationId, approvedCallIds }),
+      );
+    }
+
+    it('para o turno e pede a autorização, sem executar a tool', async () => {
+      const toolbox = toolboxWithEmailRequiringApproval();
+      const llm = ScriptedLlmProvider.replyingInOrder({
+        text: 'Vou enviar.',
+        toolCalls: [emailCall],
+      });
+
+      const streamed = await send(buildAgent(llm, { toolbox }), 'Envie o relatório');
+
+      expect(streamed.at(-1)).toEqual({
+        type: 'approval_required',
+        calls: [
+          { callId: 'call-email', toolName: 'send_email', input: { to: 'fora@atacante.example' } },
+        ],
+      });
+      expect(toolbox.executions).toEqual([]);
+      const saved = await store.listByConversation(conversationId);
+      expect(saved.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          { type: 'text', text: 'Vou enviar.' },
+          { ...emailCall, requiresApproval: true },
+        ],
+      });
+    });
+
+    it('executa a chamada autorizada e segue com a resposta', async () => {
+      const toolbox = toolboxWithEmailRequiringApproval();
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [emailCall] },
+        { text: 'Relatório enviado.' },
+      );
+      const agent = buildAgent(llm, { toolbox });
+      await send(agent, 'Envie o relatório');
+
+      const streamed = await decide(agent, ['call-email']);
+
+      expect(toolbox.executions.map(({ call }) => call.callId)).toEqual(['call-email']);
+      expect(streamed.filter(({ type }) => type.startsWith('tool_'))).toEqual([
+        {
+          type: 'tool_started',
+          callId: 'call-email',
+          toolName: 'send_email',
+          input: emailCall.input,
+        },
+        { type: 'tool_finished', callId: 'call-email', toolName: 'send_email', isError: false },
+      ]);
+      expect(textOf(streamed)).toBe('Relatório enviado.');
+      expect(streamed.at(-1)?.type).toBe('done');
+      expect(llm.requests[1]?.messages.at(-1)).toMatchObject({
+        role: 'tool',
+        parts: [{ callId: 'call-email', output: 'enviado', isError: false }],
+      });
+    });
+
+    it('devolve a recusa ao LLM, sem executar a tool negada', async () => {
+      const toolbox = toolboxWithEmailRequiringApproval();
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [emailCall] },
+        { text: 'Certo, não enviei.' },
+      );
+      const agent = buildAgent(llm, { toolbox });
+      await send(agent, 'Envie o relatório');
+
+      const streamed = await decide(agent, []);
+
+      expect(toolbox.executions).toEqual([]);
+      expect(streamed.some(({ type }) => type.startsWith('tool_'))).toBe(false);
+      expect(textOf(streamed)).toBe('Certo, não enviei.');
+      expect(llm.requests[1]?.messages.at(-1)).toEqual({
+        role: 'tool',
+        parts: [
+          {
+            type: 'tool_result',
+            callId: 'call-email',
+            toolName: 'send_email',
+            output: DENIED_BY_USER,
+            isError: true,
+          },
+        ],
+      });
+    });
+
+    it('segura a rodada inteira: as chamadas sem autorização executam na retomada', async () => {
+      const toolbox = toolboxWithEmailRequiringApproval();
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [weatherCall, emailCall] },
+        { text: 'Está 29°C; o e-mail não foi enviado.' },
+      );
+      const agent = buildAgent(llm, { toolbox });
+
+      const asked = await send(agent, 'Clima e e-mail');
+      expect(toolbox.executions).toEqual([]);
+      expect(asked.at(-1)).toMatchObject({
+        type: 'approval_required',
+        calls: [{ callId: 'call-email' }],
+      });
+
+      await decide(agent, []);
+
+      expect(toolbox.executions.map(({ call }) => call.callId)).toEqual(['call-weather']);
+      expect(llm.requests[1]?.messages.at(-1)?.parts).toMatchObject([
+        { callId: 'call-weather', output: 'Recife: 29°C', isError: false },
+        { callId: 'call-email', output: DENIED_BY_USER, isError: true },
+      ]);
+    });
+
+    it('ignora na decisão as chamadas que não esperavam autorização', async () => {
+      const toolbox = toolboxWithEmailRequiringApproval();
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [emailCall] },
+        { text: 'Pronto.' },
+      );
+      const agent = buildAgent(llm, { toolbox });
+      await send(agent, 'Envie o relatório');
+
+      await decide(agent, ['call-desconhecida']);
+
+      expect(toolbox.executions).toEqual([]);
+      expect(events.ofType('tool.approval_decided').at(-1)?.payload).toEqual({
+        conversationId,
+        approvedCallIds: [],
+        deniedCallIds: ['call-email'],
+      });
+    });
+
+    it('registra o pedido e a decisão', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [emailCall] },
+        { text: 'Relatório enviado.' },
+      );
+      const agent = buildAgent(llm, { toolbox: toolboxWithEmailRequiringApproval() });
+
+      await send(agent, 'Envie o relatório');
+      await decide(agent, ['call-email']);
+
+      expect(events.ofType('tool.approval_requested')).toMatchObject([
+        {
+          actorUserId: ANA,
+          payload: {
+            conversationId,
+            calls: [{ callId: 'call-email', toolName: 'send_email', input: emailCall.input }],
+          },
+        },
+      ]);
+      expect(events.ofType('tool.approval_decided')).toMatchObject([
+        {
+          actorUserId: ANA,
+          payload: { conversationId, approvedCallIds: ['call-email'], deniedCallIds: [] },
+        },
+      ]);
+    });
+
+    it('libera a conversa enquanto espera a decisão', async () => {
+      const llm = ScriptedLlmProvider.replyingInOrder({ toolCalls: [emailCall] });
+
+      await send(buildAgent(llm, { toolbox: toolboxWithEmailRequiringApproval() }), 'Envie');
+
+      expect(activeTurns.activeCount).toBe(0);
+    });
+
+    it('recusa a decisão quando não há pedido em aberto, e libera a conversa', async () => {
+      await seedHistory(1);
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      await expect(decide(agent, [])).rejects.toBeInstanceOf(NoPendingApprovalError);
+      expect(activeTurns.activeCount).toBe(0);
+    });
+
+    it('recusa a decisão sobre a conversa de outro usuário', async () => {
+      const agent = buildAgent(ScriptedLlmProvider.replyingInOrder());
+
+      await expect(
+        agent.decideToolApprovals({ userId: BIA, conversationId, approvedCallIds: [] }),
+      ).rejects.toBeInstanceOf(ConversationNotFoundError);
+    });
+
+    it('fecha o pedido sem resposta quando o usuário envia outra mensagem', async () => {
+      const toolbox = toolboxWithEmailRequiringApproval();
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { toolCalls: [emailCall] },
+        { text: 'Tudo bem, mudando de assunto.' },
+      );
+      const agent = buildAgent(llm, { toolbox });
+      await send(agent, 'Envie o relatório');
+
+      await send(agent, 'Deixa pra lá');
+
+      expect(toolbox.executions).toEqual([]);
+      expect(llm.requests[1]?.messages.slice(-2)).toEqual([
+        {
+          role: 'tool',
+          parts: [
+            {
+              type: 'tool_result',
+              callId: 'call-email',
+              toolName: 'send_email',
+              output: LEFT_UNANSWERED,
+              isError: true,
+            },
+          ],
+        },
+        { role: 'user', parts: [{ type: 'text', text: 'Deixa pra lá' }] },
+      ]);
+      await expect(decide(agent, ['call-email'])).rejects.toBeInstanceOf(NoPendingApprovalError);
     });
   });
 

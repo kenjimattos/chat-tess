@@ -17,3 +17,12 @@ export const resendLastMessageRequestSchema = z.object({
   text: z.string().max(100_000).optional(),
 });
 export type ResendLastMessageRequest = z.input<typeof resendLastMessageRequestSchema>;
+
+/**
+ * Decisão do usuário sobre as chamadas de tool que esperam autorização na conversa.
+ * As chamadas fora de `approvedCallIds` são negadas.
+ */
+export const decideToolApprovalsRequestSchema = z.object({
+  approvedCallIds: z.array(z.string()).max(50).default([]),
+});
+export type DecideToolApprovalsRequest = z.input<typeof decideToolApprovalsRequestSchema>;

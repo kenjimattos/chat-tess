@@ -16,6 +16,16 @@ export class NoMessageToResendError extends AppError {
   }
 }
 
+export class NoPendingApprovalError extends AppError {
+  constructor() {
+    super(
+      'conflict',
+      'no_pending_approval',
+      'Esta conversa não tem um pedido de autorização em aberto.',
+    );
+  }
+}
+
 /** Lançado pelo adapter quando o contexto enviado passa do limite do modelo. */
 export class ContextWindowExceededError extends AppError {
   constructor() {

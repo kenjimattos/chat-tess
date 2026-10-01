@@ -1,4 +1,5 @@
 import {
+  decideToolApprovalsRequestSchema,
   resendLastMessageRequestSchema,
   sendMessageRequestSchema,
   type StreamEvent,
@@ -17,11 +18,13 @@ export interface MessagesRouterOptions {
 }
 
 /**
- * As duas rotas devolvem a resposta do agente como Server-Sent Events. Erros
+ * As rotas devolvem a resposta do agente como Server-Sent Events. Erros
  * de validação respondem em JSON, antes de o stream começar.
  * - POST /conversations/:id/messages               envia uma mensagem
  * - POST /conversations/:id/messages/last/resend   refaz o último turno; com `text`, edita a
  *   última mensagem do usuário antes
+ * - POST /conversations/:id/tool-approvals         autoriza ou nega as tools que esperam a
+ *   decisão do usuário e retoma o turno
  */
 export function createMessagesRouter({
   requireAuthentication,
@@ -61,6 +64,24 @@ export function createMessagesRouter({
         userId: authenticatedUser(response).id,
         conversationId: conversationIdOf(request),
         text,
+        signal: disconnection.signal,
+      });
+      await streamReply(response, replyStream);
+    },
+  );
+
+  router.post(
+    '/conversations/:conversationId/tool-approvals',
+    requireAuthentication,
+    rateLimit,
+    async (request, response) => {
+      const { approvedCallIds } = decideToolApprovalsRequestSchema.parse(request.body ?? {});
+      const disconnection = abortOnDisconnect(response);
+
+      const replyStream = await runAgentTurn.decideToolApprovals({
+        userId: authenticatedUser(response).id,
+        conversationId: conversationIdOf(request),
+        approvedCallIds,
         signal: disconnection.signal,
       });
       await streamReply(response, replyStream);

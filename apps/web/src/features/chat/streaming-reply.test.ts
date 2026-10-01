@@ -45,4 +45,16 @@ describe('applyStreamEvent', () => {
   it('termina ao receber o fim da resposta', () => {
     expect(applyAll([{ type: 'done', messageId: 'm1' }]).isFinished).toBe(true);
   });
+
+  it('termina quando o turno para à espera da autorização do usuário', () => {
+    const reply = applyAll([
+      { type: 'text_delta', text: 'Vou abrir a página.' },
+      {
+        type: 'approval_required',
+        calls: [{ callId: 'c1', toolName: 'web_scrape', input: { url: 'https://example.com' } }],
+      },
+    ]);
+
+    expect(reply).toMatchObject({ text: 'Vou abrir a página.', error: null, isFinished: true });
+  });
 });

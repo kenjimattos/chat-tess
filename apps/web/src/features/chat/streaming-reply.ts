@@ -54,6 +54,9 @@ export function applyStreamEvent(reply: StreamingReply, event: StreamEvent): Str
       return { ...reply, error: event.message, isFinished: true };
     case 'done':
       return { ...reply, isFinished: true };
+    // O turno parou à espera do usuário; o pedido aparece a partir do histórico.
+    case 'approval_required':
+      return { ...reply, isFinished: true };
     case 'usage':
       return reply;
   }

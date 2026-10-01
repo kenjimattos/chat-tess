@@ -124,6 +124,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   olhando os argumentos de cada chamada. O registro de tools repassa a pergunta ao agente. É a base
   para que ações que mudam algo fora da conversa, ou que podem levar dados dela a terceiros, não
   sejam disparadas só por uma instrução escondida em conteúdo externo.
+- Autorização do usuário para chamadas de tool. Quando o LLM pede uma tool que depende dela, o
+  turno grava o pedido, avisa pelo evento de stream `approval_required` e para, sem executar
+  nenhuma tool da rodada. `POST /api/conversations/:id/tool-approvals` recebe a decisão e retoma o
+  turno: as chamadas autorizadas executam e as negadas voltam ao LLM como recusa. O estado da
+  espera é o próprio histórico, então vale entre instâncias e depois de recarregar a página. Se o
+  usuário enviar outra mensagem sem decidir, as chamadas são fechadas como não executadas. Pedido
+  e decisão vão para a auditoria (`tool.approval_requested`, `tool.approval_decided`).
 
 ## [0.2.0] - 2026-09-30
 

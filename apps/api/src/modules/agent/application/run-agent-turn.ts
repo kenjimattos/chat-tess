@@ -27,6 +27,7 @@ import {
   ContextWindowExceededError,
   EmptyMessageError,
   NoMessageToResendError,
+  NoPendingApprovalError,
   ResponseBlockedError,
   ResponseTruncatedError,
 } from '../domain/agent-errors';
@@ -35,6 +36,8 @@ import type {
   LlmCallCompleted,
   MessageResent,
   MessageSent,
+  ToolApprovalDecided,
+  ToolApprovalRequested,
 } from '../domain/agent-events';
 import type { AttachmentCatalog } from '../domain/attachment-catalog';
 import { shouldCompact, type CompactionThreshold } from '../domain/compaction-policy';
@@ -44,7 +47,8 @@ import type {
 } from '../domain/conversation-memory';
 import type { LlmFinishReason, LlmProvider, LlmRequest } from '../domain/llm';
 import { buildSystemPrompt } from '../domain/system-prompt';
-import type { Toolbox } from '../domain/toolbox';
+import { DENIED_BY_USER, LEFT_UNANSWERED, notExecuted, toolCallsIn } from '../domain/tool-approval';
+import type { ToolExecutionContext, Toolbox } from '../domain/toolbox';
 import type { UsageLimiter } from '../domain/usage-limiter';
 import { buildLlmMessages } from './build-llm-messages';
 import type { CompactConversation } from './compact-conversation';
@@ -65,6 +69,11 @@ export interface RunAgentTurnInput extends TurnRequest {
 export interface ResendLastMessageInput extends TurnRequest {
   /** Novo texto da mensagem; sem ele, a mensagem é reenviada como está. */
   text?: string;
+}
+
+export interface DecideToolApprovalsInput extends TurnRequest {
+  /** Chamadas autorizadas; as demais que esperavam autorização são negadas. */
+  approvedCallIds: string[];
 }
 
 export interface AgentSettings extends CompactionThreshold {
@@ -106,6 +115,23 @@ interface Turn {
   hasForcedCompaction: boolean;
 }
 
+/** Uma rodada de tools já pedida pelo LLM, à espera de execução. */
+interface ToolRound {
+  calls: ToolCallPart[];
+  /** Chamadas que o usuário não autorizou: o LLM recebe a recusa no lugar do resultado. */
+  deniedCallIds: ReadonlySet<string>;
+}
+
+/** Como o turno começa, depois de o histórico estar pronto. */
+interface TurnOpening {
+  /** Texto que acabou de entrar, para estimar se o contexto precisa de compactação. */
+  incomingText: string;
+  /** Rodada que esperava a autorização do usuário: roda antes de chamar o LLM de novo. */
+  pendingRound?: ToolRound;
+}
+
+const NO_DENIED_CALLS: ReadonlySet<string> = new Set();
+
 interface LlmCallResult {
   text: string;
   toolCalls: ToolCallPart[];
@@ -119,6 +145,8 @@ const GENERIC_FAILURE_MESSAGE = 'Não foi possível gerar a resposta. Tente nova
 /**
  * Um turno do agente: grava a mensagem do usuário e gera a resposta em
  * stream, compactando o histórico e executando tools quando necessário.
+ * Quando uma tool depende da autorização do usuário, o turno para e é
+ * retomado por `decideToolApprovals`.
  */
 export class RunAgentTurn {
   constructor(private readonly deps: AgentTurnDependencies) {}
@@ -142,8 +170,9 @@ export class RunAgentTurn {
             conversationId: conversation.id,
           })
         : [];
+      await this.closeUnansweredToolCalls(conversation);
       await this.saveUserMessage(input.userId, conversation, text, attachmentParts);
-      return text;
+      return { incomingText: text };
     });
   }
 
@@ -153,19 +182,50 @@ export class RunAgentTurn {
    * A resposta anterior é substituída, não guardada. Erros e stream como em `start`.
    */
   async resend(input: ResendLastMessageInput): Promise<AsyncIterable<StreamEvent>> {
-    return this.beginTurn(input, (conversation) =>
-      this.rewindToLastUserMessage(input.userId, conversation, input.text),
-    );
+    return this.beginTurn(input, async (conversation) => ({
+      incomingText: await this.rewindToLastUserMessage(input.userId, conversation, input.text),
+    }));
+  }
+
+  /**
+   * Retoma o turno que parou à espera de autorização: executa as chamadas
+   * autorizadas, devolve a recusa das demais ao LLM e segue com a resposta.
+   * Erros e stream como em `start`.
+   */
+  async decideToolApprovals(input: DecideToolApprovalsInput): Promise<AsyncIterable<StreamEvent>> {
+    return this.beginTurn(input, async (conversation) => {
+      const calls = await this.unansweredToolCalls(conversation);
+      const awaitingApproval = calls.filter((call) => call.requiresApproval);
+      if (awaitingApproval.length === 0) {
+        throw new NoPendingApprovalError();
+      }
+
+      const approvedCallIds = awaitingApproval
+        .map((call) => call.callId)
+        .filter((callId) => input.approvedCallIds.includes(callId));
+      const deniedCallIds = awaitingApproval
+        .map((call) => call.callId)
+        .filter((callId) => !approvedCallIds.includes(callId));
+
+      await this.deps.events.publish({
+        type: 'tool.approval_decided',
+        occurredAt: this.deps.clock.now(),
+        actorUserId: input.userId,
+        payload: { conversationId: conversation.id, approvedCallIds, deniedCallIds },
+      } satisfies ToolApprovalDecided);
+
+      return { incomingText: '', pendingRound: { calls, deniedCallIds: new Set(deniedCallIds) } };
+    });
   }
 
   /**
    * Passos comuns a todo turno: confere a conversa, reserva o turno e confere
-   * o crédito. `prepareHistory` deixa a mensagem do usuário no fim do
-   * histórico e devolve o texto dela.
+   * o crédito. `prepareHistory` deixa o histórico pronto para o agente
+   * continuar e diz como o turno começa.
    */
   private async beginTurn(
     { userId, conversationId, signal }: TurnRequest,
-    prepareHistory: (conversation: Conversation) => Promise<string>,
+    prepareHistory: (conversation: Conversation) => Promise<TurnOpening>,
   ): Promise<AsyncIterable<StreamEvent>> {
     const conversation = await findOwnedConversation(
       this.deps.conversations,
@@ -174,10 +234,10 @@ export class RunAgentTurn {
     );
     const turnId = await this.reserveTurn(userId, conversation.id);
 
-    let incomingText: string;
+    let opening: TurnOpening;
     try {
       await this.deps.usageLimiter.assertCanSpend(userId);
-      incomingText = await prepareHistory(conversation);
+      opening = await prepareHistory(conversation);
     } catch (error) {
       await this.deps.activeTurns.release(turnId);
       throw error;
@@ -191,7 +251,7 @@ export class RunAgentTurn {
       summary: null,
       hasForcedCompaction: false,
     };
-    return this.respond(turn, incomingText);
+    return this.respond(turn, opening);
   }
 
   private async reserveTurn(userId: string, conversationId: string): Promise<string> {
@@ -210,6 +270,27 @@ export class RunAgentTurn {
         throw new TurnInProgressError();
       case 'user_limit_reached':
         throw new TooManyActiveTurnsError(maxPerUser);
+    }
+  }
+
+  /** Chamadas da última mensagem do assistente que ainda não têm resultado gravado. */
+  private async unansweredToolCalls(conversation: Conversation): Promise<ToolCallPart[]> {
+    const { messages } = await this.deps.messages.listPage(conversation.id, { limit: 1 });
+    const lastMessage = messages[0];
+    return lastMessage?.role === 'assistant' ? toolCallsIn(lastMessage.parts) : [];
+  }
+
+  /**
+   * O usuário seguiu a conversa sem responder ao pedido de autorização. O LLM
+   * exige um resultado para cada chamada: as que ficaram sem resposta recebem o aviso.
+   */
+  private async closeUnansweredToolCalls(conversation: Conversation): Promise<void> {
+    const calls = await this.unansweredToolCalls(conversation);
+    if (calls.length > 0) {
+      await this.deps.messages.append(conversation.id, {
+        role: 'tool',
+        parts: calls.map((call) => notExecuted(call, LEFT_UNANSWERED)),
+      });
     }
   }
 
@@ -292,8 +373,15 @@ export class RunAgentTurn {
     return textOf(parts);
   }
 
-  private async *respond(turn: Turn, incomingText: string): AsyncGenerator<StreamEvent> {
+  private async *respond(
+    turn: Turn,
+    { incomingText, pendingRound }: TurnOpening,
+  ): AsyncGenerator<StreamEvent> {
     try {
+      if (pendingRound) {
+        yield* this.runTools(turn, pendingRound);
+      }
+
       const memory = await this.deps.memory.load(turn.conversation.id);
       turn.summary = memory.summary;
 
@@ -314,8 +402,13 @@ export class RunAgentTurn {
           return;
         }
 
-        yield* this.saveAssistantMessage(turn, result.text, result.toolCalls, { final: false });
-        yield* this.runTools(turn, result.toolCalls);
+        const toolCalls = await this.flagCallsRequiringApproval(turn, result.toolCalls);
+        yield* this.saveAssistantMessage(turn, result.text, toolCalls, { final: false });
+        if (toolCalls.some((call) => call.requiresApproval)) {
+          yield await this.askForApproval(turn, toolCalls);
+          return;
+        }
+        yield* this.runTools(turn, { calls: toolCalls, deniedCallIds: NO_DENIED_CALLS });
       }
 
       throw new AppError(
@@ -469,8 +562,43 @@ export class RunAgentTurn {
     } satisfies LlmCallCompleted);
   }
 
-  private async *runTools(turn: Turn, calls: ToolCallPart[]): AsyncGenerator<StreamEvent> {
-    for (const call of calls) {
+  private flagCallsRequiringApproval(turn: Turn, calls: ToolCallPart[]): Promise<ToolCallPart[]> {
+    const context = toolContextOf(turn);
+    return Promise.all(
+      calls.map(async (call) =>
+        (await this.deps.toolbox.requiresApproval(call, context))
+          ? { ...call, requiresApproval: true }
+          : call,
+      ),
+    );
+  }
+
+  /**
+   * Para o turno sem executar nenhuma tool da rodada: o LLM espera os
+   * resultados de todas as chamadas juntos, então elas aguardam a decisão juntas.
+   */
+  private async askForApproval(turn: Turn, calls: ToolCallPart[]): Promise<StreamEvent> {
+    const awaitingApproval = calls
+      .filter((call) => call.requiresApproval)
+      .map(({ callId, toolName, input }) => ({ callId, toolName, input }));
+
+    await this.deps.events.publish({
+      type: 'tool.approval_requested',
+      occurredAt: this.deps.clock.now(),
+      actorUserId: turn.userId,
+      payload: { conversationId: turn.conversation.id, calls: awaitingApproval },
+    } satisfies ToolApprovalRequested);
+
+    return { type: 'approval_required', calls: awaitingApproval };
+  }
+
+  private async *runTools(
+    turn: Turn,
+    { calls, deniedCallIds }: ToolRound,
+  ): AsyncGenerator<StreamEvent> {
+    const isAllowed = (call: { callId: string }) => !deniedCallIds.has(call.callId);
+
+    for (const call of calls.filter(isAllowed)) {
       yield {
         type: 'tool_started',
         callId: call.callId,
@@ -479,19 +607,18 @@ export class RunAgentTurn {
       };
     }
 
+    const context = toolContextOf(turn);
     const results = await mapWithConcurrency(
       calls,
       this.deps.settings.maxParallelToolCalls,
-      (call) =>
-        this.deps.toolbox.execute(call, {
-          userId: turn.userId,
-          conversationId: turn.conversation.id,
-          signal: turn.signal,
-        }),
+      async (call) =>
+        isAllowed(call)
+          ? this.deps.toolbox.execute(call, context)
+          : notExecuted(call, DENIED_BY_USER),
     );
     await this.deps.messages.append(turn.conversation.id, { role: 'tool', parts: results });
 
-    for (const result of results) {
+    for (const result of results.filter(isAllowed)) {
       yield {
         type: 'tool_finished',
         callId: result.callId,
@@ -539,6 +666,10 @@ export class RunAgentTurn {
 
     return { type: 'error', code, message };
   }
+}
+
+function toolContextOf(turn: Turn): ToolExecutionContext {
+  return { userId: turn.userId, conversationId: turn.conversation.id, signal: turn.signal };
 }
 
 /** As partes da mensagem com o texto trocado, mantendo os anexos. */

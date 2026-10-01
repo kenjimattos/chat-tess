@@ -31,6 +31,8 @@ export const toolCallPartSchema = z.object({
   input: z.record(z.string(), z.unknown()),
   /** Dados opacos do provedor que precisam voltar intactos no turno seguinte. */
   providerMetadata: z.record(z.string(), z.unknown()).optional(),
+  /** A chamada só executa depois de o usuário autorizar. */
+  requiresApproval: z.boolean().optional(),
 });
 export type ToolCallPart = z.infer<typeof toolCallPartSchema>;
 

@@ -26,6 +26,20 @@ export const streamEventSchema = z.discriminatedUnion('type', [
     toolName: z.string(),
     isError: z.boolean(),
   }),
+  /**
+   * O turno parou: as chamadas listadas só executam depois de o usuário autorizar.
+   * A decisão é enviada em outra requisição, que retoma o turno (ver `decideToolApprovalsRequestSchema`).
+   */
+  z.object({
+    type: z.literal('approval_required'),
+    calls: z.array(
+      z.object({
+        callId: z.string(),
+        toolName: z.string(),
+        input: z.record(z.string(), z.unknown()),
+      }),
+    ),
+  }),
   z.object({ type: z.literal('compacted'), summarizedMessageCount: z.number().int().positive() }),
   z.object({ type: z.literal('usage'), usage: tokenUsageSchema }),
   z.object({ type: z.literal('error'), code: z.string(), message: z.string() }),

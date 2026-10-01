@@ -39,11 +39,12 @@ function parseEventStream(body: string) {
 describe('POST /api/conversations/:id/messages', () => {
   let app: ReturnType<typeof createApp>;
   let activeTurns: InMemoryActiveTurns;
+  let store: InMemoryConversationStore;
   let conversationId: string;
 
   beforeEach(async () => {
     const clock = new ManualClock('2026-09-30T10:00:00Z');
-    const store = new InMemoryConversationStore(clock);
+    store = new InMemoryConversationStore(clock);
     const memory = new InMemoryConversationMemory();
     const events = new RecordingEventPublisher();
     activeTurns = new InMemoryActiveTurns();
@@ -174,6 +175,68 @@ describe('POST /api/conversations/:id/messages', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe('no_message_to_resend');
+    });
+  });
+
+  describe('POST /api/conversations/:id/tool-approvals', () => {
+    const decide = (body?: object) =>
+      request(app)
+        .post(`/api/conversations/${conversationId}/tool-approvals`)
+        .set(TEST_USER_HEADER, ANA)
+        .send(body);
+
+    /** Deixa a conversa parada num pedido de autorização para enviar um e-mail. */
+    async function seedPendingApproval(): Promise<void> {
+      await store.append(conversationId, {
+        role: 'user',
+        parts: [{ type: 'text', text: 'Envie o relatório' }],
+      });
+      await store.append(conversationId, {
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool_call',
+            callId: 'call-email',
+            toolName: 'send_email',
+            input: { to: 'bia@empresa.com' },
+            requiresApproval: true,
+          },
+        ],
+      });
+    }
+
+    it('retoma o turno com a decisão e responde em Server-Sent Events', async () => {
+      await seedPendingApproval();
+
+      const response = await decide({ approvedCallIds: [] });
+
+      expect(response.status).toBe(200);
+      expect(parseEventStream(response.text).map(({ event }) => event)).toEqual([
+        'text_delta',
+        'usage',
+        'done',
+      ]);
+    });
+
+    it('aceita a requisição sem corpo como recusa de todas as chamadas', async () => {
+      await seedPendingApproval();
+
+      const response = await decide();
+
+      expect(response.status).toBe(200);
+    });
+
+    it('responde 409, antes do stream, quando não há pedido em aberto', async () => {
+      const response = await decide({ approvedCallIds: ['call-email'] });
+
+      expect(response.status).toBe(409);
+      expect(response.body.error.code).toBe('no_pending_approval');
+    });
+
+    it('recusa corpo com formato inválido', async () => {
+      const response = await decide({ approvedCallIds: 'call-email' });
+
+      expect(response.status).toBe(400);
     });
   });
 });
