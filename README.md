@@ -121,7 +121,18 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
   deve passar da janela do modelo.
 - **Rate limit.** Por usuário: 20 mensagens e 30 uploads por minuto (`RATE_LIMIT_*`), com
   contadores no Postgres, válidos entre as instâncias. Acima do limite, 429 com `Retry-After`; a
-  primeira recusa de cada minuto vai para a auditoria.
+  primeira recusa de cada minuto vai para a auditoria. A janela é fixa (zera a cada minuto do
+  relógio), então uma rajada na virada pode passar de 2× o limite; esse pico é contido pelas
+  travas de turnos simultâneos e de crédito, e uma janela deslizante guardaria mais estado por
+  uma garantia de que a POC não precisa.
+- **Anexos.** Até 20 MB por arquivo (`MAX_UPLOAD_MB`) e 10 por mensagem. Os ainda não enviados em
+  mensagem têm teto: 10 por conversa e `MAX_PENDING_ATTACHMENTS_MB` (padrão 500 MB) por usuário,
+  somando as conversas, com a conferência e a criação numa só transação que trava a linha do
+  usuário. Enviar a mensagem ou remover o anexo libera o espaço. Cada usuário faz um upload por vez
+  por instância, e na tela os uploads entram numa fila, então anexar outro arquivo enquanto o
+  anterior sobe só espera a vez; a recusa aparece só para uploads em outra aba ou direto na API.
+  Anexos já enviados em mensagens não têm teto de armazenamento: só o cap de crédito os limita, e o
+  que fazer com o histórico do usuário é decisão de produto.
 - **Turnos simultâneos.** Uma resposta por conversa e até 3 por usuário
   (`MAX_CONCURRENT_TURNS_PER_USER`), com reserva atômica no banco. Impede respostas intercaladas no
   histórico e turnos paralelos passando juntos pela conferência de crédito.
@@ -165,7 +176,8 @@ simultâneas cada. Outros pontos:
   SQL `db-f1-micro`.
 - **Resposta ligada à conexão.** Trocar de conversa não interrompe a resposta, mas fechar a aba
   sim: no Cloud Run com CPU alocada só durante requisições, um turno sem conexão aberta ficaria sem
-  CPU.
+  CPU. Por isso o navegador pede confirmação antes de fechar ou recarregar a aba com resposta em
+  andamento.
 
 ## Do POC à produção
 

@@ -85,6 +85,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   os uploads entram numa fila única do app: anexar outro arquivo enquanto o anterior sobe, na
   mesma conversa ou em outra, só espera a vez. O aviso fica para uploads feitos em outra aba ou
   direto na API.
+- README: seção de limites com a janela fixa do rate limit, os tetos de anexos e o aviso ao
+  fechar a aba.
 
 ### Fixed
 
