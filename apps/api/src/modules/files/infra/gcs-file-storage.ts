@@ -5,9 +5,11 @@ const GCS_URI_PATTERN = /^gs:\/\/([^/]+)\/(.+)$/;
 
 /** Armazenamento no Cloud Storage. O Agent Platform lê os arquivos direto pelo endereço gs://. */
 export class GcsFileStorage implements FileStorage {
-  private readonly storage = new Storage();
-
-  constructor(private readonly bucketName: string) {}
+  /** `storage` é o cliente do Cloud Storage; os testes passam um dublê no lugar dele. */
+  constructor(
+    private readonly bucketName: string,
+    private readonly storage: Storage = new Storage(),
+  ) {}
 
   async save(key: string, content: Buffer, mimeType: string): Promise<string> {
     await this.storage.bucket(this.bucketName).file(key).save(content, {
