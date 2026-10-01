@@ -59,6 +59,28 @@ test.describe('Anexos', () => {
     await expect(chat.conversationNamed('codigo-secreto.pdf')).toBeVisible();
   });
 
+  test('o rascunho com anexo continua na conversa depois de visitar outra', async ({ page }) => {
+    await chat.send('Assunto A');
+    await chat.attach('codigo-secreto.pdf');
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText(/codigo-secreto\.pdf/);
+    await chat.messageInput.fill('Analise depois');
+
+    await chat.startNewConversation();
+    await expect(pendingAttachments).toBeHidden();
+    await chat.conversationNamed('Assunto A').click();
+
+    await expect(pendingAttachments.getByRole('listitem')).toHaveText(/codigo-secreto\.pdf/);
+    await expect(chat.messageInput).toHaveValue('Analise depois');
+
+    await chat.sendButton.click();
+
+    await expect(chat.assistantReplies().last()).toContainText(
+      'Recebi 1 anexo(s): codigo-secreto.pdf.',
+    );
+    await expect(pendingAttachments).toBeHidden();
+  });
+
   test('recusa um tipo de arquivo não suportado', async ({ page }) => {
     await chat.attach('notas.txt');
 

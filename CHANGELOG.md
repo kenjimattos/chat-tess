@@ -43,6 +43,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Fixed
 
+- O rascunho da mensagem (texto e anexos ainda não enviados) continua na conversa quando o usuário
+  abre outra e volta. Antes ele sumia da tela, e o arquivo já anexado ficava de fora da mensagem
+  enviada depois. O rascunho vale enquanto a página está aberta; recarregar a página o descarta.
 - Apagar uma conversa agora apaga também os arquivos dela no armazenamento (Cloud Storage ou
   disco). Antes só os registros dos anexos saíam do banco, e os arquivos ficavam guardados para
   sempre sem nada que apontasse para eles. O módulo de arquivos reage ao evento

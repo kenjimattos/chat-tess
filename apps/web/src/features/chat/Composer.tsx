@@ -1,7 +1,8 @@
 import type { AttachmentPart } from '@chat-tess/shared';
-import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from 'react';
 import { ACCEPTED_FILE_TYPES, uploadAttachment } from '../../api/attachments-api';
 import { ApiError } from '../../api/http-client';
+import { composerDrafts } from './composer-drafts-store';
 
 export interface ComposerProps {
   conversationId: string;
@@ -10,11 +11,14 @@ export interface ComposerProps {
   onStop(): void;
 }
 
-/** Campo de mensagem com anexos. Enter envia; Shift+Enter quebra a linha. */
+/**
+ * Campo de mensagem com anexos. Enter envia; Shift+Enter quebra a linha.
+ * O rascunho vive no `composerDrafts`: continua lá se o usuário abrir outra conversa.
+ */
 export function Composer({ conversationId, isStreaming, onSend, onStop }: ComposerProps) {
-  const [text, setText] = useState('');
-  const [attachments, setAttachments] = useState<AttachmentPart[]>([]);
-  const [uploadingCount, setUploadingCount] = useState(0);
+  const { text, attachments, uploadingCount } = useSyncExternalStore(composerDrafts.subscribe, () =>
+    composerDrafts.draftOf(conversationId),
+  );
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -26,9 +30,8 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
     if (!canSend) {
       return;
     }
-    onSend(text.trim(), attachments);
-    setText('');
-    setAttachments([]);
+    onSend(text.trim(), [...attachments]);
+    composerDrafts.clearSent(conversationId);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -41,14 +44,12 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
   async function uploadFiles(files: FileList | null) {
     setUploadError(null);
     for (const file of Array.from(files ?? [])) {
-      setUploadingCount((count) => count + 1);
+      composerDrafts.uploadStarted(conversationId);
       try {
-        const attachment = await uploadAttachment(conversationId, file);
-        setAttachments((current) => [...current, attachment]);
+        composerDrafts.uploadFinished(conversationId, await uploadAttachment(conversationId, file));
       } catch (error) {
+        composerDrafts.uploadFinished(conversationId);
         setUploadError(error instanceof ApiError ? error.message : `Falha ao enviar ${file.name}.`);
-      } finally {
-        setUploadingCount((count) => count - 1);
       }
     }
     if (fileInput.current) {
@@ -70,9 +71,7 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
                 type="button"
                 aria-label={`Remover ${attachment.fileName}`}
                 onClick={() =>
-                  setAttachments((current) =>
-                    current.filter((item) => item.attachmentId !== attachment.attachmentId),
-                  )
+                  composerDrafts.removeAttachment(conversationId, attachment.attachmentId)
                 }
                 className="rounded-full px-1.5 hover:bg-slate-200"
               >
@@ -111,7 +110,7 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
         </button>
         <textarea
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => composerDrafts.setText(conversationId, event.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
           placeholder="Escreva uma mensagem…"
