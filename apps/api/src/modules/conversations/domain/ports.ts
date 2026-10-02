@@ -2,7 +2,11 @@ import type { MessagePart } from '@chat-tess/shared';
 import type { Conversation, Message, MessageRole } from './conversation';
 import type { ConversationShare } from './conversation-share';
 
-/** Todas as consultas recebem o dono: um usuário nunca alcança conversas de outro. */
+/**
+ * As leituras recebem o dono, para que um usuário nunca alcance conversas de
+ * outro. `rename` e `delete` confiam que o use case já conferiu a posse com
+ * `findOwned`.
+ */
 export interface ConversationRepository {
   create(userId: string, title: string): Promise<Conversation>;
   findOwned(conversationId: string, userId: string): Promise<Conversation | null>;
@@ -44,7 +48,11 @@ export interface MessageRepository {
   replaceParts(messageId: string, parts: MessagePart[]): Promise<void>;
   /** Apaga as mensagens posteriores a `sequence`, para refazer o fim da conversa. */
   deleteAfter(conversationId: string, sequence: number): Promise<void>;
-  /** Uma página do histórico para exibição, das mensagens mais recentes para as mais antigas. */
+  /**
+   * Uma página do histórico: as `limit` mensagens mais recentes antes de
+   * `beforeSequence`, devolvidas em ordem de sequência. A tela monta o histórico
+   * com ela, e o agente a usa para achar a última mensagem.
+   */
   listPage(conversationId: string, request: MessagePageRequest): Promise<MessagePage>;
 }
 

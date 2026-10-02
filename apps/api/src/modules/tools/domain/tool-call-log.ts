@@ -15,7 +15,7 @@ export interface ToolCallLog {
   record(call: ToolCallRecord): Promise<void>;
 }
 
-/** Catálogo persistido das tools nativas e de conectores. */
+/** Catálogo persistido das tools. Hoje só as nativas são sincronizadas. */
 export interface ToolCatalog {
   sync(
     tools: {

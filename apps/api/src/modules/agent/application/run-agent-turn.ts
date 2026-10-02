@@ -153,8 +153,9 @@ export class RunAgentTurn {
 
   /**
    * Valida e grava a mensagem do usuário. Erros desta fase (conversa
-   * inexistente, mensagem vazia, conversa já respondendo, anexo inválido,
-   * crédito esgotado) são lançados normalmente.
+   * inexistente, mensagem vazia, conversa já respondendo, limite de respostas
+   * simultâneas do usuário, anexo inválido, crédito esgotado) são lançados
+   * normalmente.
    * Devolve o stream da resposta; a partir dele, erros viram eventos `error`.
    */
   async start(input: RunAgentTurnInput): Promise<AsyncIterable<StreamEvent>> {

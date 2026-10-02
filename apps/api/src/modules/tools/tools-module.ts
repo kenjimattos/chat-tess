@@ -30,7 +30,7 @@ export interface ToolsModuleDependencies {
   llmConfig: LlmConfig;
   toolsConfig: ToolsConfig;
   conversationHistory: ConversationHistory;
-  /** Fontes adicionais: conectores e servidores MCP. */
+  /** Ponto de extensão para conectores e servidores MCP; hoje ninguém o usa. */
   extraProviders?: ToolProvider[];
 }
 

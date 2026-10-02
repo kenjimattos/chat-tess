@@ -131,6 +131,12 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   pasta é um kernel compartilhado pequeno e não um depósito de utilitários.
 - README descreve as pastas `kernel/`, `infra/` e `http/` de `apps/api/src`, e `docs/testes.md` tem
   as contagens de arquivos de teste atualizadas.
+- Comentários do código revisados para a versão: `lastContextTokens` descrito como entrada mais
+  saída da última chamada, o repositório de conversas e a página do histórico descritos como o
+  código faz, a instrução de como adicionar uma tool apontando para `defineTool` e o
+  `BuiltInToolProvider`, as tabelas e fontes de conectores e MCP marcadas como reservadas para a
+  fase 3, e o `docker-compose.yml` dizendo que os testes de integração criam o próprio banco.
+  `docs/testes.md` com as contagens atuais (95 arquivos, 607 testes).
 
 ### Security
 

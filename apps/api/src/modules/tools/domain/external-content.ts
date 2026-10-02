@@ -1,5 +1,5 @@
 /**
- * Saída de uma tool que trouxe conteúdo de terceiros (páginas, buscas, e-mails).
+ * Saída de uma tool que trouxe conteúdo de terceiros (páginas, resultados de busca).
  * O aviso acompanha o conteúdo até o LLM para que instruções escondidas nele
  * sejam lidas como dado, e não obedecidas. O system prompt reforça a regra.
  */

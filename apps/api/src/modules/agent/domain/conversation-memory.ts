@@ -9,7 +9,7 @@ export interface ConversationSummary {
 
 export interface ConversationMemory {
   summary: ConversationSummary | null;
-  /** Tamanho, em tokens, do contexto da última chamada ao LLM. */
+  /** Entrada mais saída da última chamada ao LLM, em tokens: estimativa do contexto da próxima. */
   lastContextTokens: number;
 }
 

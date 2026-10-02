@@ -30,7 +30,11 @@ export interface ConversationsModuleDependencies {
 
 export interface ConversationsModule {
   router: Router;
-  /** Usados pelo módulo do agente para ler e gravar o histórico. */
+  /**
+   * Usados pelo agente para ler e gravar o histórico; o módulo de arquivos confere
+   * a posse da conversa e o de tools lê o histórico para decidir se o `web_scrape`
+   * pede autorização.
+   */
   conversations: ConversationRepository;
   messages: MessageRepository;
   /** Usado pelo módulo de arquivos para liberar os anexos de uma conversa compartilhada. */

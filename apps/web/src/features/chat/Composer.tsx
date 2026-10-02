@@ -82,7 +82,8 @@ export function Composer({ conversationId, isStreaming, onSend, onStop }: Compos
         : null,
     );
 
-    // Limite atingido: os arquivos seguintes seriam recusados do mesmo jeito.
+    // A API recusou por limite (429: rate limit, anexos pendentes, teto em MB ou
+    // upload em andamento): os arquivos seguintes desta leva não são tentados.
     let hasReachedLimit = false;
     const uploads = fitting.map((file) => {
       composerDrafts.uploadStarted(conversationId);

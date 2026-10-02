@@ -66,7 +66,8 @@ model Conversation {
   id                String   @id @default(uuid()) @db.Uuid
   userId            String   @map("user_id") @db.Uuid
   title             String
-  /// Tokens de entrada do último turno; é o gatilho da compactação.
+  /// Entrada mais saída da última chamada ao LLM, em tokens: estimativa do
+  /// contexto da próxima chamada e gatilho da compactação.
   lastContextTokens Int      @default(0) @map("last_context_tokens")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
@@ -166,8 +167,9 @@ enum ToolSource {
   MCP
 }
 
-/// Catálogo das tools nativas e de conectores, sincronizado com o registro em
-/// código na inicialização. Tools de MCP ficam em `McpServer.cachedTools`.
+/// Catálogo das tools nativas, sincronizado com o registro em código na
+/// inicialização. Conectores e MCP (planejados) usarão as fontes CONNECTOR e
+/// MCP; as tools de MCP ficarão em `McpServer.cachedTools`.
 model Tool {
   name             String     @id
   description      String
@@ -180,7 +182,8 @@ model Tool {
 }
 
 /// Preferência do usuário por tool. Sem chave estrangeira para `tools`: tools de
-/// servidores MCP são descobertas em tempo de execução e não estão no catálogo.
+/// servidores MCP (planejados) serão descobertas em tempo de execução e não
+/// estarão no catálogo.
 model UserToolSetting {
   userId   String  @map("user_id") @db.Uuid
   toolName String  @map("tool_name")
@@ -305,6 +308,7 @@ model AuditEvent {
 }
 
 // ─────────────────────────── Conectores e MCP ────────────────────────────────
+// Tabelas reservadas para a fase 3; ainda não há código que as use.
 
 enum ConnectorProvider {
   GOOGLE_DRIVE
@@ -316,7 +320,7 @@ model ConnectorAccount {
   userId                String            @map("user_id") @db.Uuid
   provider              ConnectorProvider
   accountEmail          String            @map("account_email")
-  /// Refresh token do OAuth, cifrado com AES-256-GCM.
+  /// Refresh token do OAuth; será cifrado com AES-256-GCM.
   encryptedRefreshToken String            @map("encrypted_refresh_token")
   scopes                String[]
   createdAt             DateTime          @default(now()) @map("created_at")
@@ -333,10 +337,10 @@ model McpServer {
   userId              String   @map("user_id") @db.Uuid
   name                String
   url                 String
-  /// Valor do cabeçalho Authorization, cifrado com AES-256-GCM.
+  /// Valor do cabeçalho Authorization; será cifrado com AES-256-GCM.
   encryptedAuthHeader String?  @map("encrypted_auth_header")
   enabled             Boolean  @default(true)
-  /// Última lista de tools obtida do servidor.
+  /// Última lista de tools obtida do servidor, quando o cliente MCP existir.
   cachedTools         Json     @default("[]") @map("cached_tools")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")

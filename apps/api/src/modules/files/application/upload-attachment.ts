@@ -32,9 +32,10 @@ export interface UploadLimits {
 /**
  * Recebe um arquivo para uma conversa. Ele fica pendente até ser enviado
  * junto com uma mensagem. Imagens grandes são reduzidas antes de guardar: o
- * que fica é o que a tela mostra e o que o modelo lê. A conversa guarda no máximo os pendentes que cabem
- * em uma mensagem, e o usuário tem um teto de bytes pendentes: assim os
- * arquivos nunca enviados, que não gastam crédito, não se acumulam.
+ * que fica é o que a tela mostra e o que o modelo lê. A conversa guarda no
+ * máximo os pendentes que cabem em uma mensagem, e o usuário tem um teto de
+ * bytes pendentes: assim os arquivos nunca enviados, que não gastam crédito,
+ * não se acumulam.
  */
 export class UploadAttachment {
   constructor(

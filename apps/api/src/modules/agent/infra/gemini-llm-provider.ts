@@ -52,7 +52,7 @@ export class GeminiLlmProvider implements LlmProvider {
 
   async *stream(request: LlmRequest, signal?: AbortSignal): AsyncIterable<LlmStreamEvent> {
     try {
-      // Sobrecarga do Agent Platform (429/503) é repetida aqui, antes de qualquer texto chegar.
+      // Falhas passageiras do Agent Platform (429/500/503) são repetidas aqui, antes de qualquer texto chegar.
       const chunks = await retryTransient(
         () => this.client.generateContentStream(this.toParameters(request, signal)),
         this.retryPolicy,

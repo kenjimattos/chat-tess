@@ -1,5 +1,6 @@
 # Postgres local para desenvolvimento e testes.
-# O banco "chat_tess_test" é criado por infra/postgres-init.sql e usado pelos testes de integração e e2e.
+# O banco "chat_tess_test" é criado por infra/postgres-init.sql e usado pelos testes e2e.
+# Os testes de integração criam o próprio banco (chat_tess_integration).
 services:
   postgres:
     image: postgres:17-alpine

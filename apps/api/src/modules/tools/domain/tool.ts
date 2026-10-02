@@ -1,8 +1,9 @@
 import type { ToolExecutionContext } from '../../agent/domain/toolbox';
 
 /**
- * Uma capacidade que o agente pode usar. Para adicionar uma tool, implemente
- * esta interface e registre a implementação no `ToolRegistry`.
+ * Uma capacidade que o agente pode usar. Para adicionar uma tool nativa,
+ * crie-a com `defineTool` e inclua-a no `BuiltInToolProvider`, em
+ * `tools-module.ts`.
  */
 export interface Tool {
   /** Nome único, em snake_case, que o LLM usa para chamar a tool. */
@@ -12,8 +13,9 @@ export interface Tool {
   /** JSON Schema dos argumentos. */
   readonly inputSchema: Record<string, unknown>;
   /**
-   * Verdadeiro quando o resultado traz conteúdo de terceiros (páginas, buscas,
-   * e-mails). O registro marca esse conteúdo como externo antes de devolvê-lo ao LLM.
+   * Verdadeiro quando o resultado traz conteúdo de terceiros (páginas e
+   * resultados de busca). O registro marca esse conteúdo como externo antes de
+   * devolvê-lo ao LLM.
    */
   readonly returnsExternalContent: boolean;
   /**
@@ -28,7 +30,7 @@ export interface Tool {
 
 export type ToolSource = 'built_in' | 'connector' | 'mcp';
 
-/** Fonte de tools: as nativas, as de conectores e as de servidores MCP. */
+/** Fonte de tools. Hoje só existem as nativas; conectores e MCP estão planejados. */
 export interface ToolProvider {
   readonly source: ToolSource;
   toolsFor(userId: string): Promise<Tool[]>;

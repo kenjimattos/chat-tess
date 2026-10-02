@@ -3,7 +3,7 @@
 Como a suíte Vitest está organizada, como rodá-la e que convenções os testes seguem. Os testes
 ponta a ponta (Playwright) estão descritos no [README](../README.md#testes).
 
-São 83 arquivos e 514 testes, que rodam em cerca de 7 segundos.
+São 95 arquivos e 607 testes, que rodam em cerca de 7 segundos.
 
 ## Como rodar
 
@@ -30,9 +30,9 @@ O [`vitest.config.ts`](../vitest.config.ts) da raiz define quatro projetos:
 | Projeto           | Arquivos | O que roda                                                   | Ambiente        |
 | ----------------- | -------- | ------------------------------------------------------------ | --------------- |
 | `shared`          | 1        | Contratos de `packages/shared`                               | Node            |
-| `api`             | 64       | Domínio, use cases, adapters e rotas da API, tudo em memória | Node            |
+| `api`             | 65       | Domínio, use cases, adapters e rotas da API, tudo em memória | Node            |
 | `api-integration` | 11       | Adapters Prisma (`*.integration.test.ts`) contra o Postgres  | Node + Postgres |
-| `web`             | 13       | Componentes, stores e funções do frontend                    | jsdom           |
+| `web`             | 18       | Componentes, stores e funções do frontend                    | jsdom           |
 
 Só o `api-integration` precisa do Docker. Os outros três não tocam em banco, rede nem disco.
 
@@ -57,7 +57,7 @@ Arquivos de teste por módulo da API:
 | `auth`                | 7          | 2            |
 | `billing`             | 3          | 1            |
 | `conversations`       | 10         | 2            |
-| `files`               | 13         | 1            |
+| `files`               | 14         | 1            |
 | `rate-limiting`       | 3          | 1            |
 | `tools`               | 8          | 1            |
 | `infra`, `http` e app | 5          | —            |
