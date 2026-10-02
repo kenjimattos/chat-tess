@@ -1,6 +1,8 @@
 import type { AttachmentPart, ConversationMessage, MessagePart } from '@chat-tess/shared';
+import { useState } from 'react';
 import { attachmentUrl } from '../../api/attachments-api';
 import { Markdown } from '../../components/Markdown';
+import { ImageViewer } from './ImageViewer';
 
 export interface MessageBubbleProps {
   message: ConversationMessage;
@@ -76,11 +78,7 @@ export function AttachmentPreview({
   url = attachmentUrl(attachment.attachmentId),
 }: AttachmentPreviewProps) {
   if (attachment.mimeType.startsWith('image/')) {
-    return (
-      <a href={url} target="_blank" rel="noreferrer">
-        <img src={url} alt={attachment.fileName} className="max-h-60 rounded-lg" />
-      </a>
-    );
+    return <ImagePreview url={url} fileName={attachment.fileName} />;
   }
   return (
     <a
@@ -91,5 +89,26 @@ export function AttachmentPreview({
     >
       📄 {attachment.fileName}
     </a>
+  );
+}
+
+/** Miniatura da imagem; o clique a amplia sobre o chat, sem sair da conversa. */
+function ImagePreview({ url, fileName }: { url: string; fileName: string }) {
+  const [isEnlarged, setIsEnlarged] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`Ampliar ${fileName}`}
+        onClick={() => setIsEnlarged(true)}
+        className="block cursor-zoom-in"
+      >
+        <img src={url} alt={fileName} className="max-h-60 rounded-lg" />
+      </button>
+      {isEnlarged && (
+        <ImageViewer url={url} fileName={fileName} onClose={() => setIsEnlarged(false)} />
+      )}
+    </>
   );
 }

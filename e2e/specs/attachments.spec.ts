@@ -73,15 +73,27 @@ test.describe('Anexos', () => {
     await expect(userMessage.getByRole('img', { name: 'faixa-azul.png' })).toBeVisible();
   });
 
-  test('a imagem enviada abre a partir da conversa', async ({ page }) => {
+  test('a imagem enviada amplia sobre o chat, sem sair da conversa', async ({ page }) => {
     await chat.attach('faixa-azul.png');
     await chat.send('Veja a imagem');
+    const conversationUrl = page.url();
 
-    const image = chat.userMessages().last().getByRole('img', { name: 'faixa-azul.png' });
-    const naturalWidth = await image.evaluate((element: HTMLImageElement) => element.naturalWidth);
+    await chat
+      .userMessages()
+      .last()
+      .getByRole('button', { name: 'Ampliar faixa-azul.png' })
+      .click();
 
-    expect(naturalWidth).toBe(64);
-    await expect(page).toHaveURL(/\/conversations\//);
+    const viewer = page.getByRole('dialog', { name: 'Imagem faixa-azul.png' });
+    const enlarged = viewer.getByRole('img', { name: 'faixa-azul.png' });
+    await expect(enlarged).toBeVisible();
+    expect(await enlarged.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(64);
+    expect(page.context().pages()).toHaveLength(1);
+    await expect(page).toHaveURL(conversationUrl);
+
+    await page.keyboard.press('Escape');
+
+    await expect(viewer).toBeHidden();
   });
 
   test('envia só o anexo, sem texto', async () => {

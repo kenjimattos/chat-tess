@@ -103,6 +103,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Changed
 
+- Clicar na imagem de uma mensagem a amplia sobre o chat, em vez de abrir outra aba. O overlay
+  fecha no botão, com Esc ou clicando fora da imagem, e mantém o link "Abrir em nova aba". Vale
+  também na conversa aberta por link de compartilhamento.
 - Documentação, comentários e testes passam a chamar a plataforma do Google Cloud pelo nome atual,
   Agent Platform (antes Vertex AI). A opção `vertexai` do SDK mantém o nome antigo.
 - README deixa de citar conectores e MCP entre os recursos, porque ainda não foram entregues.
