@@ -30,7 +30,7 @@ O [`vitest.config.ts`](../vitest.config.ts) da raiz define quatro projetos:
 | Projeto           | Arquivos | O que roda                                                   | Ambiente        |
 | ----------------- | -------- | ------------------------------------------------------------ | --------------- |
 | `shared`          | 1        | Contratos de `packages/shared`                               | Node            |
-| `api`             | 58       | Domínio, use cases, adapters e rotas da API, tudo em memória | Node            |
+| `api`             | 64       | Domínio, use cases, adapters e rotas da API, tudo em memória | Node            |
 | `api-integration` | 11       | Adapters Prisma (`*.integration.test.ts`) contra o Postgres  | Node + Postgres |
 | `web`             | 13       | Componentes, stores e funções do frontend                    | jsdom           |
 
@@ -50,17 +50,17 @@ Os testes ficam ao lado do arquivo testado e seguem as camadas da arquitetura:
 
 Arquivos de teste por módulo da API:
 
-| Módulo          | Em memória | Com Postgres |
-| --------------- | ---------- | ------------ |
-| `agent`         | 8          | 2            |
-| `audit`         | 3          | 1            |
-| `auth`          | 7          | 2            |
-| `billing`       | 3          | 1            |
-| `conversations` | 10         | 2            |
-| `files`         | 12         | 1            |
-| `rate-limiting` | 3          | 1            |
-| `tools`         | 6          | 1            |
-| `shared` e app  | 6          | —            |
+| Módulo                | Em memória | Com Postgres |
+| --------------------- | ---------- | ------------ |
+| `agent`               | 12         | 2            |
+| `audit`               | 3          | 1            |
+| `auth`                | 7          | 2            |
+| `billing`             | 3          | 1            |
+| `conversations`       | 10         | 2            |
+| `files`               | 13         | 1            |
+| `rate-limiting`       | 3          | 1            |
+| `tools`               | 8          | 1            |
+| `infra`, `http` e app | 5          | —            |
 
 ## Dublês
 

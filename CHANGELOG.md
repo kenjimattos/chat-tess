@@ -121,6 +121,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - O que sobrou de `shared` no backend (`AppError`, `DomainEvent` e `Clock`, tipos puros que o domínio
   de cada módulo pode importar) passou a se chamar `apps/api/src/kernel`. O nome deixa claro que a
   pasta é um kernel compartilhado pequeno e não um depósito de utilitários.
+- README descreve as pastas `kernel/`, `infra/` e `http/` de `apps/api/src`, e `docs/testes.md` tem
+  as contagens de arquivos de teste atualizadas.
 
 ### Security
 

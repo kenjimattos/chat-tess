@@ -96,6 +96,16 @@ tem as mesmas quatro pastas:
 A regra de dependência é verificada pelo ESLint: `domain/` e `application/` não conseguem importar
 Express, Prisma nem SDKs. Os testes ficam ao lado do arquivo testado.
 
+Fora dos módulos, `apps/api/src` tem três pastas, todas sem regra de negócio:
+
+| Pasta     | Conteúdo                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------ |
+| `kernel/` | O único código que o domínio de vários módulos importa: `AppError`, `DomainEvent`, `Clock` |
+| `infra/`  | Banco (Prisma), leitura do ambiente, logger e barramento de eventos em processo            |
+| `http/`   | Montagem do app Express, tratamento de erros, CSP, health check e stream de eventos        |
+
+O `composition-root.ts` liga tudo isso aos módulos.
+
 ## Compartilhamento
 
 O dono gera, no botão ⤴ de cada conversa, um link somente leitura (`/shared/{token}`). Quem abre o
