@@ -2,6 +2,7 @@ import { RecordingEventPublisher } from '../../../test/recording-event-publisher
 import { ManualClock } from '../../../kernel/time/clock';
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
 import { InMemoryAttachmentRepository } from '../infra/in-memory-attachment-repository';
+import type { ImageResizer } from '../domain/ports';
 import { InMemoryFileStorage } from '../infra/in-memory-file-storage';
 import { UploadAttachment } from './upload-attachment';
 
@@ -13,13 +14,27 @@ export const MAX_PENDING_BYTES_PER_USER = 20 * MAX_SIZE_BYTES;
 export const PDF_CONTENT = Buffer.from('%PDF-1.7\nconteúdo');
 export const PNG_CONTENT = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01]);
 
+/** Devolve as imagens como vieram, ou o que o teste definir em `resizeTo` e `failure`. */
+export class StubImageResizer implements ImageResizer {
+  resizeTo: Buffer | null = null;
+  failure: Error | null = null;
+
+  async fitWithinLimit(content: Buffer): Promise<Buffer> {
+    if (this.failure) {
+      throw this.failure;
+    }
+    return this.resizeTo ?? content;
+  }
+}
+
 export async function filesTestBed({ readableByModel = false } = {}) {
   const clock = new ManualClock('2026-09-30T10:00:00Z');
   const conversations = new InMemoryConversationStore(clock);
   const attachments = new InMemoryAttachmentRepository();
   const storage = new InMemoryFileStorage(readableByModel);
+  const images = new StubImageResizer();
   const events = new RecordingEventPublisher();
-  const upload = new UploadAttachment(conversations, attachments, storage, events, clock, {
+  const upload = new UploadAttachment(conversations, attachments, storage, images, events, clock, {
     maxSizeBytes: MAX_SIZE_BYTES,
     maxPendingBytesPerUser: MAX_PENDING_BYTES_PER_USER,
   });
@@ -31,6 +46,7 @@ export async function filesTestBed({ readableByModel = false } = {}) {
     conversations,
     attachments,
     storage,
+    images,
     events,
     upload,
     anaConversation,

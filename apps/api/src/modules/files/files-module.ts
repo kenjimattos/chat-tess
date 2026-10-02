@@ -21,6 +21,13 @@ import { createFilesRouter } from './http/files-router';
 import { GcsFileStorage } from './infra/gcs-file-storage';
 import { LocalFileStorage } from './infra/local-file-storage';
 import { PrismaAttachmentRepository } from './infra/prisma-attachment-repository';
+import { SharpImageResizer } from './infra/sharp-image-resizer';
+
+/**
+ * Maior lado das imagens guardadas. Acima disso o modelo não ganha detalhe,
+ * e o arquivo só pesa no armazenamento, na tela e nas requisições ao LLM.
+ */
+const MAX_IMAGE_SIDE_PIXELS = 2048;
 
 export interface FilesModuleDependencies {
   database: Database;
@@ -59,6 +66,7 @@ export function createFilesModule(deps: FilesModuleDependencies): FilesModule {
         deps.conversations,
         attachments,
         storage,
+        new SharpImageResizer(MAX_IMAGE_SIDE_PIXELS),
         deps.eventBus,
         deps.clock,
         { maxSizeBytes: deps.maxSizeBytes, maxPendingBytesPerUser: deps.maxPendingBytesPerUser },

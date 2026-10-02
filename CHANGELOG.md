@@ -103,6 +103,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Changed
 
+- Imagens com mais de 2048 px no maior lado são reduzidas no upload, mantendo a proporção e o
+  formato; a rotação do EXIF é aplicada antes. O original não é guardado: a imagem reduzida é a
+  que a tela mostra e a que o modelo lê a cada turno. Imagens menores ficam como vieram, e as já
+  enviadas não mudam. Uma imagem que não dá para ler agora é recusada no upload (`invalid_image`).
+  Nova dependência da API: `sharp`.
 - Clicar na imagem de uma mensagem a amplia sobre o chat, em vez de abrir outra aba. O overlay
   fecha no botão, com Esc ou clicando fora da imagem, e mantém o link "Abrir em nova aba". Vale
   também na conversa aberta por link de compartilhamento.

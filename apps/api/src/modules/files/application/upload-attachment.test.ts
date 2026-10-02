@@ -1,6 +1,7 @@
 import { MAX_ATTACHMENTS_PER_MESSAGE } from '@chat-tess/shared';
 import { describe, expect, it } from 'vitest';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
+import { InvalidImageError } from '../domain/file-errors';
 import {
   ANA,
   BIA,
@@ -49,6 +50,51 @@ describe('UploadAttachment', () => {
     });
 
     expect(part.mimeType).toBe('image/png');
+  });
+
+  it('guarda a imagem já reduzida e registra o tamanho dela', async () => {
+    const { upload, storage, attachments, images, anaConversation } = await filesTestBed();
+    images.resizeTo = Buffer.from('imagem reduzida');
+
+    const part = await upload.execute({
+      userId: ANA,
+      conversationId: anaConversation.id,
+      fileName: 'foto.png',
+      content: PNG_CONTENT,
+    });
+
+    expect(part.sizeBytes).toBe(images.resizeTo.length);
+    const stored = await attachments.findById(part.attachmentId);
+    expect(await storage.read(stored?.storageUri ?? '')).toEqual(images.resizeTo);
+  });
+
+  it('não reduz o que não é imagem', async () => {
+    const { upload, images, anaConversation } = await filesTestBed();
+    images.resizeTo = Buffer.from('imagem reduzida');
+
+    const part = await upload.execute({
+      userId: ANA,
+      conversationId: anaConversation.id,
+      fileName: 'contrato.pdf',
+      content: PDF_CONTENT,
+    });
+
+    expect(part.sizeBytes).toBe(PDF_CONTENT.length);
+  });
+
+  it('recusa a imagem que não dá para ler, sem guardar nada', async () => {
+    const { upload, storage, images, anaConversation } = await filesTestBed();
+    images.failure = new InvalidImageError();
+
+    const uploading = upload.execute({
+      userId: ANA,
+      conversationId: anaConversation.id,
+      fileName: 'quebrada.png',
+      content: PNG_CONTENT,
+    });
+
+    await expect(uploading).rejects.toThrow(InvalidImageError);
+    expect(storage.files.size).toBe(0);
   });
 
   it('limpa o nome do arquivo', async () => {

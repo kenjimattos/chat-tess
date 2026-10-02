@@ -32,6 +32,10 @@ export function detectMimeType(content: Uint8Array): SupportedMimeType | null {
   return null;
 }
 
+export function isImage(mimeType: SupportedMimeType): boolean {
+  return mimeType.startsWith('image/');
+}
+
 function startsWith(content: Uint8Array, signature: number[]): boolean {
   return matchesAt(content, 0, signature);
 }

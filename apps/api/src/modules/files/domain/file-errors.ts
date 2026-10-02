@@ -11,6 +11,16 @@ export class UnsupportedFileTypeError extends AppError {
   }
 }
 
+export class InvalidImageError extends AppError {
+  constructor() {
+    super(
+      'validation',
+      'invalid_image',
+      'Não foi possível ler a imagem. Confira o arquivo e envie de novo.',
+    );
+  }
+}
+
 export class FileTooLargeError extends AppError {
   constructor(maxSizeBytes: number) {
     super(

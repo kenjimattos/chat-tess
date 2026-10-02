@@ -96,6 +96,23 @@ test.describe('Anexos', () => {
     await expect(viewer).toBeHidden();
   });
 
+  test('a imagem grande é guardada reduzida', async ({ page }) => {
+    // A faixa tem 4096 px de largura; a API guarda imagens com até 2048 px no maior lado.
+    await chat.attach('faixa-larga.png');
+    await chat.send('Veja a imagem grande');
+
+    await chat
+      .userMessages()
+      .last()
+      .getByRole('button', { name: 'Ampliar faixa-larga.png' })
+      .click();
+
+    const enlarged = page.getByRole('dialog').getByRole('img', { name: 'faixa-larga.png' });
+    await expect
+      .poll(() => enlarged.evaluate((image: HTMLImageElement) => image.naturalWidth))
+      .toBe(2048);
+  });
+
   test('envia só o anexo, sem texto', async () => {
     await chat.attach('codigo-secreto.pdf');
 

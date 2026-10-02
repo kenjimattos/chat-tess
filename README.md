@@ -38,7 +38,7 @@ Abra http://localhost:5173.
 
 ## Testes
 
-São 93 arquivos de teste unitário e de integração (Vitest) e 16 specs ponta a ponta (Playwright),
+São 95 arquivos de teste unitário e de integração (Vitest) e 16 specs ponta a ponta (Playwright),
 que rodam no CI antes de todo deploy.
 
 A organização da suíte Vitest, os dublês, a cobertura mínima e as convenções estão em
@@ -137,7 +137,9 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
   relógio), então uma rajada na virada pode passar de 2× o limite; esse pico é contido pelas
   travas de turnos simultâneos e de crédito, e uma janela deslizante guardaria mais estado por
   uma garantia de que a POC não precisa.
-- **Anexos.** Até 20 MB por arquivo (`MAX_UPLOAD_MB`) e 10 por mensagem. Os ainda não enviados em
+- **Anexos.** Até 20 MB por arquivo (`MAX_UPLOAD_MB`) e 10 por mensagem. Imagens com mais de
+  2048 px no maior lado são reduzidas no upload, mantendo proporção e formato: o original não é
+  guardado, e a imagem reduzida é a que a tela mostra e a que o modelo lê. Os ainda não enviados em
   mensagem têm teto: 10 por conversa e `MAX_PENDING_ATTACHMENTS_MB` (padrão 500 MB) por usuário,
   somando as conversas, com a conferência e a criação numa só transação que trava a linha do
   usuário. Enviar a mensagem ou remover o anexo libera o espaço. Cada usuário faz um upload por vez

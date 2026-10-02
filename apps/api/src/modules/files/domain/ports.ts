@@ -15,6 +15,14 @@ export interface FileStorage {
   uriReadableByModel(storageUri: string): string | null;
 }
 
+export interface ImageResizer {
+  /**
+   * Reduz a imagem que passa do tamanho máximo, mantendo a proporção e o formato.
+   * A que já cabe volta como veio. Lança `InvalidImageError` se não der para ler.
+   */
+  fitWithinLimit(content: Buffer): Promise<Buffer>;
+}
+
 export type NewAttachment = Omit<Attachment, 'id' | 'messageId'>;
 
 /** Tetos dos anexos ainda não enviados em uma mensagem. */

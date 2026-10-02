@@ -13,8 +13,8 @@ import {
   UnsupportedFileTypeError,
 } from '../domain/file-errors';
 import type { AttachmentUploaded } from '../domain/file-events';
-import { detectMimeType } from '../domain/file-type';
-import type { AttachmentRepository, FileStorage } from '../domain/ports';
+import { detectMimeType, isImage } from '../domain/file-type';
+import type { AttachmentRepository, FileStorage, ImageResizer } from '../domain/ports';
 
 export interface UploadAttachmentInput {
   userId: string;
@@ -31,7 +31,8 @@ export interface UploadLimits {
 
 /**
  * Recebe um arquivo para uma conversa. Ele fica pendente até ser enviado
- * junto com uma mensagem. A conversa guarda no máximo os pendentes que cabem
+ * junto com uma mensagem. Imagens grandes são reduzidas antes de guardar: o
+ * que fica é o que a tela mostra e o que o modelo lê. A conversa guarda no máximo os pendentes que cabem
  * em uma mensagem, e o usuário tem um teto de bytes pendentes: assim os
  * arquivos nunca enviados, que não gastam crédito, não se acumulam.
  */
@@ -40,6 +41,7 @@ export class UploadAttachment {
     private readonly conversations: ConversationRepository,
     private readonly attachments: AttachmentRepository,
     private readonly storage: FileStorage,
+    private readonly images: ImageResizer,
     private readonly events: EventPublisher,
     private readonly clock: Clock,
     private readonly limits: UploadLimits,
@@ -62,17 +64,18 @@ export class UploadAttachment {
       throw new UnsupportedFileTypeError();
     }
     await findOwnedConversation(this.conversations, conversationId, userId);
+    const stored = isImage(mimeType) ? await this.images.fitWithinLimit(content) : content;
 
     // Grava antes de reservar a vaga: o anexo só existe com o endereço do arquivo.
     const key = `${conversationFolderKey(userId, conversationId)}/${randomUUID()}`;
-    const storageUri = await this.storage.save(key, content, mimeType);
+    const storageUri = await this.storage.save(key, stored, mimeType);
     const result = await this.attachments.createPending(
       {
         userId,
         conversationId,
         fileName: sanitizeFileName(fileName),
         mimeType,
-        sizeBytes: content.length,
+        sizeBytes: stored.length,
         storageUri,
       },
       {
