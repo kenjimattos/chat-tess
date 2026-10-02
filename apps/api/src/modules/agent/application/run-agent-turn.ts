@@ -6,9 +6,9 @@ import type {
   TokenUsage,
 } from '@chat-tess/shared';
 import { mapWithConcurrency } from './map-with-concurrency';
-import { AppError } from '../../../shared/errors/app-error';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import { AppError } from '../../../kernel/errors/app-error';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { findOwnedConversation } from '../../conversations/application/find-owned-conversation';
 import {
   DEFAULT_CONVERSATION_TITLE,

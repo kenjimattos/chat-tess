@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../app';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { silentLogger } from '../../../infra/logging/logger';
-import { ManualClock } from '../../../shared/time/clock';
+import { ManualClock } from '../../../kernel/time/clock';
 import {
   TEST_ROLE_HEADER,
   TEST_USER_HEADER,

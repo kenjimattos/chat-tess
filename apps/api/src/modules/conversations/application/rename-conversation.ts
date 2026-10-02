@@ -1,6 +1,6 @@
-import { AppError } from '../../../shared/errors/app-error';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import { AppError } from '../../../kernel/errors/app-error';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { MAX_TITLE_LENGTH, type Conversation } from '../domain/conversation';
 import type { ConversationRenamed } from '../domain/conversation-events';
 import type { ConversationRepository } from '../domain/ports';

@@ -1,5 +1,5 @@
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import type { UsageLimiter } from '../../agent/domain/usage-limiter';
 import { CreditLimitReachedError } from '../domain/billing-errors';
 import type { CreditLimitReached } from '../domain/billing-events';

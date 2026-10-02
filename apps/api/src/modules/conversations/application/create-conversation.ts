@@ -1,5 +1,5 @@
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { DEFAULT_CONVERSATION_TITLE, type Conversation } from '../domain/conversation';
 import type { ConversationCreated } from '../domain/conversation-events';
 import type { ConversationRepository } from '../domain/ports';

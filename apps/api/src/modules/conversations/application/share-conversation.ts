@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import type { ConversationShare } from '../domain/conversation-share';
 import type { ConversationShared } from '../domain/conversation-events';
 import type { ConversationRepository, ConversationShareRepository } from '../domain/ports';

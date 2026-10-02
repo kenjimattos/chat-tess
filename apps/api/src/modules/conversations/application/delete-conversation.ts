@@ -1,5 +1,5 @@
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import type { ConversationDeleted } from '../domain/conversation-events';
 import type { ConversationRepository } from '../domain/ports';
 import { findOwnedConversation } from './find-owned-conversation';

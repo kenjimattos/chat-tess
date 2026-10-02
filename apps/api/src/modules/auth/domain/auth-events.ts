@@ -1,4 +1,4 @@
-import type { DomainEvent } from '../../../shared/events/domain-event';
+import type { DomainEvent } from '../../../kernel/events/domain-event';
 
 export type LoginSucceeded = DomainEvent<
   'auth.login_succeeded',

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { DomainEvent } from '../../shared/events/domain-event';
+import type { DomainEvent } from '../../kernel/events/domain-event';
 import { InProcessEventBus } from './in-process-event-bus';
 
 const buildEvent = (type: string): DomainEvent => ({

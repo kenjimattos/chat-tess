@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 import { SUPPORTED_FILE_DESCRIPTION } from './file-type';
 
 export class UnsupportedFileTypeError extends AppError {

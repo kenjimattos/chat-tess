@@ -1,5 +1,5 @@
-import type { DomainEvent } from '../../../shared/events/domain-event';
-import { AppError } from '../../../shared/errors/app-error';
+import type { DomainEvent } from '../../../kernel/events/domain-event';
+import { AppError } from '../../../kernel/errors/app-error';
 
 /** Quantas requisições de um tipo cada usuário pode fazer por janela de tempo. */
 export interface RateLimitPolicy {

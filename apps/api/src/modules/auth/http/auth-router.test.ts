@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../app';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { silentLogger } from '../../../infra/logging/logger';
-import { fixedClock } from '../../../shared/time/clock';
+import { fixedClock } from '../../../kernel/time/clock';
 import { GetCurrentUser } from '../application/get-current-user';
 import { SignIn } from '../application/sign-in';
 import { FakeIdentityProvider } from '../infra/fake-identity-provider';

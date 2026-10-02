@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 
 /**
  * Turnos em andamento. Um turno por conversa evita respostas intercaladas no

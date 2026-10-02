@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { createErrorHandler } from '../../../http/error-handler';
 import { silentLogger } from '../../../infra/logging/logger';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { ManualClock } from '../../../shared/time/clock';
+import { ManualClock } from '../../../kernel/time/clock';
 import {
   TEST_USER_HEADER,
   fakeRequireAuthentication,

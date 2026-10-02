@@ -1,6 +1,6 @@
 import type { ToolCallPart, ToolResultPart } from '@chat-tess/shared';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import type { LlmToolDefinition } from '../../agent/domain/llm';
 import type { ToolExecutionContext, Toolbox } from '../../agent/domain/toolbox';
 import { markAsExternal } from '../domain/external-content';

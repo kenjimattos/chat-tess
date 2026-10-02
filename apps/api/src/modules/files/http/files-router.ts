@@ -1,6 +1,6 @@
 import { Router, type RequestHandler, type Response } from 'express';
 import multer, { MulterError } from 'multer';
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 import { authenticatedUser } from '../../auth/http/require-authentication';
 import { conversationIdOf } from '../../conversations/http/conversations-router';
 import type { ListPendingAttachments } from '../application/list-pending-attachments';

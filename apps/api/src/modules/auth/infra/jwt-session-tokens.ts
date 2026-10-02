@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import type { Clock } from '../../../shared/time/clock';
+import type { Clock } from '../../../kernel/time/clock';
 import type { SessionTokens } from '../domain/ports';
 
 const ALGORITHM = 'HS256';

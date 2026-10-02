@@ -12,7 +12,7 @@ import type { AppConfig } from './infra/config/env';
 import { assertDatabaseIsReachable, createDatabase } from './infra/database/database';
 import { InProcessEventBus } from './infra/events/in-process-event-bus';
 import { createLogger, type Logger } from './infra/logging/logger';
-import { systemClock } from './shared/time/clock';
+import { systemClock } from './kernel/time/clock';
 
 export interface Application {
   app: Express;

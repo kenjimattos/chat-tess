@@ -1,4 +1,4 @@
-import type { DomainEvent, EventHandler, EventPublisher } from '../../shared/events/domain-event';
+import type { DomainEvent, EventHandler, EventPublisher } from '../../kernel/events/domain-event';
 
 export type HandlerFailureReporter = (error: unknown, event: DomainEvent) => void;
 

@@ -1,5 +1,5 @@
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { ManualClock } from '../../../shared/time/clock';
+import { ManualClock } from '../../../kernel/time/clock';
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';
 import { InMemoryAttachmentRepository } from '../infra/in-memory-attachment-repository';
 import { InMemoryFileStorage } from '../infra/in-memory-file-storage';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { ManualClock } from '../../../shared/time/clock';
+import { ManualClock } from '../../../kernel/time/clock';
 import { EXTERNAL_CONTENT_NOTICE } from '../domain/external-content';
 import type { Tool, ToolProvider } from '../domain/tool';
 import { InMemoryToolPreferences } from '../infra/in-memory-tool-preferences';

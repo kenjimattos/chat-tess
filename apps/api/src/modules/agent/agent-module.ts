@@ -1,8 +1,8 @@
 import type { RequestHandler, Router } from 'express';
 import type { AgentConfig, LlmConfig } from '../../infra/config/env';
 import type { Database } from '../../infra/database/database';
-import type { EventPublisher } from '../../shared/events/domain-event';
-import type { Clock } from '../../shared/time/clock';
+import type { EventPublisher } from '../../kernel/events/domain-event';
+import type { Clock } from '../../kernel/time/clock';
 import type { ConversationRepository, MessageRepository } from '../conversations/domain/ports';
 import { CompactConversation } from './application/compact-conversation';
 import { RunAgentTurn } from './application/run-agent-turn';

@@ -1,6 +1,6 @@
-import { AppError } from '../../../shared/errors/app-error';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import { AppError } from '../../../kernel/errors/app-error';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import type { ToolPreferences } from '../domain/ports';
 import type { ToolPreferenceChanged } from '../domain/tool-events';
 import type { ToolRegistry } from './tool-registry';

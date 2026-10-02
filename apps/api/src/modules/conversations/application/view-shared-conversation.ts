@@ -1,5 +1,5 @@
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { SharedConversationNotFoundError } from '../domain/conversation-errors';
 import type { SharedConversationViewed } from '../domain/conversation-events';
 import { SHARE_TOKEN_PATTERN } from '../domain/conversation-share';

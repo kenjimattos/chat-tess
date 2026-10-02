@@ -1,6 +1,6 @@
 import type { MessagePart } from '@chat-tess/shared';
 import { randomUUID } from 'node:crypto';
-import type { Clock } from '../../../shared/time/clock';
+import type { Clock } from '../../../kernel/time/clock';
 import type { Conversation, Message } from '../domain/conversation';
 import type { ConversationShare } from '../domain/conversation-share';
 import type {

@@ -1,4 +1,4 @@
-import type { DomainEvent } from '../../../shared/events/domain-event';
+import type { DomainEvent } from '../../../kernel/events/domain-event';
 import { compactPayload } from '../domain/audit-payload';
 import type { AuditLog } from '../domain/audit-entry';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RecordingEventPublisher } from '../../../../test/recording-event-publisher';
-import { fixedClock } from '../../../../shared/time/clock';
+import { fixedClock } from '../../../../kernel/time/clock';
 import type { ConversationHistory, PageReader, WebSearchEngine } from '../../domain/ports';
 import { FakeWebSearch } from '../../infra/fake-web-search';
 import { createWebScrapeTool } from './web-scrape-tool';

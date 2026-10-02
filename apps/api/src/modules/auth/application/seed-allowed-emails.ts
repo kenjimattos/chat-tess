@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 import { isValidAllowlistPattern, normalizeEmail } from '../domain/email-allowlist';
 import type { AllowedEmailRepository } from '../domain/ports';
 

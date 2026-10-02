@@ -1,5 +1,5 @@
 import type { AttachmentPart } from '@chat-tess/shared';
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 import type { AttachmentCatalog, AttachmentOwner } from '../domain/attachment-catalog';
 import type { AttachmentSource } from '../domain/llm';
 

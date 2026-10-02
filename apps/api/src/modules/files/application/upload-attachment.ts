@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { MAX_ATTACHMENTS_PER_MESSAGE, type AttachmentPart } from '@chat-tess/shared';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { findOwnedConversation } from '../../conversations/application/find-owned-conversation';
 import type { ConversationRepository } from '../../conversations/domain/ports';
 import { conversationFolderKey, sanitizeFileName, toAttachmentPart } from '../domain/attachment';

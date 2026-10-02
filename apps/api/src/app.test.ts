@@ -6,7 +6,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { createApp } from './app';
-import { AppError } from './shared/errors/app-error';
+import { AppError } from './kernel/errors/app-error';
 import { silentLogger } from './infra/logging/logger';
 
 function buildApp(configureRoutes: (router: Router) => void = () => {}, webDistDir?: string) {

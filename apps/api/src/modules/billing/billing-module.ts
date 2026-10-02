@@ -1,7 +1,7 @@
 import type { RequestHandler, Router } from 'express';
 import type { Database } from '../../infra/database/database';
 import type { InProcessEventBus } from '../../infra/events/in-process-event-bus';
-import type { Clock } from '../../shared/time/clock';
+import type { Clock } from '../../kernel/time/clock';
 import type { LlmCallCompleted } from '../agent/domain/agent-events';
 import type { UsageLimiter } from '../agent/domain/usage-limiter';
 import type { UserRepository } from '../auth/domain/ports';

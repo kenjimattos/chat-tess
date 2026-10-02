@@ -1,5 +1,5 @@
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { EmailNotAllowedError } from '../domain/auth-errors';
 import type { LoginDenied, LoginSucceeded } from '../domain/auth-events';
 import { isEmailAllowed, normalizeEmail } from '../domain/email-allowlist';

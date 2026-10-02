@@ -1,6 +1,6 @@
-import { AppError } from '../../../shared/errors/app-error';
-import type { EventPublisher } from '../../../shared/events/domain-event';
-import type { Clock } from '../../../shared/time/clock';
+import { AppError } from '../../../kernel/errors/app-error';
+import type { EventPublisher } from '../../../kernel/events/domain-event';
+import type { Clock } from '../../../kernel/time/clock';
 import { normalizeEmail } from '../../auth/domain/email-allowlist';
 import type { UserRepository } from '../../auth/domain/ports';
 import type { User } from '../../auth/domain/user';

@@ -2,7 +2,7 @@ import type { RequestHandler, Router } from 'express';
 import type { FileStorageConfig } from '../../infra/config/env';
 import type { Database } from '../../infra/database/database';
 import type { InProcessEventBus } from '../../infra/events/in-process-event-bus';
-import type { Clock } from '../../shared/time/clock';
+import type { Clock } from '../../kernel/time/clock';
 import type { AttachmentCatalog } from '../agent/domain/attachment-catalog';
 import type {
   ConversationRepository,

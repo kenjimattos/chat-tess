@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { fixedClock } from '../../../shared/time/clock';
+import { fixedClock } from '../../../kernel/time/clock';
 import { EmailNotAllowedError } from '../domain/auth-errors';
 import type { VerifiedIdentity } from '../domain/user';
 import { FakeSessionTokens } from '../infra/fake-session-tokens';

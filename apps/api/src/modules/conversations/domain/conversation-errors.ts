@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 
 /**
  * Também usado quando a conversa existe mas pertence a outro usuário:

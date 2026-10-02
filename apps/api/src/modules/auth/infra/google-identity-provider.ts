@@ -1,5 +1,5 @@
 import { OAuth2Client } from 'google-auth-library';
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 import type { IdentityProvider } from '../domain/ports';
 import type { VerifiedIdentity } from '../domain/user';
 

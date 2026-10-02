@@ -1,5 +1,5 @@
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { ManualClock } from '../../../shared/time/clock';
+import { ManualClock } from '../../../kernel/time/clock';
 import { InMemoryConversationStore } from '../infra/in-memory-conversation-store';
 
 export const ANA_ID = 'user-ana';

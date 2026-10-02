@@ -1,5 +1,5 @@
 import type { TokenUsage } from '@chat-tess/shared';
-import type { DomainEvent } from '../../../shared/events/domain-event';
+import type { DomainEvent } from '../../../kernel/events/domain-event';
 
 export type LlmCallPurpose = 'chat' | 'compaction' | 'tool';
 

@@ -1,5 +1,5 @@
 import type { RequestHandler, Response } from 'express';
-import { AppError } from '../../../shared/errors/app-error';
+import { AppError } from '../../../kernel/errors/app-error';
 import type { GetCurrentUser } from '../application/get-current-user';
 import type { User } from '../domain/user';
 import type { SessionCookie } from './session-cookie';

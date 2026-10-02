@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { ManualClock } from '../../../shared/time/clock';
+import { ManualClock } from '../../../kernel/time/clock';
 import type { LlmCallCompleted } from '../../agent/domain/agent-events';
 import type { User } from '../../auth/domain/user';
 import { InMemoryUserRepository } from '../../auth/infra/in-memory-user-repository';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fixedClock } from '../../../shared/time/clock';
+import { fixedClock } from '../../../kernel/time/clock';
 import { JwtSessionTokens } from './jwt-session-tokens';
 
 const SECRET = 'um-segredo-de-sessao-com-mais-de-32-caracteres';

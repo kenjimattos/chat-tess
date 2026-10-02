@@ -1,9 +1,9 @@
 import type { Router } from 'express';
 import type { AppConfig } from '../../infra/config/env';
 import type { Database } from '../../infra/database/database';
-import type { EventPublisher } from '../../shared/events/domain-event';
+import type { EventPublisher } from '../../kernel/events/domain-event';
 import type { Logger } from '../../infra/logging/logger';
-import type { Clock } from '../../shared/time/clock';
+import type { Clock } from '../../kernel/time/clock';
 import { GetCurrentUser } from './application/get-current-user';
 import { SeedAllowedEmails } from './application/seed-allowed-emails';
 import { SignIn } from './application/sign-in';
