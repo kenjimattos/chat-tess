@@ -36,6 +36,8 @@ Critério principal: código legível (clean code, SOLID) e testes.
 
 **Revisão da documentação (01/10), ao fechar a 0.3.0:** comentários do código conferidos contra o que ele faz; os de conectores e MCP passaram a dizer que são tabelas e pontos de extensão reservados para a fase 3. A revisão achou e corrigiu uma rodada de tool executada além de `MAX_TOOL_ROUNDS`.
 
+**Revisão de código da 0.3.0 (01/10), depois de fechada:** cinco achados, nenhum grave. Três estão corrigidos na `develop`, em `[Unreleased]` do CHANGELOG, cada um com teste que falha sem a correção: o pedido de autorização que voltava à tela, com os botões ativos, enquanto o histórico era relido; o anexo já enviado ou removido que voltava ao rascunho quando a lista de pendentes chegava atrasada; e o endereço do usuário terminado em `)`, `]` ou `}`, que o `web_scrape` não reconhecia e por isso pedia autorização. Faltam dois: `sessionStorage` do rascunho sem proteção contra armazenamento bloqueado ou cheio, e o texto já transmitido que não é gravado quando o turno estoura `MAX_TOOL_ROUNDS`.
+
 ## Pendências, em ordem
 
 1. Publicar a 0.3.0: merge da `develop` na `main` com push (o job de migração cria `conversation_shares` e o índice de anexos pendentes), tag `v0.3.0` e fumaça em produção. O CHANGELOG já está fechado na `develop`, que está à frente do remoto, sem push.

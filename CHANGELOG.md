@@ -21,6 +21,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   em `)`, `]` ou `}`, como `https://pt.wikipedia.org/wiki/Terra_(planeta)`. O fechamento era
   tratado como pontuação da frase e o endereço nunca era reconhecido como fornecido pelo usuário.
 
+### Changed
+
+- `docs/testes.md` com a contagem atual (612 testes) e `docs/planos-e-decisoes.md` com a revisão
+  de código feita depois de fechar a 0.3.0: o que foi corrigido e o que falta.
+
 ## [0.3.0] - 2026-10-01
 
 Compartilhamento de conversa por link, histórico em páginas, reenviar e editar a última mensagem,

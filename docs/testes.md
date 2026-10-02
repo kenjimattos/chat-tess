@@ -3,7 +3,7 @@
 Como a suíte Vitest está organizada, como rodá-la e que convenções os testes seguem. Os testes
 ponta a ponta (Playwright) estão descritos no [README](../README.md#testes).
 
-São 95 arquivos e 607 testes, que rodam em cerca de 7 segundos.
+São 95 arquivos e 612 testes, que rodam em cerca de 7 segundos.
 
 ## Como rodar
 
