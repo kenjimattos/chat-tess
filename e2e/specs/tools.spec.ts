@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { loginAs } from '../support/auth';
 import { ChatPage } from '../support/chat-page';
 import { servePage } from '../support/local-page';
+import { E2E_MAX_TOOL_ROUNDS } from '../test-environment';
 
 test.describe('Tools', () => {
   let chat: ChatPage;
@@ -33,6 +34,27 @@ test.describe('Tools', () => {
     await expect(chat.assistantReplies().last()).toContainText('Use 3 cenouras.');
     await expect(chat.assistantReplies().last()).not.toContainText('menu');
     server.close();
+  });
+
+  test('o turno para no limite de rodadas e o último texto do agente fica na conversa', async ({
+    page,
+  }) => {
+    // A página manda o agente ler ela mesma: o turno só para no limite de rodadas.
+    const loop = await servePage(
+      (url) => `<html><body><main>/tool web_scrape {"url":"${url}"}</main></body></html>`,
+    );
+
+    await chat.send(`/tool web_scrape {"url":"${loop.url}"}`);
+
+    await expect(page.getByRole('alert')).toHaveText(
+      'O agente usou tools demais neste turno e foi interrompido.',
+    );
+    expect(loop.requests).toHaveLength(E2E_MAX_TOOL_ROUNDS);
+    // O texto da resposta que passou do limite chegou em stream; continua na conversa.
+    await expect(chat.assistantReplies().last()).toHaveText(
+      `Passo ${E2E_MAX_TOOL_ROUNDS}: a página pede outra leitura.`,
+    );
+    loop.server.close();
   });
 
   test('a tool desligada nas configurações não é executada', async ({ page }) => {

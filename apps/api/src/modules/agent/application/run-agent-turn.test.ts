@@ -609,6 +609,26 @@ describe('RunAgentTurn', () => {
         message: 'O agente usou tools demais neste turno e foi interrompido.',
       });
     });
+
+    it('guarda o texto já transmitido e descarta as tools da resposta que passou do limite', async () => {
+      const toolbox = new FakeToolbox({ weather: () => 'ok' });
+      const llm = ScriptedLlmProvider.replyingInOrder(
+        { text: 'Vou consultar.', toolCalls: [weatherCall] },
+        { text: 'Vou consultar de novo.', toolCalls: [weatherCall] },
+      );
+
+      await send(
+        buildAgent(llm, { toolbox, settings: { ...defaultSettings, maxToolRounds: 1 } }),
+        'Clima?',
+      );
+
+      const saved = await store.listByConversation(conversationId);
+      expect(saved.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'Vou consultar de novo.' }],
+      });
+      expect(toolbox.executions).toHaveLength(1);
+    });
   });
 
   describe('autorização do usuário para tools', () => {

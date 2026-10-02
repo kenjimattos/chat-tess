@@ -152,7 +152,8 @@ link vê as mensagens e os anexos, inclusive as mensagens enviadas depois, mas n
   histórico e turnos paralelos passando juntos pela conferência de crédito.
 - **Tools em paralelo.** Até 3 tools executam ao mesmo tempo numa rodada
   (`MAX_PARALLEL_TOOL_CALLS`) e até 8 rodadas por turno (`MAX_TOOL_ROUNDS`). O modelo pode pedir
-  várias páginas de uma vez; as que passam do limite esperam a vez.
+  várias páginas de uma vez; as que passam do limite esperam a vez. Se o modelo ainda pedir tools
+  depois da última rodada, o turno termina com um aviso e o texto já escrito fica na conversa.
 - **Resposta bloqueada.** Se o Gemini barrar a resposta por segurança ou cortá-la pelo limite de
   saída, o usuário recebe o motivo e a falha vai para a auditoria.
 - **Prompt injection.** Conteúdo de terceiros é marcado como dado, e os caminhos por onde os

@@ -147,6 +147,7 @@ describe('fakeChatResponder', () => {
       const reply = fakeChatResponder(chatRequest([scrapeResult(page)]));
 
       expect(reply).toEqual({
+        text: 'Passo 1: a página pede outra leitura.',
         toolCalls: [
           {
             type: 'tool_call',

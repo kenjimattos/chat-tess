@@ -8,15 +8,20 @@ export interface LocalPage {
   requests: string[];
 }
 
-/** Serve uma página HTML local para a tool web_scrape ler durante o teste. */
-export async function servePage(html: string): Promise<LocalPage> {
+/**
+ * Serve uma página HTML local para a tool web_scrape ler durante o teste.
+ * Com uma função, o HTML é montado a partir do endereço da própria página.
+ */
+export async function servePage(html: string | ((url: string) => string)): Promise<LocalPage> {
   const requests: string[] = [];
+  const page = { url: '' };
   const server = createServer((request, response) => {
     requests.push(request.url ?? '');
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    response.end(html);
+    response.end(typeof html === 'string' ? html : html(page.url));
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address() as AddressInfo;
-  return { server, url: `http://127.0.0.1:${port}/receita`, requests };
+  page.url = `http://127.0.0.1:${port}/receita`;
+  return { server, url: page.url, requests };
 }

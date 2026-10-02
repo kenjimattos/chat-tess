@@ -408,6 +408,8 @@ export class RunAgentTurn {
         }
 
         if (round === this.deps.settings.maxToolRounds) {
+          // O usuário viu este texto chegar. As chamadas ficam de fora: não serão executadas.
+          yield* this.saveAssistantMessage(turn, result.text, [], { final: false });
           break;
         }
         const toolCalls = await this.flagCallsRequiringApproval(turn, result.toolCalls);

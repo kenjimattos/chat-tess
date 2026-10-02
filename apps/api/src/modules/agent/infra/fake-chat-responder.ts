@@ -15,7 +15,8 @@ const SLOW_REPLY =
  * - pedido de compactação: devolve um resumo das perguntas do usuário;
  * - "/tool nome {json}": chama a tool; na volta, relata o resultado;
  * - resultado de tool contendo "/tool nome {json}": obedece e chama a tool, como um
- *   modelo enganado por uma instrução escondida em conteúdo externo (prompt injection);
+ *   modelo enganado por uma instrução escondida em conteúdo externo (prompt injection),
+ *   e escreve "Passo N: ..." junto com a chamada, como os modelos costumam fazer;
  * - "/blocked": simula uma resposta bloqueada por política de segurança;
  * - "/slow": responde devagar (cerca de 4 s), para testar respostas em andamento;
  * - demais mensagens: repete o texto e lista os anexos recebidos.
@@ -29,7 +30,7 @@ export function fakeChatResponder(request: LlmRequest): ScriptedReply {
   if (lastMessage?.role === 'tool') {
     const injectedCall = injectedToolCall(lastMessage, request.messages.length);
     return injectedCall
-      ? { toolCalls: [injectedCall] }
+      ? { text: stepNotice(request.messages), toolCalls: [injectedCall] }
       : { text: `Resultado da tool: ${describeToolResults(lastMessage)}` };
   }
 
@@ -70,6 +71,12 @@ function toolCall(
     toolName,
     input: inputJson ? (JSON.parse(inputJson) as Record<string, unknown>) : {},
   };
+}
+
+/** O texto que acompanha a chamada pedida pelo conteúdo; N é a rodada de tools que acabou de voltar. */
+function stepNotice(messages: readonly LlmMessage[]): string {
+  const finishedRounds = messages.filter((message) => message.role === 'tool').length;
+  return `Passo ${finishedRounds}: a página pede outra leitura.`;
 }
 
 /** O comando "/tool" escondido no conteúdo que uma tool trouxe, se houver. */

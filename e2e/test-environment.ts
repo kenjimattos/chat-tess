@@ -22,6 +22,9 @@ export const E2E_MESSAGES_PER_MINUTE = 5;
 /** Teto de anexos pendentes por usuário nos testes: o menor que a configuração aceita. */
 export const E2E_MAX_PENDING_ATTACHMENTS_MB = 1;
 
+/** Rodadas de tools por turno nos testes: poucas, para o spec do limite ser rápido. */
+export const E2E_MAX_TOOL_ROUNDS = 3;
+
 /** Recebe o papel de administrador no login (ADMIN_EMAILS). */
 export const ADMIN_TEST_EMAIL = 'admin@e2e.test';
 
@@ -63,6 +66,7 @@ export const apiEnvironment: Record<string, string> = {
   // Limite baixo para que a compactação aconteça depois de poucas mensagens.
   CONTEXT_TOKEN_LIMIT: String(E2E_CONTEXT_TOKEN_LIMIT),
   COMPACTION_KEEP_RECENT_MESSAGES: '2',
+  MAX_TOOL_ROUNDS: String(E2E_MAX_TOOL_ROUNDS),
   // O spec de tools faz scraping de uma página servida localmente pelo próprio teste.
   WEB_FETCH_ALLOW_PRIVATE_NETWORKS: 'true',
   RATE_LIMIT_MESSAGES_PER_MINUTE: String(E2E_MESSAGES_PER_MINUTE),

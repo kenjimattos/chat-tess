@@ -24,11 +24,17 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `sessionStorage` sem proteção ao carregar e a tela ficava em branco; com o armazenamento cheio,
   digitar lançava erro. Nos dois casos o texto do rascunho agora fica só na memória e some ao
   recarregar a página.
+- O texto que o agente escreve na resposta que passa de `MAX_TOOL_ROUNDS` agora é gravado. Antes,
+  o usuário via o texto chegar e ele sumia quando o turno terminava com "O agente usou tools
+  demais"; também não entrava no contexto do turno seguinte. As chamadas de tool dessa resposta
+  continuam descartadas.
 
 ### Changed
 
-- `docs/testes.md` com a contagem atual (613 testes) e `docs/planos-e-decisoes.md` com a revisão
-  de código feita depois de fechar a 0.3.0: o que foi corrigido e o que falta.
+- `docs/testes.md` com a contagem atual (614 testes) e `docs/planos-e-decisoes.md` com a revisão
+  de código feita depois de fechar a 0.3.0 e as cinco correções.
+- O LLM roteirizado do e2e escreve "Passo N: ..." junto com a tool pedida por conteúdo externo,
+  como os modelos fazem, e o e2e roda com `MAX_TOOL_ROUNDS=3`, para o spec do limite de rodadas.
 
 ## [0.3.0] - 2026-10-01
 
