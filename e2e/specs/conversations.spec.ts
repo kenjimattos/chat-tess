@@ -20,6 +20,22 @@ test.describe('Conversas', () => {
     await expect(chat.assistantReplies().last()).toHaveText('Você disse: "Olá, agente!".');
   });
 
+  test('funciona com o armazenamento do site bloqueado no navegador', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'sessionStorage', {
+        get() {
+          throw new DOMException('Armazenamento bloqueado', 'SecurityError');
+        },
+      });
+    });
+    await page.reload();
+    await chat.startNewConversation();
+
+    await chat.send('Sem armazenamento');
+
+    await expect(chat.assistantReplies().last()).toHaveText('Você disse: "Sem armazenamento".');
+  });
+
   test('dá à conversa o título da primeira mensagem', async () => {
     await chat.startNewConversation();
 

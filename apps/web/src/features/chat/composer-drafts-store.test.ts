@@ -126,6 +126,23 @@ describe('ComposerDraftsStore', () => {
       expect(new ComposerDraftsStore(textStorage).draftOf('a').text).toBe('');
     });
 
+    it('mantém o rascunho na memória quando o armazenamento recusa a leitura e a escrita', () => {
+      const refuse = () => {
+        throw new DOMException('Armazenamento bloqueado', 'SecurityError');
+      };
+      const drafts = new ComposerDraftsStore({
+        getItem: refuse,
+        setItem: refuse,
+        removeItem: refuse,
+      });
+
+      drafts.setText('a', 'Texto sem onde guardar');
+      expect(drafts.draftOf('a').text).toBe('Texto sem onde guardar');
+
+      drafts.clearSent('a');
+      expect(drafts.draftOf('a').text).toBe('');
+    });
+
     it('junta os anexos pendentes da API aos que a tela já conhece, sem repetir', () => {
       const drafts = new ComposerDraftsStore();
       drafts.uploadStarted('a');

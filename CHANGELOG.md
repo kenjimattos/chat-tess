@@ -20,10 +20,14 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - O `web_scrape` não pede mais autorização para abrir um endereço enviado pelo usuário que termina
   em `)`, `]` ou `}`, como `https://pt.wikipedia.org/wiki/Terra_(planeta)`. O fechamento era
   tratado como pontuação da frase e o endereço nunca era reconhecido como fornecido pelo usuário.
+- O app abre e funciona com o armazenamento do site bloqueado no navegador. O rascunho lia o
+  `sessionStorage` sem proteção ao carregar e a tela ficava em branco; com o armazenamento cheio,
+  digitar lançava erro. Nos dois casos o texto do rascunho agora fica só na memória e some ao
+  recarregar a página.
 
 ### Changed
 
-- `docs/testes.md` com a contagem atual (612 testes) e `docs/planos-e-decisoes.md` com a revisão
+- `docs/testes.md` com a contagem atual (613 testes) e `docs/planos-e-decisoes.md` com a revisão
   de código feita depois de fechar a 0.3.0: o que foi corrigido e o que falta.
 
 ## [0.3.0] - 2026-10-01

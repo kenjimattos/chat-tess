@@ -23,7 +23,8 @@ const TEXT_KEY_PREFIX = 'chat-tess:rascunho:';
  *
  * Recarregar a página também não perde o rascunho: o texto fica no
  * `textStorage` (o sessionStorage da aba) e os anexos são relidos da API, que
- * é quem os guarda (`restoreAttachments`).
+ * é quem os guarda (`restoreAttachments`). Se o armazenamento falhar (bloqueado
+ * ou cheio), o texto fica só na memória e some ao recarregar.
  *
  * Os snapshots são imutáveis, no formato que o `useSyncExternalStore` espera.
  */
@@ -111,14 +112,22 @@ export class ComposerDraftsStore {
   }
 
   private storedText(conversationId: string): string {
-    return this.textStorage?.getItem(TEXT_KEY_PREFIX + conversationId) ?? '';
+    try {
+      return this.textStorage?.getItem(TEXT_KEY_PREFIX + conversationId) ?? '';
+    } catch {
+      return '';
+    }
   }
 
   private storeText(conversationId: string, text: string): void {
-    if (text) {
-      this.textStorage?.setItem(TEXT_KEY_PREFIX + conversationId, text);
-    } else {
-      this.textStorage?.removeItem(TEXT_KEY_PREFIX + conversationId);
+    try {
+      if (text) {
+        this.textStorage?.setItem(TEXT_KEY_PREFIX + conversationId, text);
+      } else {
+        this.textStorage?.removeItem(TEXT_KEY_PREFIX + conversationId);
+      }
+    } catch {
+      // Sem armazenamento, o rascunho continua na memória até a página ser recarregada.
     }
   }
 
@@ -137,6 +146,13 @@ function hasAttachment(draft: ComposerDraft, attachmentId: string): boolean {
   return draft.attachments.some((item) => item.attachmentId === attachmentId);
 }
 
-export const composerDrafts = new ComposerDraftsStore(
-  typeof sessionStorage === 'undefined' ? null : sessionStorage,
-);
+/** Com o armazenamento do site bloqueado, o navegador lança só de ler `sessionStorage`. */
+function browserTextStorage(): DraftTextStorage | null {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+export const composerDrafts = new ComposerDraftsStore(browserTextStorage());
