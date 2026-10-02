@@ -7,6 +7,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-02
+
+Correções da revisão de código da 0.3.0: pedido de autorização, rascunho com anexos, endereços
+terminados em fechamento, armazenamento do site bloqueado e o limite de rodadas de tools.
+
 ### Fixed
 
 - O pedido de autorização de tool não volta mais à tela, com os botões ativos, entre o fim do
@@ -34,7 +39,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ### Changed
 
 - `docs/testes.md` com a contagem atual (614 testes) e `docs/planos-e-decisoes.md` com a revisão
-  de código feita depois de fechar a 0.3.0, as correções dela e o estado da publicação da 0.3.0.
+  de código feita depois de fechar a 0.3.0, as correções dela e o estado das versões 0.3.0 e
+  0.3.1.
 - README lista o limite de rodadas entre o que os specs e2e cobrem, e o comentário de
   `maxToolRounds` diz que o texto da resposta que passa do limite é gravado.
 - O LLM roteirizado do e2e escreve "Passo N: ..." junto com a tool pedida por conteúdo externo,
@@ -550,7 +556,8 @@ Primeira versão em produção: fases 1 e 2 do desafio e deploy contínuo.
 - `infra/provision.sh` passa `ADMIN_EMAILS` ao Cloud Run; antes, rodar o script de novo removia
   o papel de administrador em produção.
 
-[Unreleased]: https://github.com/kenjimattos/chat-tess/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/kenjimattos/chat-tess/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/kenjimattos/chat-tess/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/kenjimattos/chat-tess/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/kenjimattos/chat-tess/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/kenjimattos/chat-tess/releases/tag/v0.1.0
