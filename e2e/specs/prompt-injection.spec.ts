@@ -86,6 +86,33 @@ test.describe('Prompt injection', () => {
       expect(attacker.requests).toEqual(['/receita?d=segredo-da-conversa']);
     });
 
+    test('o pedido não volta à tela enquanto o histórico é relido depois da decisão', async ({
+      page,
+    }) => {
+      const request = page.getByRole('region', { name: 'Pedido de autorização' });
+      // Segura a releitura do histórico: é nela que o pedido já respondido deixa de existir.
+      let releaseHistory = (): void => undefined;
+      const historyIsHeld = new Promise<void>((resolve) => (releaseHistory = resolve));
+      await page.route(/\/api\/conversations\/[^/?]+(\?.*)?$/, async (route) => {
+        if (route.request().method() === 'GET') {
+          await historyIsHeld;
+        }
+        await route.continue();
+      });
+      const decisionStream = page.waitForResponse((response) =>
+        response.url().includes('/tool-approvals'),
+      );
+
+      await page.getByRole('button', { name: 'Permitir' }).click();
+      await (await decisionStream).finished();
+      await expect(page.getByRole('button', { name: 'Parar' })).toBeHidden();
+
+      await expect(request).toBeHidden();
+      releaseHistory();
+      await expect(chat.assistantReplies().last()).toContainText('dados recebidos');
+      await expect(request).toBeHidden();
+    });
+
     test('o pedido continua na tela depois de recarregar a página', async ({ page }) => {
       await page.reload();
 

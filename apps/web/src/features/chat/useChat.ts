@@ -64,7 +64,9 @@ export function useChat(conversationId: string, { onTurnFinished }: UseChatOptio
   );
 
   // O pedido de autorização vem do histórico: continua lá depois de recarregar a página.
-  const awaitingApproval = isStreaming ? [] : callsAwaitingApproval(messages);
+  // Entre o fim do turno e a releitura, o histórico ainda traz o pedido já respondido.
+  const awaitingApproval =
+    isStreaming || history.isRefreshing ? [] : callsAwaitingApproval(messages);
 
   /** Responde ao pedido de autorização, para todas as chamadas dele, e retoma o turno. */
   const decideApprovals = useCallback(

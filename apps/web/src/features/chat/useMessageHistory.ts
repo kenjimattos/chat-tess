@@ -12,10 +12,14 @@ import {
 /** Busca a página mais recente ou, com `beforeSequence`, as mensagens anteriores a ela. */
 export type LoadMessagePage<Page extends MessagePage> = (beforeSequence?: number) => Promise<Page>;
 
+/** Nenhuma carga terminou ainda; diferente de qualquer `refreshKey`, inclusive `undefined`. */
+const NOTHING_SETTLED = Symbol('nothing-settled');
+
 /**
  * Histórico de uma conversa carregado em páginas: abre pelas mensagens mais
  * recentes e busca as anteriores quando o usuário pede. A página mais recente
- * é recarregada sempre que `refreshKey` muda.
+ * é recarregada sempre que `refreshKey` muda; até ela chegar, `isRefreshing`
+ * avisa que as mensagens na tela são as de antes da mudança.
  * `loadPage` precisa ser estável entre renderizações (use `useCallback`).
  */
 export function useMessageHistory<Page extends MessagePage>(
@@ -27,6 +31,7 @@ export function useMessageHistory<Page extends MessagePage>(
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
+  const [settledRefreshKey, setSettledRefreshKey] = useState<unknown>(NOTHING_SETTLED);
 
   useEffect(() => {
     let isCurrent = true;
@@ -37,12 +42,14 @@ export function useMessageHistory<Page extends MessagePage>(
           setLatestPage(page);
           setLoadError(null);
           setIsLoading(false);
+          setSettledRefreshKey(refreshKey);
         }
       },
       (error: unknown) => {
         if (isCurrent) {
           setLoadError(error);
           setIsLoading(false);
+          setSettledRefreshKey(refreshKey);
         }
       },
     );
@@ -86,6 +93,8 @@ export function useMessageHistory<Page extends MessagePage>(
     hasEarlierMessages: history.hasEarlierMessages,
     latestPage,
     isLoading,
+    // Derivado na renderização: já vale no mesmo quadro em que `refreshKey` muda.
+    isRefreshing: settledRefreshKey !== refreshKey,
     isLoadingEarlier,
     loadError,
     loadEarlier,

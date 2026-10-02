@@ -7,6 +7,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Fixed
+
+- O pedido de autorização de tool não volta mais à tela, com os botões ativos, entre o fim do
+  turno da decisão e a releitura do histórico. Um segundo clique nessa janela reenviava a decisão
+  e mostrava "Esta conversa não tem um pedido de autorização em aberto." abaixo de uma resposta
+  bem-sucedida.
+
 ## [0.3.0] - 2026-10-01
 
 Compartilhamento de conversa por link, histórico em páginas, reenviar e editar a última mensagem,
