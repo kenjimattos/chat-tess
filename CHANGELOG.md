@@ -7,7 +7,16 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-01
+
+Compartilhamento de conversa por link, histórico em páginas, reenviar e editar a última mensagem,
+rascunho preservado, limites de anexos pendentes, imagens reduzidas no upload, defesas contra
+prompt injection com autorização do usuário para tools, e o backend reorganizado em `kernel`,
+`infra` e `http`.
+
 ### Added
+
+#### Compartilhamento
 
 - Compartilhamento de conversa por link somente leitura. O dono gera o link (token aleatório de
   32 caracteres, um por conversa), consulta e revoga em `/api/conversations/:id/share` (`PUT`,
@@ -22,14 +31,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Spec e2e do compartilhamento: outro usuário vê a conversa e a imagem sem poder enviar
   mensagens, o link revogado para de funcionar, quem não está logado volta ao link depois do login
   e a auditoria registra quem abriu.
-- README: seção sobre o compartilhamento, com o acesso restrito a usuários logados, a revogação e
-  por que a colaboração ficou para depois.
-- README: seção de testes, com o número de arquivos de teste e de specs e2e e o que os specs
-  cobrem.
-- `docs/testes.md`: como rodar a suíte Vitest, os quatro projetos, o que cada camada testa, os
-  dublês, os testes de integração, a cobertura mínima e as convenções. O README aponta para ele.
-- `docs/planos-e-decisoes.md`: estado das versões, pendências em ordem e as decisões de engenharia
-  e de produto com seus motivos. Antes ficava fora do repositório. O README aponta para ele.
+
+#### Histórico e mensagens
+
 - Histórico em páginas na API: `GET /api/conversations/:id` e `GET /api/shared/:token` devolvem
   as 50 mensagens mais recentes e `hasEarlierMessages`; `?before=<sequência>` traz as anteriores
   (`?limit=` até 100). Antes, abrir uma conversa trazia todas as mensagens, sem limite. No link
@@ -37,10 +41,6 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Tela do chat e do link compartilhado abrem pelas mensagens mais recentes e mostram o botão
   "Carregar mensagens anteriores" enquanto houver mais; a posição de leitura é mantida ao carregar.
   Coberto pelo spec e2e `history.spec.ts`.
-- README: seção "Do POC à produção", com os limites de dimensionamento atuais (anexos em memória,
-  vagas do Cloud Run, conexões do banco, reserva de turno, auditoria síncrona, retenção e cota do
-  Gemini), quando cada um aparece e a correção. Substitui a nota sobre uploads, que atribuía ao
-  rate limit um teto que ele não impõe.
 - Refazer o último turno: `POST /api/conversations/:id/messages/last/resend` apaga a resposta à
   última mensagem do usuário e gera outra, em stream. Com `text`, edita a mensagem antes, mantendo
   os anexos dela. A resposta anterior é substituída, não guardada; valem o rate limit, o crédito e
@@ -48,18 +48,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - Botões "Editar" e "Reenviar" na última mensagem do usuário. Reenviar gera outra resposta para
   a mesma pergunta; editar troca o texto (os anexos continuam) e gera a resposta de novo. A
   resposta anterior é substituída. Coberto pelo spec e2e `resend.spec.ts`.
+
+#### Anexos
+
 - Anexos pendentes na API: `GET /api/conversations/:id/attachments/pending` lista o que já subiu
   e ainda não foi enviado em uma mensagem, e `DELETE /api/attachments/:id` remove um deles,
   apagando o registro e o arquivo no armazenamento (`attachment.removed` na auditoria). Anexo já
   enviado responde 409.
-- Testes unitários do adapter do Cloud Storage (`GcsFileStorage`), com um dublê do cliente em
-  memória: gravação, leitura, endereço `gs://` e exclusão da pasta de uma conversa sem tocar nas
-  vizinhas.
-- Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
-  modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
-  processada; as que passam do limite esperam a vez, sem falhar.
-- Aviso do navegador ao fechar ou recarregar a aba enquanto alguma resposta ainda está chegando,
-  já que sair corta o stream. Sem resposta em andamento, a aba fecha sem aviso.
 - Limite de 10 anexos por enviar em cada conversa, o mesmo de uma mensagem
   (`MAX_ATTACHMENTS_PER_MESSAGE`). A API recusa o upload seguinte com 429
   (`too_many_pending_attachments`), para que arquivos nunca enviados não se acumulem no
@@ -73,8 +68,6 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   (`pending_attachments_quota_exceeded`); enviar ou remover anexos libera o espaço. Fecha o caminho
   de acumular arquivos sem gastar crédito, criando várias conversas com anexos nunca enviados.
   Anexos já enviados continuam sem teto de armazenamento, limitados só pelo cap de crédito.
-- Plano e decisões: limites de anexos pendentes, a escolha da janela fixa no rate limit, o aviso
-  ao fechar a aba e, em aberto para produto, o teto de armazenamento do histórico.
 - Os tetos de anexos pendentes passam a valer também para uploads simultâneos: conferir e criar o
   anexo acontecem numa só transação, com a linha do usuário travada. Antes, uploads disparados em
   paralelo direto na API liam a mesma soma e passavam juntos do limite. O arquivo recusado é
@@ -85,6 +78,34 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   os uploads entram numa fila única do app: anexar outro arquivo enquanto o anterior sobe, na
   mesma conversa ou em outra, só espera a vez. O aviso fica para uploads feitos em outra aba ou
   direto na API.
+- Testes unitários do adapter do Cloud Storage (`GcsFileStorage`), com um dublê do cliente em
+  memória: gravação, leitura, endereço `gs://` e exclusão da pasta de uma conversa sem tocar nas
+  vizinhas.
+
+#### Agente e interface
+
+- Limite de tools executando ao mesmo tempo numa rodada (`MAX_PARALLEL_TOOL_CALLS`, padrão 3). O
+  modelo pode pedir várias leituras de página de uma vez, e cada uma ocupa memória enquanto é
+  processada; as que passam do limite esperam a vez, sem falhar.
+- Aviso do navegador ao fechar ou recarregar a aba enquanto alguma resposta ainda está chegando,
+  já que sair corta o stream. Sem resposta em andamento, a aba fecha sem aviso.
+
+#### Documentação
+
+- README: seção sobre o compartilhamento, com o acesso restrito a usuários logados, a revogação e
+  por que a colaboração ficou para depois.
+- README: seção de testes, com o número de arquivos de teste e de specs e2e e o que os specs
+  cobrem.
+- `docs/testes.md`: como rodar a suíte Vitest, os quatro projetos, o que cada camada testa, os
+  dublês, os testes de integração, a cobertura mínima e as convenções. O README aponta para ele.
+- `docs/planos-e-decisoes.md`: estado das versões, pendências em ordem e as decisões de engenharia
+  e de produto com seus motivos. Antes ficava fora do repositório. O README aponta para ele.
+- README: seção "Do POC à produção", com os limites de dimensionamento atuais (anexos em memória,
+  vagas do Cloud Run, conexões do banco, reserva de turno, auditoria síncrona, retenção e cota do
+  Gemini), quando cada um aparece e a correção. Substitui a nota sobre uploads, que atribuía ao
+  rate limit um teto que ele não impõe.
+- Plano e decisões: limites de anexos pendentes, a escolha da janela fixa no rate limit, o aviso
+  ao fechar a aba e, em aberto para produto, o teto de armazenamento do histórico.
 - README: seção de limites com a janela fixa do rate limit, os tetos de anexos e o aviso ao
   fechar a aba.
 
@@ -496,6 +517,7 @@ Primeira versão em produção: fases 1 e 2 do desafio e deploy contínuo.
 - `infra/provision.sh` passa `ADMIN_EMAILS` ao Cloud Run; antes, rodar o script de novo removia
   o papel de administrador em produção.
 
-[Unreleased]: https://github.com/kenjimattos/chat-tess/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/kenjimattos/chat-tess/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/kenjimattos/chat-tess/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/kenjimattos/chat-tess/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/kenjimattos/chat-tess/releases/tag/v0.1.0
