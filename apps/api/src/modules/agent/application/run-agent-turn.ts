@@ -77,7 +77,11 @@ export interface DecideToolApprovalsInput extends TurnRequest {
 }
 
 export interface AgentSettings extends CompactionThreshold {
-  /** Limite de rodadas de tool por turno, para evitar laços infinitos. */
+  /**
+   * Rodadas de tool por turno cujo resultado volta ao LLM. Se, depois delas, o
+   * modelo ainda pedir tools, o turno é interrompido sem executá-las. A contagem
+   * recomeça quando o turno é retomado após uma autorização.
+   */
   maxToolRounds: number;
   /**
    * Tools executando ao mesmo tempo numa rodada. O modelo pode pedir várias de
@@ -403,6 +407,9 @@ export class RunAgentTurn {
           return;
         }
 
+        if (round === this.deps.settings.maxToolRounds) {
+          break;
+        }
         const toolCalls = await this.flagCallsRequiringApproval(turn, result.toolCalls);
         yield* this.saveAssistantMessage(turn, result.text, toolCalls, { final: false });
         if (toolCalls.some((call) => call.requiresApproval)) {

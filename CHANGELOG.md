@@ -100,6 +100,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   disco). Antes só os registros dos anexos saíam do banco, e os arquivos ficavam guardados para
   sempre sem nada que apontasse para eles. O módulo de arquivos reage ao evento
   `conversation.deleted` e remove a pasta da conversa.
+- O limite de rodadas de tool por turno (`MAX_TOOL_ROUNDS`) deixava passar uma rodada a mais: as
+  tools pedidas depois do limite eram executadas e registradas, e só então o turno era
+  interrompido, sem que o modelo lesse o resultado. Agora o turno para antes de executá-las.
 
 ### Changed
 

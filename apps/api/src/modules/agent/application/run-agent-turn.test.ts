@@ -602,6 +602,7 @@ describe('RunAgentTurn', () => {
       );
 
       expect(llm.requests).toHaveLength(3);
+      expect(toolbox.executions).toHaveLength(2);
       expect(streamed.at(-1)).toEqual({
         type: 'error',
         code: 'tool_rounds_exceeded',
