@@ -24,16 +24,35 @@ function givenAddresses(history: readonly HistoryMessage[]): Set<string> {
 
 /** Endereços com ou sem `https://`, como as pessoas escrevem. */
 const URL_IN_TEXT = /(?:https?:\/\/)?(?:[\w-]+\.)+[\w-]+(?::\d+)?(?:[/?#][^\s<>"'`]*)?/gi;
-const TRAILING_PUNCTUATION = /[.,;:!?)\]}]+$/;
+const TRAILING_PUNCTUATION = /[.,;:!?)\]}]$/;
+const OPENING_OF: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
 
 function urlsWrittenByUser(part: MessagePart): string[] {
   if (part.type !== 'text') {
     return [];
   }
   return (part.text.match(URL_IN_TEXT) ?? []).map((candidate) => {
-    const url = candidate.replace(TRAILING_PUNCTUATION, '');
+    const url = withoutSentencePunctuation(candidate);
     return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   });
+}
+
+/**
+ * Tira do fim a pontuação que é da frase, não do endereço. Um fechamento fica
+ * quando abre dentro do próprio endereço, como em `/wiki/Terra_(planeta)`.
+ */
+function withoutSentencePunctuation(candidate: string): string {
+  let url = candidate;
+  while (TRAILING_PUNCTUATION.test(url) && !endsClosingItsOwnBracket(url)) {
+    url = url.slice(0, -1);
+  }
+  return url;
+}
+
+function endsClosingItsOwnBracket(url: string): boolean {
+  const closing = url.at(-1) ?? '';
+  const opening = OPENING_OF[closing];
+  return opening !== undefined && url.split(opening).length >= url.split(closing).length;
 }
 
 const searchOutputSchema = z.object({

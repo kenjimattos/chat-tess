@@ -17,6 +17,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   enviado ou removido. Antes, o anexo voltava à tela, o envio seguinte falhava e ele só saía ao
   recarregar a página. Um anexo cujo upload terminava nessa mesma janela também não aparece mais
   duas vezes.
+- O `web_scrape` não pede mais autorização para abrir um endereço enviado pelo usuário que termina
+  em `)`, `]` ou `}`, como `https://pt.wikipedia.org/wiki/Terra_(planeta)`. O fechamento era
+  tratado como pontuação da frase e o endereço nunca era reconhecido como fornecido pelo usuário.
 
 ## [0.3.0] - 2026-10-01
 

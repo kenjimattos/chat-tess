@@ -27,6 +27,27 @@ describe('wasUrlGivenToAgent', () => {
       expect(wasUrlGivenToAgent('https://example.com/bolo', history)).toBe(true);
     });
 
+    it('mantém o fechamento que faz parte do endereço', () => {
+      const history = [userSaid('Resuma https://pt.wikipedia.org/wiki/Terra_(planeta).')];
+
+      expect(wasUrlGivenToAgent('https://pt.wikipedia.org/wiki/Terra_(planeta)', history)).toBe(
+        true,
+      );
+      expect(wasUrlGivenToAgent('https://pt.wikipedia.org/wiki/Terra_(planeta', history)).toBe(
+        false,
+      );
+    });
+
+    it('separa o fechamento do endereço do parêntese da frase em volta dele', () => {
+      const history = [
+        userSaid('Li sobre isso (em https://pt.wikipedia.org/wiki/Terra_(planeta)).'),
+      ];
+
+      expect(wasUrlGivenToAgent('https://pt.wikipedia.org/wiki/Terra_(planeta)', history)).toBe(
+        true,
+      );
+    });
+
     it('aceita o endereço escrito sem protocolo', () => {
       const history = [userSaid('o que diz example.com/sobre?')];
 
