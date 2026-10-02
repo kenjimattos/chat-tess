@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import type { Tool } from '../domain/tool';
 import { InMemoryToolPreferences } from '../infra/in-memory-tool-preferences';

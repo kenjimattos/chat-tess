@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import { RateLimitExceededError, type RateLimitPolicy } from '../domain/rate-limit';
 import { InMemoryRateLimitCounter } from '../infra/in-memory-rate-limit-counter';

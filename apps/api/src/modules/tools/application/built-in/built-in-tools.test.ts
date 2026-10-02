@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RecordingEventPublisher } from '../../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../../test/recording-event-publisher';
 import { fixedClock } from '../../../../shared/time/clock';
 import type { ConversationHistory, PageReader, WebSearchEngine } from '../../domain/ports';
 import { FakeWebSearch } from '../../infra/fake-web-search';

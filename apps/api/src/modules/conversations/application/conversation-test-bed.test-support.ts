@@ -1,4 +1,4 @@
-import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import { InMemoryConversationStore } from '../infra/in-memory-conversation-store';
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import type { LlmCallCompleted } from '../../agent/domain/agent-events';
 import type { User } from '../../auth/domain/user';

@@ -109,6 +109,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - O agente carrega do banco só as mensagens que o resumo da conversa ainda não cobre. Antes,
   cada chamada ao LLM (até nove por turno, com tools) trazia e validava o histórico inteiro, que
   cresce sem limite, para depois descartar em memória a parte já resumida.
+- `RecordingEventPublisher`, usado só pelos testes, saiu de `shared/events` e foi para
+  `apps/api/src/test`, junto dos outros apoios de teste.
 
 ### Security
 

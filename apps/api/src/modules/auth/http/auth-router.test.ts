@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../app';
-import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { silentLogger } from '../../../shared/logging/logger';
 import { fixedClock } from '../../../shared/time/clock';
 import { GetCurrentUser } from '../application/get-current-user';

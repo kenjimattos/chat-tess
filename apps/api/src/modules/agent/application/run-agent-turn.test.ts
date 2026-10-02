@@ -1,7 +1,7 @@
 import type { StreamEvent } from '@chat-tess/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AppError } from '../../../shared/errors/app-error';
-import { RecordingEventPublisher } from '../../../shared/events/recording-event-publisher';
+import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
 import { ManualClock } from '../../../shared/time/clock';
 import { ConversationNotFoundError } from '../../conversations/domain/conversation-errors';
 import { InMemoryConversationStore } from '../../conversations/infra/in-memory-conversation-store';

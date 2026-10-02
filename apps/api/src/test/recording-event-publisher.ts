@@ -1,4 +1,4 @@
-import type { DomainEvent, EventPublisher } from './domain-event';
+import type { DomainEvent, EventPublisher } from '../shared/events/domain-event';
 
 /** Guarda os eventos publicados, para que os testes verifiquem o que aconteceu. */
 export class RecordingEventPublisher implements EventPublisher {
