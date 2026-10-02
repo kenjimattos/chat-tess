@@ -54,6 +54,11 @@ test.describe('Tools', () => {
     await expect(chat.assistantReplies().last()).toHaveText(
       `Passo ${E2E_MAX_TOOL_ROUNDS}: a página pede outra leitura.`,
     );
+    // As tools do turno aparecem só no histórico, sem repetir o andamento abaixo dele.
+    await expect(
+      chat.assistantReplies().filter({ hasText: 'Usou a ferramenta web_scrape' }),
+    ).toHaveCount(E2E_MAX_TOOL_ROUNDS);
+    await expect(page.getByText('O assistente usou a ferramenta')).toHaveCount(0);
     loop.server.close();
   });
 

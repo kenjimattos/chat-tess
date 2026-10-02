@@ -126,7 +126,10 @@ export function ChatView({ conversationId, onTurnFinished }: ChatViewProps) {
   );
 }
 
-/** Estado do turno em andamento: avisos, tools e o texto que ainda está chegando. */
+/**
+ * Estado do turno: avisos, tools e o texto que ainda está chegando. Depois do
+ * fim ficam só os avisos; as tools e o texto já estão no histórico.
+ */
 function ReplyStatus({ reply, isStreaming }: { reply: StreamingReply; isStreaming: boolean }) {
   return (
     <div className="space-y-2">
@@ -135,9 +138,7 @@ function ReplyStatus({ reply, isStreaming }: { reply: StreamingReply; isStreamin
           O início da conversa foi resumido para caber no contexto do modelo. Nada foi apagado.
         </p>
       )}
-      {reply.tools.map((tool) => (
-        <ToolActivityLine key={tool.callId} tool={tool} />
-      ))}
+      {isStreaming && reply.tools.map((tool) => <ToolActivityLine key={tool.callId} tool={tool} />)}
       {isStreaming && (
         <article aria-label="Resposta em andamento" className="flex justify-start">
           <div className="max-w-[85%] rounded-2xl bg-white px-4 py-3 text-slate-900 shadow-sm">

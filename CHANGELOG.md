@@ -28,6 +28,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   o usuário via o texto chegar e ele sumia quando o turno terminava com "O agente usou tools
   demais"; também não entrava no contexto do turno seguinte. As chamadas de tool dessa resposta
   continuam descartadas.
+- Depois de um turno que usou tools e terminou com erro ou com compactação, a tela não repete
+  mais, abaixo do histórico, as linhas "O assistente usou a ferramenta" que ele já mostra.
 
 ### Changed
 
