@@ -5,7 +5,7 @@ import type {
   ToolCallPart,
   TokenUsage,
 } from '@chat-tess/shared';
-import { mapWithConcurrency } from '../../../shared/concurrency/map-with-concurrency';
+import { mapWithConcurrency } from './map-with-concurrency';
 import { AppError } from '../../../shared/errors/app-error';
 import type { EventPublisher } from '../../../shared/events/domain-event';
 import type { Clock } from '../../../shared/time/clock';

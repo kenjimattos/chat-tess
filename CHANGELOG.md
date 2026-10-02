@@ -116,6 +116,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   compartilhado entre os módulos.
 - Banco (Prisma), leitura do ambiente, logger e barramento de eventos em processo saíram de
   `shared` para `apps/api/src/infra`: são infraestrutura, não código usado pelo domínio.
+- `mapWithConcurrency`, usado só pelo agente, saiu de `shared/concurrency` para
+  `modules/agent/application`.
 
 ### Security
 
