@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError } from 'zod';
-import { AppError, type AppErrorKind } from '../errors/app-error';
-import type { Logger } from '../logging/logger';
+import { AppError, type AppErrorKind } from '../shared/errors/app-error';
+import type { Logger } from '../shared/logging/logger';
 
 const HTTP_STATUS_BY_KIND: Record<AppErrorKind, number> = {
   validation: 400,

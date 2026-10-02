@@ -111,6 +111,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   cresce sem limite, para depois descartar em memória a parte já resumida.
 - `RecordingEventPublisher`, usado só pelos testes, saiu de `shared/events` e foi para
   `apps/api/src/test`, junto dos outros apoios de teste.
+- O que é entrada HTTP (`web-app`, `error-handler`, `health-router`, `event-stream` e a política
+  de CSP) saiu de `shared/http` para `apps/api/src/http`: são adaptadores, não um kernel
+  compartilhado entre os módulos.
 
 ### Security
 

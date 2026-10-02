@@ -5,7 +5,7 @@ import {
   type StreamEvent,
 } from '@chat-tess/shared';
 import { Router, type RequestHandler, type Response } from 'express';
-import { openEventStream } from '../../../shared/http/event-stream';
+import { openEventStream } from '../../../http/event-stream';
 import { authenticatedUser } from '../../auth/http/require-authentication';
 import { conversationIdOf } from '../../conversations/http/conversations-router';
 import type { RunAgentTurn } from '../application/run-agent-turn';

@@ -1,9 +1,9 @@
 import cookieParser from 'cookie-parser';
 import express, { type Express, type Router } from 'express';
 import { pinoHttp } from 'pino-http';
-import { apiNotFoundHandler, createErrorHandler } from './shared/http/error-handler';
-import { createHealthRouter, type ReadinessCheck } from './shared/http/health-router';
-import { createWebAppRouter } from './shared/http/web-app';
+import { apiNotFoundHandler, createErrorHandler } from './http/error-handler';
+import { createHealthRouter, type ReadinessCheck } from './http/health-router';
+import { createWebAppRouter } from './http/web-app';
 import type { Logger } from './shared/logging/logger';
 
 export interface AppOptions {
