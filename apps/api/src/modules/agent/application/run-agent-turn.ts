@@ -79,8 +79,9 @@ export interface DecideToolApprovalsInput extends TurnRequest {
 export interface AgentSettings extends CompactionThreshold {
   /**
    * Rodadas de tool por turno cujo resultado volta ao LLM. Se, depois delas, o
-   * modelo ainda pedir tools, o turno é interrompido sem executá-las. A contagem
-   * recomeça quando o turno é retomado após uma autorização.
+   * modelo ainda pedir tools, o turno é interrompido sem executá-las; o texto
+   * dessa resposta é gravado. A contagem recomeça quando o turno é retomado
+   * após uma autorização.
    */
   maxToolRounds: number;
   /**

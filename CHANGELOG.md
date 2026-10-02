@@ -34,7 +34,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ### Changed
 
 - `docs/testes.md` com a contagem atual (614 testes) e `docs/planos-e-decisoes.md` com a revisão
-  de código feita depois de fechar a 0.3.0 e as cinco correções.
+  de código feita depois de fechar a 0.3.0, as correções dela e o estado da publicação da 0.3.0.
+- README lista o limite de rodadas entre o que os specs e2e cobrem, e o comentário de
+  `maxToolRounds` diz que o texto da resposta que passa do limite é gravado.
 - O LLM roteirizado do e2e escreve "Passo N: ..." junto com a tool pedida por conteúdo externo,
   como os modelos fazem, e o e2e roda com `MAX_TOOL_ROUNDS=3`, para o spec do limite de rodadas.
 

@@ -53,7 +53,7 @@ Gemini. Cobrem:
 - reenviar e editar a última mensagem, substituindo a resposta;
 - anexos de imagem e PDF, com o rascunho preservado ao trocar de conversa e ao recarregar a página;
 - compactação automática do histórico;
-- tools (busca e scraping), preferências e auditoria de cada execução;
+- tools (busca e scraping), limite de rodadas por turno, preferências e auditoria de cada execução;
 - prompt injection: imagem na resposta, e pedido de autorização quando uma página manda o agente
   abrir um endereço com dados da conversa;
 - créditos, rate limit e turnos simultâneos;
