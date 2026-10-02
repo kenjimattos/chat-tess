@@ -13,6 +13,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   turno da decisão e a releitura do histórico. Um segundo clique nessa janela reenviava a decisão
   e mostrava "Esta conversa não tem um pedido de autorização em aberto." abaixo de uma resposta
   bem-sucedida.
+- A lista de anexos pendentes que chega atrasada da API não devolve mais ao rascunho um anexo já
+  enviado ou removido. Antes, o anexo voltava à tela, o envio seguinte falhava e ele só saía ao
+  recarregar a página. Um anexo cujo upload terminava nessa mesma janela também não aparece mais
+  duas vezes.
 
 ## [0.3.0] - 2026-10-01
 

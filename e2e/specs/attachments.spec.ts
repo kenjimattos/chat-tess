@@ -146,6 +146,40 @@ test.describe('Anexos', () => {
     await expect(pendingAttachments).toBeHidden();
   });
 
+  test('o anexo enviado não volta ao rascunho quando a lista de pendentes chega atrasada', async ({
+    page,
+  }) => {
+    await chat.send('Assunto A');
+    await chat.attach('codigo-secreto.pdf');
+    const pendingAttachments = page.getByRole('list', { name: 'Anexos a enviar' });
+    await expect(pendingAttachments.getByRole('listitem')).toHaveCount(1);
+    await chat.startNewConversation();
+
+    // Segura a lista de pendentes pedida ao reabrir a conversa: ela foi lida
+    // com o anexo ainda por enviar e só chega depois do envio.
+    let releasePendingList = (): void => undefined;
+    const pendingListIsHeld = new Promise<void>((resolve) => (releasePendingList = resolve));
+    await page.route('**/attachments/pending', async (route) => {
+      const response = await route.fetch();
+      await pendingListIsHeld;
+      await route.fulfill({ response });
+    });
+    await chat.conversationNamed('Assunto A').click();
+    await expect(pendingAttachments.getByRole('listitem')).toHaveCount(1);
+
+    await chat.sendButton.click();
+    await expect(chat.assistantReplies().last()).toContainText(
+      'Recebi 1 anexo(s): codigo-secreto.pdf.',
+    );
+    const pendingList = page.waitForResponse('**/attachments/pending');
+    releasePendingList();
+    await (await pendingList).finished();
+
+    await expect(pendingAttachments).toBeHidden();
+    await chat.send('Sem anexo agora');
+    await expect(chat.assistantReplies().last()).toContainText('Você disse: "Sem anexo agora".');
+  });
+
   test('o rascunho continua como o usuário deixou depois de recarregar a página', async ({
     page,
   }) => {

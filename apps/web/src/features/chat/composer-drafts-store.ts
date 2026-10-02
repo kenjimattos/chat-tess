@@ -30,6 +30,8 @@ const TEXT_KEY_PREFIX = 'chat-tess:rascunho:';
 export class ComposerDraftsStore {
   private readonly drafts = new Map<string, ComposerDraft>();
   private readonly listeners = new Set<() => void>();
+  /** Anexos que já saíram do rascunho, enviados ou removidos: não voltam para ele. */
+  private readonly departedAttachmentIds = new Set<string>();
 
   constructor(private readonly textStorage: DraftTextStorage | null = null) {}
 
@@ -53,11 +55,18 @@ export class ComposerDraftsStore {
     this.storeText(conversationId, text);
   }
 
-  /** Junta ao rascunho os anexos pendentes que a API guarda e a tela ainda não conhece. */
+  /**
+   * Junta ao rascunho os anexos pendentes que a API guarda e a tela ainda não conhece.
+   * A lista pode chegar atrasada: o que o usuário enviou ou removeu enquanto ela
+   * vinha não é mais pendente e fica de fora.
+   */
   restoreAttachments(conversationId: string, pending: readonly AttachmentPart[]): void {
     this.update(conversationId, (draft) => {
-      const known = new Set(draft.attachments.map((item) => item.attachmentId));
-      const missing = pending.filter((item) => !known.has(item.attachmentId));
+      const missing = pending.filter(
+        (item) =>
+          !hasAttachment(draft, item.attachmentId) &&
+          !this.departedAttachmentIds.has(item.attachmentId),
+      );
       return missing.length ? { ...draft, attachments: [...draft.attachments, ...missing] } : draft;
     });
   }
@@ -69,16 +78,23 @@ export class ComposerDraftsStore {
     }));
   }
 
-  /** Sem `attachment`, o upload falhou. */
+  /**
+   * Sem `attachment`, o upload falhou. O anexo pode já estar no rascunho, se a
+   * lista de pendentes da API chegou antes da resposta do upload.
+   */
   uploadFinished(conversationId: string, attachment?: AttachmentPart): void {
     this.update(conversationId, (draft) => ({
       ...draft,
-      attachments: attachment ? [...draft.attachments, attachment] : draft.attachments,
+      attachments:
+        attachment && !hasAttachment(draft, attachment.attachmentId)
+          ? [...draft.attachments, attachment]
+          : draft.attachments,
       uploadingCount: draft.uploadingCount - 1,
     }));
   }
 
   removeAttachment(conversationId: string, attachmentId: string): void {
+    this.departedAttachmentIds.add(attachmentId);
     this.update(conversationId, (draft) => ({
       ...draft,
       attachments: draft.attachments.filter((item) => item.attachmentId !== attachmentId),
@@ -87,6 +103,9 @@ export class ComposerDraftsStore {
 
   /** Depois de enviar: limpa texto e anexos; uploads em andamento continuam contando. */
   clearSent(conversationId: string): void {
+    for (const { attachmentId } of this.draftOf(conversationId).attachments) {
+      this.departedAttachmentIds.add(attachmentId);
+    }
     this.update(conversationId, (draft) => ({ ...draft, text: '', attachments: [] }));
     this.storeText(conversationId, '');
   }
@@ -112,6 +131,10 @@ export class ComposerDraftsStore {
     this.drafts.set(conversationId, changed);
     this.listeners.forEach((listener) => listener());
   }
+}
+
+function hasAttachment(draft: ComposerDraft, attachmentId: string): boolean {
+  return draft.attachments.some((item) => item.attachmentId === attachmentId);
 }
 
 export const composerDrafts = new ComposerDraftsStore(

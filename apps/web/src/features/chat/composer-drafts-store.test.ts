@@ -136,6 +136,39 @@ describe('ComposerDraftsStore', () => {
       expect(drafts.draftOf('a').attachments).toEqual([attachment('novo'), attachment('antigo')]);
     });
 
+    it('não traz de volta o anexo enviado enquanto a lista da API vinha', () => {
+      const drafts = new ComposerDraftsStore();
+      drafts.restoreAttachments('a', [attachment('enviado')]);
+
+      drafts.clearSent('a');
+      drafts.restoreAttachments('a', [attachment('enviado'), attachment('outro')]);
+
+      expect(drafts.draftOf('a').attachments).toEqual([attachment('outro')]);
+    });
+
+    it('não traz de volta o anexo removido enquanto a lista da API vinha', () => {
+      const drafts = new ComposerDraftsStore();
+      drafts.restoreAttachments('a', [attachment('removido')]);
+
+      drafts.removeAttachment('a', 'removido');
+      drafts.restoreAttachments('a', [attachment('removido')]);
+
+      expect(drafts.draftOf('a').attachments).toEqual([]);
+    });
+
+    it('não repete o anexo que a lista da API trouxe antes de o upload dele responder', () => {
+      const drafts = new ComposerDraftsStore();
+      drafts.uploadStarted('a');
+
+      drafts.restoreAttachments('a', [attachment('subindo')]);
+      drafts.uploadFinished('a', attachment('subindo'));
+
+      expect(drafts.draftOf('a')).toMatchObject({
+        attachments: [attachment('subindo')],
+        uploadingCount: 0,
+      });
+    });
+
     it('não avisa os inscritos quando a API não traz nada de novo', () => {
       const drafts = new ComposerDraftsStore();
       const listener = vi.fn();
