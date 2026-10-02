@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { AllowedEmailRepository } from '../domain/ports';
 
 export class PrismaAllowedEmailRepository implements AllowedEmailRepository {

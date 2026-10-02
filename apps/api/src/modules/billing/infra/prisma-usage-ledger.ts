@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type {
   CreditAccount as CreditAccountRecord,
   UsagePurpose,

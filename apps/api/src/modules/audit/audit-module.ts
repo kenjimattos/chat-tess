@@ -1,6 +1,6 @@
 import type { RequestHandler, Router } from 'express';
-import type { Database } from '../../shared/database/database';
-import type { InProcessEventBus } from '../../shared/events/in-process-event-bus';
+import type { Database } from '../../infra/database/database';
+import type { InProcessEventBus } from '../../infra/events/in-process-event-bus';
 import { ListAuditEvents } from './application/list-audit-events';
 import { RecordAuditEvent } from './application/record-audit-event';
 import { createAuditRouter } from './http/audit-router';

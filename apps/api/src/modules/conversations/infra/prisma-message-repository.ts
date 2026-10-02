@@ -1,5 +1,5 @@
 import { messagePartsSchema, type MessagePart } from '@chat-tess/shared';
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type {
   Message as MessageRecord,
   MessageRole as MessageRoleRecord,

@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createErrorHandler } from '../../../http/error-handler';
-import { silentLogger } from '../../../shared/logging/logger';
+import { silentLogger } from '../../../infra/logging/logger';
 import {
   TEST_USER_HEADER,
   fakeRequireAuthentication,

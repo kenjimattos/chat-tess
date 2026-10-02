@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { RateLimitCounter } from '../domain/rate-limit';
 
 /**

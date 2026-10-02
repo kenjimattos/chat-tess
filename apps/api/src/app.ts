@@ -4,7 +4,7 @@ import { pinoHttp } from 'pino-http';
 import { apiNotFoundHandler, createErrorHandler } from './http/error-handler';
 import { createHealthRouter, type ReadinessCheck } from './http/health-router';
 import { createWebAppRouter } from './http/web-app';
-import type { Logger } from './shared/logging/logger';
+import type { Logger } from './infra/logging/logger';
 
 export interface AppOptions {
   logger: Logger;

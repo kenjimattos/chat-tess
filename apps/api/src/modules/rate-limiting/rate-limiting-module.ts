@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
-import type { RateLimitConfig } from '../../shared/config/env';
-import type { Database } from '../../shared/database/database';
+import type { RateLimitConfig } from '../../infra/config/env';
+import type { Database } from '../../infra/database/database';
 import type { EventPublisher } from '../../shared/events/domain-event';
 import type { Clock } from '../../shared/time/clock';
 import { ConsumeRateLimit } from './application/consume-rate-limit';

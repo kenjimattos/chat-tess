@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { Attachment as AttachmentRecord } from '../../../generated/prisma/client';
 import type { Attachment } from '../domain/attachment';
 import { detectableMimeTypes } from '../domain/file-type';

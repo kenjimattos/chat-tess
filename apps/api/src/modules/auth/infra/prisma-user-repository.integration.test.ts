@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { createDatabase } from '../../../shared/database/database';
+import { createDatabase } from '../../../infra/database/database';
 import { INTEGRATION_DATABASE_URL, resetDatabase } from '../../../test/integration-database';
 import { PrismaUserRepository } from './prisma-user-repository';
 

@@ -1,5 +1,5 @@
 import { composeApplication } from './composition-root';
-import { loadConfig } from './shared/config/env';
+import { loadConfig } from './infra/config/env';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 

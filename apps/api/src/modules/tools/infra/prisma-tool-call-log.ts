@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { Prisma } from '../../../generated/prisma/client';
 import { compactPayload } from '../../audit/domain/audit-payload';
 import type { ToolCallLog, ToolCallRecord, ToolCatalog } from '../domain/tool-call-log';

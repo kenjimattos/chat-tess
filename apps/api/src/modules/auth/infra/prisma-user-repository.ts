@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { User as UserRecord } from '../../../generated/prisma/client';
 import type { UserRepository } from '../domain/ports';
 import type { User, UserRole, VerifiedIdentity } from '../domain/user';

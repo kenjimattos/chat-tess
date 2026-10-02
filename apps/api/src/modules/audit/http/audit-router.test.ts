@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../app';
-import { silentLogger } from '../../../shared/logging/logger';
+import { silentLogger } from '../../../infra/logging/logger';
 import {
   TEST_ROLE_HEADER,
   TEST_USER_HEADER,

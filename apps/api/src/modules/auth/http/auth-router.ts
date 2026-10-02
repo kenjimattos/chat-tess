@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { testLoginRequestSchema, type CurrentUser, type LoginError } from '@chat-tess/shared';
 import { Router, type RequestHandler, type Response } from 'express';
-import type { Logger } from '../../../shared/logging/logger';
+import type { Logger } from '../../../infra/logging/logger';
 import type { GetCurrentUser } from '../application/get-current-user';
 import type { SignIn } from '../application/sign-in';
 import { EmailNotAllowedError } from '../domain/auth-errors';

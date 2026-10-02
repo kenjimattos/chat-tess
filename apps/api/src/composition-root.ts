@@ -8,10 +8,10 @@ import { createConversationsModule } from './modules/conversations/conversations
 import { createFilesModule } from './modules/files/files-module';
 import { createRateLimitingModule } from './modules/rate-limiting/rate-limiting-module';
 import { createToolsModule } from './modules/tools/tools-module';
-import type { AppConfig } from './shared/config/env';
-import { assertDatabaseIsReachable, createDatabase } from './shared/database/database';
-import { InProcessEventBus } from './shared/events/in-process-event-bus';
-import { createLogger, type Logger } from './shared/logging/logger';
+import type { AppConfig } from './infra/config/env';
+import { assertDatabaseIsReachable, createDatabase } from './infra/database/database';
+import { InProcessEventBus } from './infra/events/in-process-event-bus';
+import { createLogger, type Logger } from './infra/logging/logger';
 import { systemClock } from './shared/time/clock';
 
 export interface Application {

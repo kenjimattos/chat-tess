@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { createApp } from './app';
 import { AppError } from './shared/errors/app-error';
-import { silentLogger } from './shared/logging/logger';
+import { silentLogger } from './infra/logging/logger';
 
 function buildApp(configureRoutes: (router: Router) => void = () => {}, webDistDir?: string) {
   const router = Router();

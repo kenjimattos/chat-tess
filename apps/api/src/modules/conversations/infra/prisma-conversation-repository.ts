@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { Conversation as ConversationRecord } from '../../../generated/prisma/client';
 import type { Conversation } from '../domain/conversation';
 import type { ConversationRepository } from '../domain/ports';

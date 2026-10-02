@@ -114,6 +114,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - O que é entrada HTTP (`web-app`, `error-handler`, `health-router`, `event-stream` e a política
   de CSP) saiu de `shared/http` para `apps/api/src/http`: são adaptadores, não um kernel
   compartilhado entre os módulos.
+- Banco (Prisma), leitura do ambiente, logger e barramento de eventos em processo saíram de
+  `shared` para `apps/api/src/infra`: são infraestrutura, não código usado pelo domínio.
 
 ### Security
 

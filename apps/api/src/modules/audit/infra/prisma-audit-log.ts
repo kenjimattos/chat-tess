@@ -1,4 +1,4 @@
-import type { Database } from '../../../shared/database/database';
+import type { Database } from '../../../infra/database/database';
 import type { Prisma } from '../../../generated/prisma/client';
 import type { AuditEntry, AuditLog, AuditQuery } from '../domain/audit-entry';
 

@@ -1,4 +1,4 @@
-import type { Database } from '../shared/database/database';
+import type { Database } from '../infra/database/database';
 
 /**
  * Banco dos testes de integração. É separado do banco dos testes ponta a ponta

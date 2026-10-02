@@ -2,7 +2,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../app';
 import { RecordingEventPublisher } from '../../../test/recording-event-publisher';
-import { silentLogger } from '../../../shared/logging/logger';
+import { silentLogger } from '../../../infra/logging/logger';
 import { ManualClock } from '../../../shared/time/clock';
 import {
   TEST_USER_HEADER,

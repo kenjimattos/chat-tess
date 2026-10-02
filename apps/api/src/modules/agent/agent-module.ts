@@ -1,6 +1,6 @@
 import type { RequestHandler, Router } from 'express';
-import type { AgentConfig, LlmConfig } from '../../shared/config/env';
-import type { Database } from '../../shared/database/database';
+import type { AgentConfig, LlmConfig } from '../../infra/config/env';
+import type { Database } from '../../infra/database/database';
 import type { EventPublisher } from '../../shared/events/domain-event';
 import type { Clock } from '../../shared/time/clock';
 import type { ConversationRepository, MessageRepository } from '../conversations/domain/ports';
